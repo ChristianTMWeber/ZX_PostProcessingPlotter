@@ -8,6 +8,7 @@
 
 import ROOT # to do all the ROOT stuff
 import numpy as np # good ol' numpy
+import warnings # to warn about things that might not have gone right
 
 
 
@@ -69,7 +70,25 @@ def splitHistNamesByPlotvariable(histNameList, delimeter = "_", nonEndingStringP
 
     return histsByPlotVariable
 
+def activateATLASPlotStyle():
+    # runs the root macro that defines the ATLAS style, and checks that it is active
+    # relies on a seperate style macro
+    ROOT.gROOT.ProcessLine(".x atlasStyle.C")
+
+    if "ATLAS" in ROOT.gStyle.GetName(): print("ROOT.gStyle: ATLAS style loaded!")
+    else:                                warnings.warn("Did not load ATLAS style properly")
+
+    return None
+
+
+
+
+
+
+
 if __name__ == '__main__':
+
+    activateATLASPlotStyle() 
 
     inputRootFileName = "data15_mc16a.root"
 
@@ -111,6 +130,8 @@ if __name__ == '__main__':
 
 
             import pdb; pdb.set_trace()
+
+            ROOT.gROOT.ProcessLine(".x atlasStyle.C")
 
         import pdb; pdb.set_trace()
 
