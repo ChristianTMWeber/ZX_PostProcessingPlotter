@@ -9,8 +9,8 @@
 import ROOT # to do all the ROOT stuff
 import numpy as np # good ol' numpy
 import warnings # to warn about things that might not have gone right
-
-
+import itertools # to cycle over lists in a nice automated way
+import re # to do regular expression matching
 
 
 def getTDirsAndContents(TDir, outputDict = {}, recursiveCounter = 0):
@@ -81,14 +81,78 @@ def activateATLASPlotStyle():
     return None
 
 
+def setupTLegend():
+    # set up a TLegend, still need to add the different entries
+    TLegend = ROOT.TLegend(0.15,0.65,0.45,0.87)
+    TLegend.SetFillColor(ROOT.kWhite)
+    TLegend.SetLineColor(ROOT.kWhite)
+    TLegend.SetNColumns(2);
 
+    return TLegend
 
+def importMetaData(metadataFileLocation):
+    # parse the metada data from a metadata text file that we furnish
+    # we expect the metadata file to have the stucture:
+    # <DSID> <crossSection> <kFactor> <genFiltEff>   <...>
+    # There the different values are seperate by whitespace
+    # We ignore lines that do not start with a DSID (i.e. a 6 digit number)
 
+    metaDataDict = {}
+    DSIDPattern = re.compile("\d{6}") # DSIDs are numbers 6 digits long
 
+    metadataFile = open(metadataFileLocation,'r')
+
+    for line in metadataFile:
+        if re.match(DSIDPattern, line): #if the line starts with out pattern
+            splittedLine = line.split() # split at whitespace
+            DSID = int(splittedLine[0])
+            tempDict = { "crossSection" : float(splittedLine[1]),  
+                         "kFactor"      : float(splittedLine[2]),
+                         "genFiltEff"   : float(splittedLine[3])}
+
+            metaDataDict[DSID] = tempDict
+
+    return metaDataDict
+
+def getSumOfWeigts(topLevelTObjects):
+    # get the sum of weights for our MC samples
+    # expects as input the following data structure:
+    # {TDirObject1 : [list of the names of the TH1s in the TDirObject1 which contain the sum of weights in the bin named 'sumOfEventWeights_xAOD' ],
+    #  TDirObject2 : [ same like above, but now for the TH1 names in TDirObject2 ],
+    #   etc }
+    # will get the sum of weigts and output them in a dict like  {DSID : sumAODWeights}
+
+    sumOfEventWeightsDict = {}
+
+    for TDir in topLevelTObjects.keys():
+        histNames = topLevelTObjects[TDir]
+
+        for name in histNames:
+            currentTH1 = TDir.Get(name)
+
+            sumAODWeights = currentTH1.GetBinContent(currentTH1.GetXaxis().FindBin("sumOfEventWeights_xAOD"))
+
+            DSID = name.split("_")[1]
+            sumOfEventWeightsDict[int(DSID)] = sumAODWeights
+
+    return sumOfEventWeightsDict
 
 if __name__ == '__main__':
 
-    activateATLASPlotStyle() 
+    #activateATLASPlotStyle() 
+
+    campaign = "mc16a"
+
+    bkgMetaFilePaths= {"mc16a" : "production_20180414_18/md_bkg_datasets_mc16a.txt",
+                       "mc16d" : "production_20180414_18/md_bkg_datasets_mc16d.txt"}
+
+    lumiMap= { "mc16a" : 36.1029, "mc16d" : 43.5382, "units" : "fb-1"}  # campaigns integrated luminosity,  complete + partial
+
+
+
+
+    metdataMC16a = importMetaData(bkgMetaFilePaths["mc16a"])
+
 
     inputRootFileName = "data15_mc16a.root"
 
@@ -97,19 +161,22 @@ if __name__ == '__main__':
     dirsAndContents = getTDirsAndContents(postProcessedData, recursiveCounter = 1)
 
     topLevelTObjects = {postProcessedData : dirsAndContents[postProcessedData]}
-    del dirsAndContents[postProcessedData]
+    del dirsAndContents[postProcessedData] # remove the top level entries, they are only ought to contain the sumOfWeights
+
+    sumOfWeights = getSumOfWeigts(topLevelTObjects)
+
+    
 
     for TDir in dirsAndContents.keys():
-        HistNames = dirsAndContents[TDir]
-
+        histNames = dirsAndContents[TDir]
 
         nonCutflowHists = []
-        for HistName in HistNames :  
-            if "cutflow" in HistName: continue
-            if HistName.startswith("h2_"): continue
-            if HistName.endswith("Weight"): continue
-            nonCutflowHists.append(HistName)
-            print(HistName)
+        for histName in histNames :  
+            if "cutflow" in histName: continue
+            if histName.startswith("h2_"): continue
+            if histName.endswith("Weight"): continue
+            nonCutflowHists.append(histName)
+            print(histName)
 
 
         histsByEnding = splitHistNamesByPlotvariable(nonCutflowHists)
@@ -119,19 +186,53 @@ if __name__ == '__main__':
             dataTH1 = None 
 
             backgroundTHStack = ROOT.THStack(histEnding,histEnding)
+            
+
+            # define fill colors, use itertools to cycle through them, access via fillColors.next()
+            fillColors = itertools.cycle([ROOT.kBlue,   ROOT.kMagenta,  ROOT.kRed,    ROOT.kYellow,   
+                                          ROOT.kGreen,  ROOT.kCyan,     ROOT.kViolet, ROOT.kPink, 
+                                          ROOT.kOrange, ROOT.kSpring,    ROOT.kTeal,   ROOT.kAzure]) 
+
+
+
+
+
+
+            canvas = ROOT.TCanvas(histEnding,histEnding,1280,720);
+            legend = setupTLegend()
 
             for histName in histsByEnding[histEnding]: 
                 print(histName)
                 DSID = histName.split("_")[1]
                 currentTH1 = TDir.Get(histName)
+
+
                 
-                if DSID > 0: backgroundTHStack.Add(currentTH1) # take Data to have DSID 0
-                else:        dataTH1 = currentTH1
+                if int(DSID) > 0: # Signal & Background have DSID > 0
+                    currentTH1.SetFillStyle(1001) # 1001 - Solid Fill: https://root.cern.ch/doc/v608/classTAttFill.html
+                    currentTH1.SetFillColor(fillColors.next())
+
+                    
+                    scale = lumiMap[campaign] * 1000000. * metdataMC16a[int(DSID)]["crossSection"] * metdataMC16a[int(DSID)]["kFactor"] * metdataMC16a[int(DSID)]["genFiltEff"] / sumOfWeights[int(DSID)]
+                    currentTH1.Scale(scale)
+                    backgroundTHStack.Add(currentTH1) 
+                    legend.AddEntry(currentTH1 ,histName, "f");
+                else:   # data has DSID 0 for us  
+                    dataTH1 = currentTH1
+                    legend.AddEntry(currentTH1 ,histName)
+                    
 
 
+
+
+            backgroundTHStack.Draw("Hist")
+            dataTH1.Draw("same")
+            legend.Draw();
+
+
+            canvas.Update() # we need to update the canvas, so that changes to it (like the drawing of a legend get reflected in its status)
             import pdb; pdb.set_trace()
 
-            ROOT.gROOT.ProcessLine(".x atlasStyle.C")
 
         import pdb; pdb.set_trace()
 
@@ -139,8 +240,8 @@ if __name__ == '__main__':
 
 
 
-
-
+currentTH1.SetFillStyle(3004)
+currentTH1.SetFillColor(ROOT.kBlue+1)
 
 
 
