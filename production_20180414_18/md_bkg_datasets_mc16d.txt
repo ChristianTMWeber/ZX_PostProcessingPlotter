@@ -1,0 +1,58 @@
+dataset_number/I:crossSection/D:kFactor/D:genFiltEff/D:physics_short/C:ami_tags/C:events/D:physics_comment/C:pdf/C:generator_name/C
+## list of DOAD_HIGG2D1 background samples for the ZdZd analysis
+## assembled by Christian
+
+## Higgs samples
+345060  6.0239E-06   1.0             1.0000E+00  PowhegPythia8EvtGen_NNLOPS_nnlo_30_ggH125_ZZ4l                e5682_e5984_s3126_r10201_r10210_p3387  3309502   NULL  NULL         Powheg+Pythia8+EvtGen    
+341488  4.6872e-07   0.978615629651  1.0000E+00  PowhegPythia8EvtGen_CT10_AZNLOCTEQ6L1_VBFH125_ZZ4lep          e3951_e5984_s3126_r10201_r10210_p3387  213079    NULL  NULL         Powheg+Pythia8+EvtGen    
+341964  1.6988e-07   1.0             1.0         Pythia8EvtGen_A14NNPDF23LO_WH125_ZZ4l                         e4161_e5984_s3126_r10201_r10210_p3387  160897    NULL  NULL         Pythia8+EvtGen           
+341947  1.09616e-07  1.0             0.010256    Pythia8EvtGen_A14NNPDF23LO_ZH125_ZZ4l                         e4161_e5984_s3126_r10201_r10210_p3387  158606    NULL  NULL         Pythia8+EvtGen           
+345066  1.5128e-08   1.0             1.0000E+00  PowhegPythia8EvtGen_NNPDF3_AZNLO_ggZH125_ZZ4lepZinc           e5931_e5984_s3126_r10201_r10210_p3387  271679    NULL  NULL         Powheg+Pythia8+EvtGen    
+345046  2.4374E-04   1.0             1.0000E+00  PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_allhad   e6427_e5984_s3126_r10201_r10210_p3387  129212    NULL  NULL         Powheg+Pythia8+EvtGen    
+345047  7.1178E-04   1.0             4.3791E-01  PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_semilep  e6427_e5984_s3126_r10201_r10210_p3387  129658    NULL  NULL         Powheg+Pythia8+EvtGen    
+345048  5.5246E-05   1.0             1.0000E+00  PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_dilep    e6427_e5984_s3126_r10201_r10210_p3387  59924     NULL  NULL         Powheg+Pythia8+EvtGen    
+344973  6.616E-08    1.0             1.0000E+00  aMcAtNloPythia8EvtGen_A14NNPDF23LO_bbH125_yb2_ZZ4lep_noTau    e5537_e5984_s3126_r10201_r10210_p3387  287756    NULL  NULL         aMcAtNlo+Pythia8+EvtGen  
+344974  -5.158E-09   1.0             1.0000E+00  aMcAtNloPythia8EvtGen_A14NNPDF23LO_bbH125_ybyt_ZZ4lep_noTau   e5537_e5984_s3126_r10201_r10210_p3387  47789     NULL  NULL         aMcAtNlo+Pythia8+EvtGen  
+
+## (qq ->) ZZ -> 4l
+364250  1.2523E-03   1.0             1.0000E+00  Sherpa_222_NNPDF30NNLO_llll                                   e5894_e5984_s3126_r10201_r10210_p3387  10796288  NULL  NNPDF30NNLO  Sherpa                   
+364251  3.5356E-04   1.0             1.2798E-01  Sherpa_222_NNPDF30NNLO_llll_m4l100_300_filt100_150            e5894_e5984_s3126_r10201_r10210_p3387  8149639   NULL  NNPDF30NNLO  Sherpa                   
+364252  6.1774E-05   1.0             1.0         Sherpa_222_NNPDF30NNLO_llll_m4l300                            e5894_e5984_s3126_r10201_r10210_p3387  4361358   NULL  NNPDF30NNLO  Sherpa                   
+
+## Reducible (Z+jets)
+#Sherpa samples 364114-364127 are preferred of this one #mc16_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee.deriv.DAOD_HIGG2D1.e3601_e5984_s3126_r10201_r10210_p3387
+#Sherpa samples 364100-364113 are preferred of this one #mc16_13TeV.361107.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu.deriv.DAOD_HIGG2D1.e3601_e5984_s3126_r10201_r10210_p3387
+#Sherpa samples 364128-364141 are preferred of this one #mc16_13TeV.361108.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Ztautau.deriv.DAOD_HIGG2D1.e3601_e5984_s3126_r10201_r10210_p3387
+
+## (gg ->) ZZ -> 4l
+345708  4.7321E-06   1.0             1.0000E+00  Sherpa_222_NNPDF30NNLO_ggllllNoHiggs_0M4l130                  e6213_e5984_s3126_r10201_r10210_p3387  200827    NULL  NNPDF30NNLO  Sherpa                   
+345709  1.0556E-05   1.0             1.0000E+00  Sherpa_222_NNPDF30NNLO_ggllllNoHiggs_130M4l                   e6213_e5984_a875_r10201_r10210_p3387   569142    NULL  NNPDF30NNLO  Sherpa                   
+
+## Reducible (WZ)
+## missing 361601
+
+
+## VVV/VBS
+364248  3.8550E-07   1.0             2.2480E-01  Sherpa_222_NNPDF30NNLO_ZZZ_4l2v_EW6                           e5887_e5984_s3126_r10201_r10210_p3387  32043     NULL  NNPDF30NNLO  Sherpa                   
+364247  1.4500E-08   1.0             1.0000E+00  Sherpa_222_NNPDF30NNLO_ZZZ_6l0v_EW6                           e5887_e5984_s3126_r10201_r10210_p3387  34140     NULL  NNPDF30NNLO  Sherpa                   
+364245  1.8810E-07   1.0             1.0000E+00  Sherpa_222_NNPDF30NNLO_WZZ_5l1v_EW6                           e5887_e5984_s3126_r10201_r10210_p3387  48211     NULL  NNPDF30NNLO  Sherpa                   
+364243  1.7964E-06   1.0             1.0000E+00  Sherpa_222_NNPDF30NNLO_WWZ_4l2v_EW6                           e5887_e5984_s3126_r10201_r10210_p3387  56590     NULL  NNPDF30NNLO  Sherpa                   
+
+
+## VVV/VBS
+## This sample overlaps with [- DIDS 341488]. Thus we repalce it with the 364364 one ## mc16_13TeV.364283.Sherpa_222_NNPDF30NNLO_lllljj_EW6.deriv.DAOD_HIGG2D1.e6055_e5984_s3126_r10201_r10210_p3387
+364364  1.0358E-05   1.0             1.0000E+00  Sherpa_222_NNPDF30NNLO_lllljj_EW6_noHiggs                     e6611_e5984_a875_r10201_r10210_p3387   707407    NULL  NNPDF30NNLO  Sherpa                   
+
+
+## Reducible (ttbar)
+410472  7.2977E-01   1.13975636159   1.0545E-01  PhPy8EG_A14_ttbar_hdamp258p75_dil                             e6348_e5984_s3126_r10201_r10210_p3387  21341703  NULL  NULL         Powheg+Pythia8+EvtGen    
+# confirm that 410472 is the best ttbar sample for us ## we are switching to 410472 from 410501 (which is not available in MC16d yet)
+
+## Z+ttbar/J/Psi/Upsilon
+410142  1.1313E-04   1.09            1.0000E+00  Sherpa_NNPDF30NNLO_ttll_mll5                                  e4686_e5984_s3126_r10201_r10210_p3387  1486508   NULL  NNPDF        Sherpa                   
+
+#WZ
+361601  4.5103E-03   1.0             1.0000E+00  PowhegPy8EG_CT10nloME_AZNLOCTEQ6L1_WZlvll_mll4                e4475_e5984_s3126_r10201_r10210_p3387  5053973   NULL  NULL         Powheg+Pythia8+EvtGen    
+
+#lsetup  "asetup AthAnalysis,21.2.23" pyAMI
+#getMetadata.py --timestamp="2018-04-24 07:25:28" --physicsGroups="PMG,MCGN" --fields="dataset_number,crossSection,kFactor,genFiltEff,physics_short,ami_tags,events,physics_comment,pdf,generator_name" --inDS="mc16_13TeV.345060.PowhegPythia8EvtGen_NNLOPS_nnlo_30_ggH125_ZZ4l.deriv.DAOD_HIGG2D1.e5682_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.341488.PowhegPythia8EvtGen_CT10_AZNLOCTEQ6L1_VBFH125_ZZ4lep.deriv.DAOD_HIGG2D1.e3951_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.341964.Pythia8EvtGen_A14NNPDF23LO_WH125_ZZ4l.deriv.DAOD_HIGG2D1.e4161_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.341947.Pythia8EvtGen_A14NNPDF23LO_ZH125_ZZ4l.deriv.DAOD_HIGG2D1.e4161_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.345066.PowhegPythia8EvtGen_NNPDF3_AZNLO_ggZH125_ZZ4lepZinc.deriv.DAOD_HIGG2D1.e5931_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.345046.PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_allhad.deriv.DAOD_HIGG2D1.e6427_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.345047.PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_semilep.deriv.DAOD_HIGG2D1.e6427_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.345048.PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_dilep.deriv.DAOD_HIGG2D1.e6427_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.344973.aMcAtNloPythia8EvtGen_A14NNPDF23LO_bbH125_yb2_ZZ4lep_noTau.deriv.DAOD_HIGG2D1.e5537_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.344974.aMcAtNloPythia8EvtGen_A14NNPDF23LO_bbH125_ybyt_ZZ4lep_noTau.deriv.DAOD_HIGG2D1.e5537_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.364250.Sherpa_222_NNPDF30NNLO_llll.deriv.DAOD_HIGG2D1.e5894_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.364251.Sherpa_222_NNPDF30NNLO_llll_m4l100_300_filt100_150.deriv.DAOD_HIGG2D1.e5894_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.364252.Sherpa_222_NNPDF30NNLO_llll_m4l300.deriv.DAOD_HIGG2D1.e5894_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.345708.Sherpa_222_NNPDF30NNLO_ggllllNoHiggs_0M4l130.deriv.DAOD_HIGG2D1.e6213_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.345709.Sherpa_222_NNPDF30NNLO_ggllllNoHiggs_130M4l.deriv.DAOD_HIGG2D1.e6213_e5984_a875_r10201_r10210_p3387,mc16_13TeV.364248.Sherpa_222_NNPDF30NNLO_ZZZ_4l2v_EW6.deriv.DAOD_HIGG2D1.e5887_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.364247.Sherpa_222_NNPDF30NNLO_ZZZ_6l0v_EW6.deriv.DAOD_HIGG2D1.e5887_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.364245.Sherpa_222_NNPDF30NNLO_WZZ_5l1v_EW6.deriv.DAOD_HIGG2D1.e5887_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.364243.Sherpa_222_NNPDF30NNLO_WWZ_4l2v_EW6.deriv.DAOD_HIGG2D1.e5887_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.364364.Sherpa_222_NNPDF30NNLO_lllljj_EW6_noHiggs.deriv.DAOD_HIGG2D1.e6611_e5984_a875_r10201_r10210_p3387,mc16_13TeV.410472.PhPy8EG_A14_ttbar_hdamp258p75_dil.deriv.DAOD_HIGG2D1.e6348_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.410142.Sherpa_NNPDF30NNLO_ttll_mll5.deriv.DAOD_HIGG2D1.e4686_e5984_s3126_r10201_r10210_p3387,mc16_13TeV.361601.PowhegPy8EG_CT10nloME_AZNLOCTEQ6L1_WZlvll_mll4.deriv.DAOD_HIGG2D1.e4475_e5984_s3126_r10201_r10210_p3387"
