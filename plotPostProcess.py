@@ -215,6 +215,10 @@ def getSumOfWeigts(topLevelTObjects):
 
 if __name__ == '__main__':
 
+    #inputRootFileName = "ZX_data15_mc16a.root"
+    inputRootFileName = "ZdZd_SRHM_data1516_mc16a.root"
+
+
     #activateATLASPlotStyle() 
 
     campaign = "mc16a"
@@ -229,13 +233,10 @@ if __name__ == '__main__':
 
     mac16aDISDHelper.importMetaData(bkgMetaFilePaths["mc16a"])
 
-    import pdb; pdb.set_trace()
-
     #metdataMC16a = importMetaData(bkgMetaFilePaths["mc16a"])
 
 
-    #inputRootFileName = "ZX_data15_mc16a.root"
-    inputRootFileName = "ZdZd_SRHM_data1516_mc16a.root"
+
 
     postProcessedData = ROOT.TFile(inputRootFileName,"READ");
 
@@ -330,29 +331,8 @@ if __name__ == '__main__':
             legend.Draw();
 
             canvas.Update() # we need to update the canvas, so that changes to it (like the drawing of a legend get reflected in its status)
-            import pdb; pdb.set_trace()
+            #import pdb; pdb.set_trace()
 
 
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
 
-
-
-
-
-currentTH1.SetFillStyle(3004)
-currentTH1.SetFillColor(ROOT.kBlue+1)
-
-
-
-
-topLevelTObjects = []     # will store the names of the sumOfWeights here
-higherLevelTObjects = {}  # will store here directory : [dirContents] here
-
-
-dirContents=[]
-
-
-
-
-
-import pdb; pdb.set_trace()
