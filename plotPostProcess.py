@@ -170,22 +170,22 @@ def getTDirsAndContents(TDir, outputDict = {}, recursiveCounter = 0):
 #    return histsByPlotVariable
 
 def splitHistNamesByPlotvariable(histNameList, delimeter = "_", nonEndingStringParts = 2): 
-	# create a mapping {ending1 : [histogram names with ending1], ending2 : ...}
-	# we wanna group the hist names together that shall be plotted together
+    # create a mapping {ending1 : [histogram names with ending1], ending2 : ...}
+    # we wanna group the hist names together that shall be plotted together
     # we we are doing that by grouping them together by the endings
     # by default we take the strings to be splittable by the delimeter "_"
     # and that only the first two parts of the string are not part of the ending
 
-	histsByEnding = {}
+    histsByEnding = {}
 
-	for histName in histNameList:
-		histNameParts = histName.split(delimeter)
-		currentEnding = delimeter.join(histNameParts[nonEndingStringParts:]) # by conventoin we take the first part of the hist name to be an indicator of the type of object, and the second part the DSID
+    for histName in histNameList:
+        histNameParts = histName.split(delimeter)
+        currentEnding = delimeter.join(histNameParts[nonEndingStringParts:]) # by conventoin we take the first part of the hist name to be an indicator of the type of object, and the second part the DSID
 
-		if currentEnding in histsByEnding.keys(): 	histsByEnding[currentEnding].append(histName)
-		else: 					 			histsByEnding[currentEnding] = [histName]
+        if currentEnding in histsByEnding.keys():   histsByEnding[currentEnding].append(histName)
+        else:                               histsByEnding[currentEnding] = [histName]
 
-	return histsByEnding
+    return histsByEnding
 
 
 
@@ -336,7 +336,7 @@ if __name__ == '__main__':
                     print( DSID, currentTH1.Integral(), scale, currentTH1.Integral()*scale)
                     currentTH1.Scale(scale)
 
-                    #backgroundSamples.backgroundSamples.append( (DSID, currentTH1) )
+                    
 
                     #if int(DSID) == 345047:
                     #    currentTH1.Draw()
@@ -348,7 +348,7 @@ if __name__ == '__main__':
                     backgroundTHStack.Add(currentTH1) 
                     legend.AddEntry(currentTH1 ,histName, "f");
                 else:   # data has DSID 0 for us  
-                	gotDataSample = True
+                    gotDataSample = True
                     dataTH1 = currentTH1
                     legend.AddEntry(currentTH1 ,histName)
                     
