@@ -137,6 +137,26 @@ def getTDirsAndContents(TDir, outputDict = {}, recursiveCounter = 0):
 
     return outputDict
 
+def mergeHistsByMapping(backgroundSamples, mappingDict) :
+
+    mergedSamples = {}
+
+    for aTuple in backgroundSamples:
+
+        DSID = aTuple[0]
+        histogram = aTuple[1]
+
+        mappedDSID = mappingDict[DSID]
+
+        if mappedDSID in mergedSamples.keys():  mergedSamples[mappedDSID].Add(histogram)
+        else:                                   mergedSamples[mappedDSID] = histogram.Clone()
+
+    return mergedSamples
+
+
+
+
+
 
 #def binStringListByEnding(listOfStrings, endingStr):
 #    # sorts a list of strings into two other lists, by asking for each of the strings
@@ -336,7 +356,7 @@ if __name__ == '__main__':
                     print( DSID, currentTH1.Integral(), scale, currentTH1.Integral()*scale)
                     currentTH1.Scale(scale)
 
-                    
+                    backgroundSamples.append( (DSID, currentTH1) )
 
                     #if int(DSID) == 345047:
                     #    currentTH1.Draw()
@@ -345,12 +365,12 @@ if __name__ == '__main__':
 
                     #if currentTH1.Integral() < 1. : continue
 
-                    backgroundTHStack.Add(currentTH1) 
-                    legend.AddEntry(currentTH1 ,histName, "f");
+                    #backgroundTHStack.Add(currentTH1) 
+                    #legend.AddEntry(currentTH1 ,histName, "f");
                 else:   # data has DSID 0 for us  
                     gotDataSample = True
                     dataTH1 = currentTH1
-                    legend.AddEntry(currentTH1 ,histName)
+                    #legend.AddEntry(currentTH1 ,histName)
                     
 
 
