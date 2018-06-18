@@ -11,6 +11,7 @@ import numpy as np # good ol' numpy
 import warnings # to warn about things that might not have gone right
 import itertools # to cycle over lists in a nice automated way
 import re # to do regular expression matching
+import copy # for making deep copies
 #import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
 
 
@@ -137,36 +138,57 @@ def getTDirsAndContents(TDir, outputDict = {}, recursiveCounter = 0):
     return outputDict
 
 
-def binStringListByEnding(listOfStrings, endingStr):
-    # sorts a list of strings into two other lists, by asking for each of the strings
-    # if it ends with the desired ending string
-    hasCorrectEnding = []
-    hasWrongEnding = []
-
-    for string in listOfStrings:
-        if string.endswith(endingStr): hasCorrectEnding.append(string)
-        else:                       hasWrongEnding.append(string)
-
-    return hasCorrectEnding, hasWrongEnding
+#def binStringListByEnding(listOfStrings, endingStr):
+#    # sorts a list of strings into two other lists, by asking for each of the strings
+#    # if it ends with the desired ending string
+#    hasCorrectEnding = []
+#    hasWrongEnding = []
+#
+#    for string in listOfStrings:
+#        if string.endswith(endingStr): hasCorrectEnding.append(string)
+#        else:                       hasWrongEnding.append(string)
+#
+#    return hasCorrectEnding, hasWrongEnding
+#
+#def splitHistNamesByPlotvariable(histNameList, delimeter = "_", nonEndingStringParts = 2): 
+#    # we wanna group the hist names together that shall be plotted together
+#    # we we are doing that by grouping them together by the endings
+#    # by default we take the strings to be splittable by the delimeter "_"
+#    # and that only the first two parts of the string are not part of the ending
+#
+#    histsByPlotVariable = {}
+#
+#    while(histNameList): # while that list is not empty
+#        
+#        histNameParts = histNameList[0].split(delimeter)
+#        currentEnding = delimeter.join(histNameParts[nonEndingStringParts:]) # by conventoin we take the first part of the hist name to be an indicator of the type of object, and the second part the DSID
+#
+#        currentHists, histNameList = binStringListByEnding(histNameList, currentEnding)
+#
+#        histsByPlotVariable[currentEnding] = currentHists
+#
+#    return histsByPlotVariable
 
 def splitHistNamesByPlotvariable(histNameList, delimeter = "_", nonEndingStringParts = 2): 
-    # we wanna group the hist names together that shall be plotted together
+	# create a mapping {ending1 : [histogram names with ending1], ending2 : ...}
+	# we wanna group the hist names together that shall be plotted together
     # we we are doing that by grouping them together by the endings
     # by default we take the strings to be splittable by the delimeter "_"
     # and that only the first two parts of the string are not part of the ending
 
-    histsByPlotVariable = {}
+	histsByEnding = {}
 
-    while(histNameList): # while that list is not empty
-        
-        histNameParts = histNameList[0].split(delimeter)
-        currentEnding = delimeter.join(histNameParts[nonEndingStringParts:]) # by conventoin we take the first part of the hist name to be an indicator of the type of object, and the second part the DSID
+	for histName in histNameList:
+		histNameParts = histName.split(delimeter)
+		currentEnding = delimeter.join(histNameParts[nonEndingStringParts:]) # by conventoin we take the first part of the hist name to be an indicator of the type of object, and the second part the DSID
 
-        currentHists, histNameList = binStringListByEnding(histNameList, currentEnding)
+		if currentEnding in histsByEnding.keys(): 	histsByEnding[currentEnding].append(histName)
+		else: 					 			histsByEnding[currentEnding] = [histName]
 
-        histsByPlotVariable[currentEnding] = currentHists
+	return histsByEnding
 
-    return histsByPlotVariable
+
+
 
 def activateATLASPlotStyle():
     # runs the root macro that defines the ATLAS style, and checks that it is active
@@ -240,8 +262,13 @@ if __name__ == '__main__':
 
     postProcessedData = ROOT.TFile(inputRootFileName,"READ");
 
+
     dirsAndContents = getTDirsAndContents(postProcessedData, recursiveCounter = 1)
 
+
+    ######### get sumOfWeights #########
+
+    # we take the histograms that store the sumOfWeights are in the top-level of the TFile, i.e. not in a sub-TDirectory
     topLevelTObjects = {postProcessedData : dirsAndContents[postProcessedData]}
     del dirsAndContents[postProcessedData] # remove the top level entries, they are only ought to contain the sumOfWeights
 
@@ -249,39 +276,38 @@ if __name__ == '__main__':
 
     
 
-    for TDir in dirsAndContents.keys():
-        histNames = dirsAndContents[TDir]
+    for TDir in dirsAndContents.keys(): # We iterate through the different TDirs in the files
+        histNames = dirsAndContents[TDir] # get the list of histograms in this TDir, specifically get the list of histogram names in that directory
 
-        nonCutflowHists = []
+        # we have histograms that show distributions of kinematic variables after cuts (analysisHists)
+        # and histograms that show how many events are left after each cut (cutflowHists), we wanna plot the former (analysisHists)
+        # so let's get a list of the analysisHists
+        analysisHists = []
         for histName in histNames :  
             if "cutflow" in histName: continue
             if histName.startswith("h2_"): continue
             if histName.endswith("Weight"): continue
-            nonCutflowHists.append(histName)
-            print(histName)
+            analysisHists.append(histName)
 
 
-        histsByEnding = splitHistNamesByPlotvariable(nonCutflowHists)
+        histsByEnding = splitHistNamesByPlotvariable(analysisHists) # get a mapping like {ending, [hists with that ending], ... }
+        # hists with a common ending shall be plotted together
+        
+
+        canvasList = []
 
         for histEnding in histsByEnding.keys():
-
-            dataTH1 = None 
-
-            
-            
 
             # define fill colors, use itertools to cycle through them, access via fillColors.next()
             fillColors = itertools.cycle([ROOT.kBlue,   ROOT.kMagenta,  ROOT.kRed,    ROOT.kYellow,   
                                           ROOT.kGreen,  ROOT.kCyan,     ROOT.kViolet, ROOT.kPink, 
                                           ROOT.kOrange, ROOT.kSpring,    ROOT.kTeal,   ROOT.kAzure]) 
 
-
-
-            
+      
             #histEnding = "ZXSR_HiggsMassVeto_M4l"
             #histEnding = "SRHM_Final_M4l"
             #histEnding = "SRHM_Final_avgMll"
-            histEnding = "VR1HM_Final_avgMll"
+            #histEnding = "VR1HM_Final_avgMll"
 
             backgroundTHStack = ROOT.THStack(histEnding,histEnding)
             backgroundTHStack.SetMaximum(25.)
@@ -289,24 +315,28 @@ if __name__ == '__main__':
             legend = setupTLegend()
 
 
+            gotDataSample = False # change this to true later if we do have data samples
+
+            backgroundSamples = [] # store the background samples as list of tuples [ (DSID, TH1) , ...] 
 
             for histName in histsByEnding[histEnding]: 
-                print(histName)
-                DSID = histName.split("_")[1]
-                currentTH1 = TDir.Get(histName)
-                currentTH1.GetYaxis().SetRange(0,25);
+                #print(histName)
+                DSID = histName.split("_")[1] # get the DSID from the name of the histogram, which should be like bla_DSID_bla_...
+                currentTH1 = TDir.Get(histName).Clone() # get a clone of the histogram, so that we can scale it, without changeing the original
+
+                #currentTH1.GetYaxis().SetRange(0,25);
 
                 
                 if int(DSID) > 0: # Signal & Background have DSID > 0
                     currentTH1.SetFillStyle(1001) # 1001 - Solid Fill: https://root.cern.ch/doc/v608/classTAttFill.html
                     currentTH1.SetFillColor(fillColors.next())
 
-
-
                     scale = lumiMap[campaign] * 1000000. * mac16aDISDHelper.getProduct_CrossSec_kFactor_genFiltEff(DSID) / sumOfWeights[int(DSID)]
 
                     print( DSID, currentTH1.Integral(), scale, currentTH1.Integral()*scale)
                     currentTH1.Scale(scale)
+
+                    #backgroundSamples.backgroundSamples.append( (DSID, currentTH1) )
 
                     #if int(DSID) == 345047:
                     #    currentTH1.Draw()
@@ -318,6 +348,7 @@ if __name__ == '__main__':
                     backgroundTHStack.Add(currentTH1) 
                     legend.AddEntry(currentTH1 ,histName, "f");
                 else:   # data has DSID 0 for us  
+                	gotDataSample = True
                     dataTH1 = currentTH1
                     legend.AddEntry(currentTH1 ,histName)
                     
@@ -333,6 +364,9 @@ if __name__ == '__main__':
             canvas.Update() # we need to update the canvas, so that changes to it (like the drawing of a legend get reflected in its status)
             #import pdb; pdb.set_trace()
 
+            canvasList.append( copy.deepcopy(canvas) ) # save a deep copy of the canvas for later use
+            import pdb; pdb.set_trace()
 
-        #import pdb; pdb.set_trace()
+
+        import pdb; pdb.set_trace()
 
