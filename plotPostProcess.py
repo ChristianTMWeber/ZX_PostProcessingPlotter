@@ -138,20 +138,24 @@ def getTDirsAndContents(TDir, outputDict = {}, recursiveCounter = 0):
     return outputDict
 
 def mergeHistsByMapping(backgroundSamples, mappingDict) :
+    # backgroundSamples - a list of tuples [(DSID, TH1),...]
+    # mappingDict - a dictionary like { DSID1 : descriptor1, DSID2 : descriptor2, ...}
+    # mergeHistsByMapping - combines TH1s with the common descriptors (as defined in the mapping dict) into a single TH1
+    # e.g. let's say we have the samples [ (001, TH1a), (002, TH1b), (003, TH1c)] and the mapping { 001 : 'ggH', 002 : 'ggH', 003 : 'tt' }
+    # output will be a dict structure { 'ggH' : TH1a+b, 'tt' : TH1c} , where TH1a+b is the sum of TH1a and TH1b
 
-    mergedSamples = {}
+    mergedSamplesDICT = {} # store the merged samples here
 
-    for aTuple in backgroundSamples:
+    for aTuple in backgroundSamples: # loop over all the tuples
 
-        DSID = aTuple[0]
-        histogram = aTuple[1]
+        DSID, histogram = aTuple
 
-        mappedDSID = mappingDict[DSID]
+        DSIDTarget = mappingDict[DSID]
 
-        if mappedDSID in mergedSamples.keys():  mergedSamples[mappedDSID].Add(histogram)
-        else:                                   mergedSamples[mappedDSID] = histogram.Clone()
+        if DSIDTarget in mergedSamplesDICT.keys():  mergedSamplesDICT[DSIDTarget].Add(histogram)
+        else:                                   mergedSamplesDICT[DSIDTarget] = histogram.Clone()
 
-    return mergedSamples
+    return mergedSamplesDICT
 
 
 
@@ -277,9 +281,6 @@ if __name__ == '__main__':
 
     #metdataMC16a = importMetaData(bkgMetaFilePaths["mc16a"])
 
-
-
-
     postProcessedData = ROOT.TFile(inputRootFileName,"READ");
 
 
@@ -371,10 +372,12 @@ if __name__ == '__main__':
                     gotDataSample = True
                     dataTH1 = currentTH1
                     #legend.AddEntry(currentTH1 ,histName)
-                    
 
+            import pdb; pdb.set_trace()
+            #DSIDMappingDict = mac16aDISDHelper.physicsSubProcessByDSID
+            DSIDMappingDict = mac16aDISDHelper.physicsProcessByDSID
 
-
+            sortedSamples = mergeHistsByMapping(backgroundSamples, DSIDMappingDict)
 
             backgroundTHStack.Draw("Hist")
             dataTH1.Draw("same")
