@@ -150,10 +150,12 @@ def mergeHistsByMapping(backgroundSamples, mappingDict) :
 
         DSID, histogram = aTuple
 
-        DSIDTarget = mappingDict[DSID]
+        DSIDTarget = mappingDict[int(DSID)]
 
         if DSIDTarget in mergedSamplesDICT.keys():  mergedSamplesDICT[DSIDTarget].Add(histogram)
-        else:                                   mergedSamplesDICT[DSIDTarget] = histogram.Clone()
+        else:                                       mergedSamplesDICT[DSIDTarget] = histogram.Clone()
+
+        import pdb; pdb.set_trace()
 
     return mergedSamplesDICT
 
@@ -357,7 +359,7 @@ if __name__ == '__main__':
                     print( DSID, currentTH1.Integral(), scale, currentTH1.Integral()*scale)
                     currentTH1.Scale(scale)
 
-                    backgroundSamples.append( (DSID, currentTH1) )
+                    backgroundSamples.append( ( int(DSID), currentTH1) )
 
                     #if int(DSID) == 345047:
                     #    currentTH1.Draw()
@@ -373,11 +375,13 @@ if __name__ == '__main__':
                     dataTH1 = currentTH1
                     #legend.AddEntry(currentTH1 ,histName)
 
-            import pdb; pdb.set_trace()
+
             #DSIDMappingDict = mac16aDISDHelper.physicsSubProcessByDSID
             DSIDMappingDict = mac16aDISDHelper.physicsProcessByDSID
 
             sortedSamples = mergeHistsByMapping(backgroundSamples, DSIDMappingDict)
+
+            import pdb; pdb.set_trace()
 
             backgroundTHStack.Draw("Hist")
             dataTH1.Draw("same")
