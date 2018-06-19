@@ -18,8 +18,8 @@ import copy # for making deep copies
 class DSIDHelper:
 
 
-    physicsProcess={"H->ZZ*->4l" : [341947, 345060, 341488, 345046, 345047, 345048, 345066, 344973, 344974],
-                      "ZZ*->4l" :    [364250, 364251, 364252, 361603, 342556, 343232, 343212, 343213],
+    physicsProcess={"H->ZZ*->4l" : [341964, 341947, 345060, 341488, 345046, 345047, 345048, 345066, 344973, 344974],
+                      "ZZ*->4l" :    [364250, 364251, 364252, 361603, 342556, 343232, 343212, 343213, 345708, 345709],
                       "Reducible (Z+Jets, WZ, ttbar)"  : [364114, 364115, 364116, 364117, 364118, 364119, 364120, 364121, 364122, 
                                                           364123, 364124, 364125, 364126, 364127, 364100, 364101, 364102, 364103, 
                                                           364104, 364105, 364106, 364107, 364108, 364109, 364110, 364111, 364112, 
@@ -153,9 +153,7 @@ def mergeHistsByMapping(backgroundSamples, mappingDict) :
         DSIDTarget = mappingDict[int(DSID)]
 
         if DSIDTarget in mergedSamplesDICT.keys():  mergedSamplesDICT[DSIDTarget].Add(histogram)
-        else:                                       mergedSamplesDICT[DSIDTarget] = histogram.Clone()
-
-        import pdb; pdb.set_trace()
+        else:                                       mergedSamplesDICT[DSIDTarget]=histogram.Clone()
 
     return mergedSamplesDICT
 
@@ -333,7 +331,7 @@ if __name__ == '__main__':
             #histEnding = "VR1HM_Final_avgMll"
 
             backgroundTHStack = ROOT.THStack(histEnding,histEnding)
-            backgroundTHStack.SetMaximum(25.)
+            #backgroundTHStack.SetMaximum(25.)
             canvas = ROOT.TCanvas(histEnding,histEnding,1280,720);
             legend = setupTLegend()
 
@@ -381,11 +379,21 @@ if __name__ == '__main__':
 
             sortedSamples = mergeHistsByMapping(backgroundSamples, DSIDMappingDict)
 
-            import pdb; pdb.set_trace()
+            
+            for key in sortedSamples.keys(): # add merged samples to the backgroundTHStack
+                mergedHist = sortedSamples[key]
+                backgroundTHStack.Add( mergedHist )
+                legend.AddEntry(mergedHist , key , "f");
 
             backgroundTHStack.Draw("Hist")
-            dataTH1.Draw("same")
-            backgroundTHStack.GetYaxis().SetRange(0,25);
+            # use the x-axis label from the original plot in the THStack, needs to be called after 'Draw()'
+            backgroundTHStack.GetXaxis().SetTitle( mergedHist.GetXaxis().GetTitle() )
+
+            if gotDataSample: # add data samples
+                dataTH1.Draw("same")
+                legend.AddEntry(currentTH1, "data", "l")
+
+            #backgroundTHStack.GetYaxis().SetRange(0,25);
             legend.Draw();
 
             canvas.Update() # we need to update the canvas, so that changes to it (like the drawing of a legend get reflected in its status)
