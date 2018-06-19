@@ -259,6 +259,17 @@ def getSumOfWeigts(topLevelTObjects):
 
     return sumOfEventWeightsDict
 
+def printRootCanvasPDF(myRootCanvas, isLastCanvas, fileName, tableOfContents = None):
+    if fileName is None:  fileName = myRootCanvas.GetTitle() + ".pdf"
+
+    # it is not the last histogram in the TFile
+    if not isLastCanvas: fileName += "("
+    # close the pdf if it is the last histogram
+    else:                fileName += ")"
+
+    if tableOfContents is None: myRootCanvas.Print(fileName)
+    else: myRootCanvas.Print(fileName, "Title:" + tableOfContents)
+
 if __name__ == '__main__':
 
     #inputRootFileName = "ZX_data15_mc16a.root"
@@ -354,7 +365,7 @@ if __name__ == '__main__':
 
                     scale = lumiMap[campaign] * 1000000. * mac16aDISDHelper.getProduct_CrossSec_kFactor_genFiltEff(DSID) / sumOfWeights[int(DSID)]
 
-                    print( DSID, currentTH1.Integral(), scale, currentTH1.Integral()*scale)
+                    #print( DSID, currentTH1.Integral(), scale, currentTH1.Integral()*scale)
                     currentTH1.Scale(scale)
 
                     backgroundSamples.append( ( int(DSID), currentTH1) )
@@ -400,7 +411,18 @@ if __name__ == '__main__':
             #import pdb; pdb.set_trace()
 
             canvasList.append( copy.deepcopy(canvas) ) # save a deep copy of the canvas for later use
-            import pdb; pdb.set_trace()
+
+
+
+        # Write the Histograms to a ROOT File
+        outoutROOTFile = ROOT.TFile("outHistograms.root","RECREATE")
+        counter = 0
+        for histogram in canvasList: 
+            histogram.Write() # write to the .ROOT file
+            counter +=1
+            printRootCanvasPDF(histogram, isLastCanvas = histogram==canvasList[-1] , 
+                               fileName = "outHistograms.pdf", tableOfContents = str(counter) + " - " + histogram.GetTitle() ) # write to .PDF
+        outoutROOTFile.Close()
 
 
         import pdb; pdb.set_trace()
