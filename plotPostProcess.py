@@ -12,6 +12,7 @@ import warnings # to warn about things that might not have gone right
 import itertools # to cycle over lists in a nice automated way
 import re # to do regular expression matching
 import copy # for making deep copies
+import argparse # to parse command line options
 #import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
 
 
@@ -272,27 +273,53 @@ def printRootCanvasPDF(myRootCanvas, isLastCanvas, fileName, tableOfContents = N
 
 if __name__ == '__main__':
 
-    #inputRootFileName = "ZX_data15_mc16a.root"
-    inputRootFileName = "ZdZd_SRHM_data1516_mc16a.root"
+    ######################################################
+    # Define some default or hardcoded values
+    ######################################################
 
-
-    #activateATLASPlotStyle() 
-
-    campaign = "mc16a"
-
+    # default locations of the meta data files for mc16a and mc16d, 
+    # alternative can be provided via command line argument
     bkgMetaFilePaths= {"mc16a" : "production_20180414_18/md_bkg_datasets_mc16a.txt",
                        "mc16d" : "production_20180414_18/md_bkg_datasets_mc16d.txt"}
+    
+    # campaigns integrated luminosity,  complete + partial
+    lumiMap= { "mc16a" : 36.1029, "mc16d" : 43.5382, "units" : "fb-1"}
 
-    lumiMap= { "mc16a" : 36.1029, "mc16d" : 43.5382, "units" : "fb-1"}  # campaigns integrated luminosity,  complete + partial
+
+    ######################################################
+    #Parse Command line options
+    ######################################################
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("input", type=str, help="name or path to the input file")
+    parser.add_argument("-c", "--mcCampaign", type=str, help="name of the mc campaign, i.e. mc16a or mc16d", default="mc16a")
+    parser.add_argument("-d", "--metaData", type=str, 
+        help="location of the metadata file for the given mc campaign. If not provided, we will use a default location" )
+
+    args = parser.parse_args()
+
+    # open the file with te data from the ZdZdPostProcessing
+    postProcessedData = ROOT.TFile(args.input,"READ");
+
+    # define the MC campaign that we are using
+    mcCampaign = args.mcCampaign
+
+    # get the default metadata if a custom one has not been specified in the command line arguments
+    if args.metaData is None: metaDataFile = bkgMetaFilePaths[mcCampaign]
 
 
-    mac16aDISDHelper = DSIDHelper()
+    ######################################################
+    # Set up DSID helper
+    ######################################################
+    # the DSID helper has two main functions
+    # 1) administrating the metadata 
+    #    i.e. parsing the meta data files and based on them providing a scaling for the MC samples
+    # 2) grouping DSIDs into physics categories for the plots
+    #    e.g. grouping DSIDs 345060 and 341488 (among others) into one histogram for the "H->ZZ*->4l" process
 
-    mac16aDISDHelper.importMetaData(bkgMetaFilePaths["mc16a"])
-
-    #metdataMC16a = importMetaData(bkgMetaFilePaths["mc16a"])
-
-    postProcessedData = ROOT.TFile(inputRootFileName,"READ");
+    DISDHelper = DSIDHelper()
+    DISDHelper.importMetaData(metaDataFile) # since the DSID helper administrates the meta data for the MC samples we must provide it with the meta data location
 
 
     dirsAndContents = getTDirsAndContents(postProcessedData, recursiveCounter = 1)
@@ -363,7 +390,7 @@ if __name__ == '__main__':
                     currentTH1.SetFillStyle(1001) # 1001 - Solid Fill: https://root.cern.ch/doc/v608/classTAttFill.html
                     currentTH1.SetFillColor(fillColors.next())
 
-                    scale = lumiMap[campaign] * 1000000. * mac16aDISDHelper.getProduct_CrossSec_kFactor_genFiltEff(DSID) / sumOfWeights[int(DSID)]
+                    scale = lumiMap[mcCampaign] * 1000000. * DISDHelper.getProduct_CrossSec_kFactor_genFiltEff(DSID) / sumOfWeights[int(DSID)]
 
                     #print( DSID, currentTH1.Integral(), scale, currentTH1.Integral()*scale)
                     currentTH1.Scale(scale)
@@ -385,8 +412,8 @@ if __name__ == '__main__':
                     #legend.AddEntry(currentTH1 ,histName)
 
 
-            #DSIDMappingDict = mac16aDISDHelper.physicsSubProcessByDSID
-            DSIDMappingDict = mac16aDISDHelper.physicsProcessByDSID
+            #DSIDMappingDict = DISDHelper.physicsSubProcessByDSID
+            DSIDMappingDict = DISDHelper.physicsProcessByDSID
 
             sortedSamples = mergeHistsByMapping(backgroundSamples, DSIDMappingDict)
 
@@ -425,5 +452,7 @@ if __name__ == '__main__':
         outoutROOTFile.Close()
 
 
-        import pdb; pdb.set_trace()
+
+    print("All plots processed!")
+        #import pdb; pdb.set_trace()
 
