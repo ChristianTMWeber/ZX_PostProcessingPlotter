@@ -322,6 +322,12 @@ if __name__ == '__main__':
     DISDHelper.importMetaData(metaDataFile) # since the DSID helper administrates the meta data for the MC samples we must provide it with the meta data location
 
 
+
+    ######################################################
+    # Do the data processing from here on
+    ######################################################
+
+    # get the histograms in the diffrent TDirectories within the provided .root file
     dirsAndContents = getTDirsAndContents(postProcessedData, recursiveCounter = 1)
 
 
@@ -333,7 +339,7 @@ if __name__ == '__main__':
 
     sumOfWeights = getSumOfWeigts(topLevelTObjects)
 
-    
+    ######### process the cutflow histograms #########
 
     for TDir in dirsAndContents.keys(): # We iterate through the different TDirs in the files
         histNames = dirsAndContents[TDir] # get the list of histograms in this TDir, specifically get the list of histogram names in that directory
@@ -348,43 +354,33 @@ if __name__ == '__main__':
             if histName.endswith("Weight"): continue
             analysisHists.append(histName)
 
+        # get a mapping like {ending, [hists with that ending], ... }, because hists with a common ending shall be plotted together
+        histsByEnding = splitHistNamesByPlotvariable(analysisHists) 
 
-        histsByEnding = splitHistNamesByPlotvariable(analysisHists) # get a mapping like {ending, [hists with that ending], ... }
-        # hists with a common ending shall be plotted together
-        
+        canvasList = [] # store here our canvases, each canvas contains a plot fir a given 'ending', i.e. a given kinematic variable
 
-        canvasList = []
-
-        for histEnding in histsByEnding.keys():
+        for histEnding in histsByEnding.keys(): # iterate over all the 'endings'
 
             # define fill colors, use itertools to cycle through them, access via fillColors.next()
             fillColors = itertools.cycle([ROOT.kBlue,   ROOT.kMagenta,  ROOT.kRed,    ROOT.kYellow,   
                                           ROOT.kGreen,  ROOT.kCyan,     ROOT.kViolet, ROOT.kPink, 
                                           ROOT.kOrange, ROOT.kSpring,    ROOT.kTeal,   ROOT.kAzure]) 
 
-      
-            #histEnding = "ZXSR_HiggsMassVeto_M4l"
-            #histEnding = "SRHM_Final_M4l"
-            #histEnding = "SRHM_Final_avgMll"
-            #histEnding = "VR1HM_Final_avgMll"
-
             backgroundTHStack = ROOT.THStack(histEnding,histEnding)
             #backgroundTHStack.SetMaximum(25.)
             canvas = ROOT.TCanvas(histEnding,histEnding,1280,720);
             legend = setupTLegend()
-
 
             gotDataSample = False # change this to true later if we do have data samples
 
             backgroundSamples = [] # store the background samples as list of tuples [ (DSID, TH1) , ...] 
 
             for histName in histsByEnding[histEnding]: 
-                #print(histName)
+
                 DSID = histName.split("_")[1] # get the DSID from the name of the histogram, which should be like bla_DSID_bla_...
                 currentTH1 = TDir.Get(histName).Clone() # get a clone of the histogram, so that we can scale it, without changeing the original
 
                 #currentTH1.GetYaxis().SetRange(0,25);
-
                 
                 if int(DSID) > 0: # Signal & Background have DSID > 0
                     currentTH1.SetFillStyle(1001) # 1001 - Solid Fill: https://root.cern.ch/doc/v608/classTAttFill.html
@@ -392,31 +388,18 @@ if __name__ == '__main__':
 
                     scale = lumiMap[mcCampaign] * 1000000. * DISDHelper.getProduct_CrossSec_kFactor_genFiltEff(DSID) / sumOfWeights[int(DSID)]
 
-                    #print( DSID, currentTH1.Integral(), scale, currentTH1.Integral()*scale)
-                    currentTH1.Scale(scale)
+                    currentTH1.Scale(scale) # scale the histogram
 
                     backgroundSamples.append( ( int(DSID), currentTH1) )
 
-                    #if int(DSID) == 345047:
-                    #    currentTH1.Draw()
-                    #    canvas.Update()
-                    #    import pdb; pdb.set_trace()
-
-                    #if currentTH1.Integral() < 1. : continue
-
-                    #backgroundTHStack.Add(currentTH1) 
-                    #legend.AddEntry(currentTH1 ,histName, "f");
                 else:   # data has DSID 0 for us  
                     gotDataSample = True
                     dataTH1 = currentTH1
-                    #legend.AddEntry(currentTH1 ,histName)
-
 
             #DSIDMappingDict = DISDHelper.physicsSubProcessByDSID
             DSIDMappingDict = DISDHelper.physicsProcessByDSID
 
             sortedSamples = mergeHistsByMapping(backgroundSamples, DSIDMappingDict)
-
             
             for key in sortedSamples.keys(): # add merged samples to the backgroundTHStack
                 mergedHist = sortedSamples[key]
@@ -431,15 +414,9 @@ if __name__ == '__main__':
                 dataTH1.Draw("same")
                 legend.AddEntry(currentTH1, "data", "l")
 
-            #backgroundTHStack.GetYaxis().SetRange(0,25);
             legend.Draw();
-
             canvas.Update() # we need to update the canvas, so that changes to it (like the drawing of a legend get reflected in its status)
-            #import pdb; pdb.set_trace()
-
             canvasList.append( copy.deepcopy(canvas) ) # save a deep copy of the canvas for later use
-
-
 
         # Write the Histograms to a ROOT File
         outoutROOTFile = ROOT.TFile("outHistograms.root","RECREATE")
@@ -454,5 +431,5 @@ if __name__ == '__main__':
 
 
     print("All plots processed!")
-        #import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
