@@ -34,7 +34,7 @@ class DSIDHelper:
                      "ggZH" : [345066], "ttH125" : [345046, 345047, 345048], "bbH" : [344973, 344974],
                      "qq->ZZ*->4l" : [364250, 364251, 364252], "gg->ZZ*->4l" : [345708, 345709],
                      "ZZZ" : [364248, 364247], "WZZ" : [364245], "WWZ" : [364243], 
-                     "lllljj" : [364364], "ttll" : [410142], "WZ" : [361601],
+                     "lllljj" : [364364], "ttll" : [410142], "WZ" : [361601], "ttbar" : [410472],
                      "Z+Jets (Sherpa)" : [364114, 364115, 364116, 364117, 364118, 364119, 364120, 
                                           364121, 364122, 364123, 364124, 364125, 364126, 364127, 
                                           364100, 364101, 364102, 364103, 364104, 364105, 364106, 
@@ -267,6 +267,8 @@ def printRootCanvasPDF(myRootCanvas, isLastCanvas, fileName, tableOfContents = N
     if not isLastCanvas: fileName += "("
     # close the pdf if it is the last histogram
     else:                fileName += ")"
+    # see for alternatives to these brackets here: https://root.cern.ch/doc/master/classTPad.html#abae9540f673ff88149c238e8bb2a6da6
+
 
     if tableOfContents is None: myRootCanvas.Print(fileName)
     else: myRootCanvas.Print(fileName, "Title:" + tableOfContents)
@@ -418,15 +420,28 @@ if __name__ == '__main__':
             canvas.Update() # we need to update the canvas, so that changes to it (like the drawing of a legend get reflected in its status)
             canvasList.append( copy.deepcopy(canvas) ) # save a deep copy of the canvas for later use
 
+
+
+        #for histogram in canvasList: 
+        #    if "ZXSR" not in histogram.GetName():
+        #        canvasList.remove(histogram)
+
+        indexFile = open("indexFile.txt", "w") # w for (over) write
         # Write the Histograms to a ROOT File
         outoutROOTFile = ROOT.TFile("outHistograms.root","RECREATE")
         counter = 0
         for histogram in canvasList: 
-            histogram.Write() # write to the .ROOT file
+            
             counter +=1
+            
+            histogram.SetName( str(counter) + " - " + histogram.GetName() )
+            histogram.Write() # write to the .ROOT file
+
             printRootCanvasPDF(histogram, isLastCanvas = histogram==canvasList[-1] , 
                                fileName = "outHistograms.pdf", tableOfContents = str(counter) + " - " + histogram.GetTitle() ) # write to .PDF
+            indexFile.write(str(counter) + "\t" + histogram.GetName() + "\n"); 
         outoutROOTFile.Close()
+        indexFile.close()
 
 
 
