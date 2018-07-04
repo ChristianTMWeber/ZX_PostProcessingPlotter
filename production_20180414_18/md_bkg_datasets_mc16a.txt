@@ -1,0 +1,125 @@
+dataset_number/I:crossSection/D:kFactor/D:genFiltEff/D:physics_short/C:ami_tags/C:events/D:physics_comment/C:pdf/C:generator_name/C
+## list of DOAD_HIGG2D1 background samples for the ZdZd analysis
+## assembled by Christian
+## see JobOptions for a given DSID to get a more detailled description for a given sample
+## https://svnweb.cern.ch/trac/atlasoff/browser/Generators/MC15JobOptions/trunk/share?order=name
+
+
+#Higgs 4l backgrounds: ggF, VBF, WH, ZH (qq and gg), ttH, bbH
+# 345060 is is the ‘newer’ ggH125_ZZ4l sample, (old sample was 341471)
+# It has a higher order treatment for the qcd jets and does "matching and merging" to the parton shower
+341947  2.1070E-07   1.0             0.010256    Pythia8EvtGen_A14NNPDF23LO_ZH125_ZZ4l                         e4161_e5984_s3126_r9364_r9315_p3387  124664    NULL  NULL         Pythia8+EvtGen           
+345060  6.0239E-06   1.0             1.0000E+00  PowhegPythia8EvtGen_NNLOPS_nnlo_30_ggH125_ZZ4l                e5682_s3126_r9364_r9315_p3387        941488    NULL  NULL         Powheg+Pythia8+EvtGen    
+341488  1.0500E-06   0.978615629651  1.0000E+00  PowhegPythia8EvtGen_CT10_AZNLOCTEQ6L1_VBFH125_ZZ4lep          e3951_e5984_s3126_r9364_r9315_p3387  169585    NULL  NULL         Powheg+Pythia8+EvtGen    
+341964  3.8005E-07   1.0             1.0         Pythia8EvtGen_A14NNPDF23LO_WH125_ZZ4l                         e4161_e5984_s3126_r9364_r9315_p3387  126179    NULL  NULL         Pythia8+EvtGen           
+# superseded by 345046, 345047, and 345048 # mc16_13TeV.342561.aMcAtNloHerwigppEvtGen_UEEE5_CTEQ6L1_CT10ME_ttH125_4l.deriv.DAOD_HIGG2D1.e4540_s3126_r9364_r9315_p3387
+345046  2.8736E-05   1.0             1.0000E+00  PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_allhad   e6427_e5984_s3126_r9364_r9315_p3387  99424     NULL  NULL         Powheg+Pythia8+EvtGen    
+345047  2.7596E-05   1.0             4.3791E-01  PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_semilep  e6427_e5984_s3126_r9364_r9315_p3387  99780     NULL  NULL         Powheg+Pythia8+EvtGen    
+345048  6.6238E-06   1.0             1.0000E+00  PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_dilep    e6427_e5984_s3126_r9364_r9315_p3387  49946     NULL  NULL         Powheg+Pythia8+EvtGen    
+345066  3.3963E-08   1.0             1.0000E+00  PowhegPythia8EvtGen_NNPDF3_AZNLO_ggZH125_ZZ4lepZinc           e5931_e5984_s3126_r9364_r9315_p3387  271438    NULL  NULL         Powheg+Pythia8+EvtGen    
+
+
+#Higgs 4l backgrounds: bbH; yb and yt, are here coupling terms, related to radiating higgs off of b and t quarks respectively  (https://arxiv.org/pdf/1409.5301v2.pdf)
+344973  6.616E-08    1.0             1.0000E+00  aMcAtNloPythia8EvtGen_A14NNPDF23LO_bbH125_yb2_ZZ4lep_noTau    e5537_s3126_r9364_r9315_p3387        286931    NULL  NULL         aMcAtNlo+Pythia8+EvtGen  
+344974  -5.158E-09   1.0             1.0000E+00  aMcAtNloPythia8EvtGen_A14NNPDF23LO_bbH125_ybyt_ZZ4lep_noTau   e5537_s3126_r9364_r9315_p3387        47596     NULL  NULL         aMcAtNlo+Pythia8+EvtGen  
+
+
+#SM qq->ZZ background (note that mass-slice samples overlap with general sample, so need to use overlap removal tool to avoid double-count)
+364250  1.2523E-03   1.0             1.0000E+00  Sherpa_222_NNPDF30NNLO_llll                                   e5894_s3126_r9364_r9315_p3387        10437805  NULL  NNPDF30NNLO  Sherpa                   
+364251  3.5356E-04   1.0             1.2798E-01  Sherpa_222_NNPDF30NNLO_llll_m4l100_300_filt100_150            e5894_s3126_r9364_r9315_p3387        8011102   NULL  NNPDF30NNLO  Sherpa                   
+364252  6.1820E-05   1.0             1.0         Sherpa_222_NNPDF30NNLO_llll_m4l300                            e5894_s3126_r9364_r9315_p3387        4331812   NULL  NNPDF30NNLO  Sherpa                   
+
+## The Sherpa samples are the nominal ZZ->4l background samples of the H->4l group, use the powheg ones only as crosscheck
+## mc16_13TeV.361603.PowhegPy8EG_CT10nloME_AZNLOCTEQ6L1_ZZllll_mll4.deriv.DAOD_HIGG2D1.e4475_s3126_r9364_r9315_p3387
+## mc16_13TeV.342556.PowhegPy8EG_CT10nloME_AZNLOCTEQ6L1_ZZllll_mll4_m4l_100_150.deriv.DAOD_HIGG2D1.e4366_e6174_s3126_r9364_r9315_p3387
+## mc16_13TeV.343232.PowhegPy8EG_CT10nloME_AZNLOCTEQ6L1_ZZllll_mll4_m4l_500_13000.deriv.DAOD_HIGG2D1.e4539_e6174_s3126_r9364_r9315_p3387
+
+#Sherpa Z+Jets, Z->ee samples
+364114  1.9815E+00   0.9751          8.2141E-01  Sherpa_221_NNPDF30NNLO_Zee_MAXHTPTV0_70_CVetoBVeto            4679691   NULL  NNPDF30NNLO  Sherpa                   
+364115  1.9817E+00   0.9751          1.1405E-01  Sherpa_221_NNPDF30NNLO_Zee_MAXHTPTV0_70_CFilterBVeto          3303064   NULL  NNPDF30NNLO  Sherpa                   
+364116  1.9821E+00   0.9751          6.5757E-02  Sherpa_221_NNPDF30NNLO_Zee_MAXHTPTV0_70_BFilter               5615682   NULL  NNPDF30NNLO  Sherpa                   
+364117  1.1063E-01   0.9751          6.9432E-01  Sherpa_221_NNPDF30NNLO_Zee_MAXHTPTV70_140_CVetoBVeto          4720091   NULL  NNPDF30NNLO  Sherpa                   
+364118  1.1045E-01   0.9751          1.8697E-01  Sherpa_221_NNPDF30NNLO_Zee_MAXHTPTV70_140_CFilterBVeto        1642475   NULL  NNPDF30NNLO  Sherpa                   
+364119  1.1049E-01   0.9751          1.1970E-01  Sherpa_221_NNPDF30NNLO_Zee_MAXHTPTV70_140_BFilter             4534506   NULL  NNPDF30NNLO  Sherpa                   
+364120  4.0711E-02   0.9751          6.1632E-01  Sherpa_221_NNPDF30NNLO_Zee_MAXHTPTV140_280_CVetoBVeto         4231803   NULL  NNPDF30NNLO  Sherpa                   
+364121  4.0674E-02   0.9751          2.3287E-01  Sherpa_221_NNPDF30NNLO_Zee_MAXHTPTV140_280_CFilterBVeto       2580541   NULL  NNPDF30NNLO  Sherpa                   
+364122  4.0674E-02   0.9751          1.5335E-01  Sherpa_221_NNPDF30NNLO_Zee_MAXHTPTV140_280_BFilter            10910847  NULL  NNPDF30NNLO  Sherpa                   
+364123  8.6718E-03   0.9751          5.6351E-01  Sherpa_221_NNPDF30NNLO_Zee_MAXHTPTV280_500_CVetoBVeto         1744969   NULL  NNPDF30NNLO  Sherpa                   
+364124  8.6654E-03   0.9751          2.6618E-01  Sherpa_221_NNPDF30NNLO_Zee_MAXHTPTV280_500_CFilterBVeto       877232    NULL  NNPDF30NNLO  Sherpa                   
+364125  8.6821E-03   0.9751          1.7627E-01  Sherpa_221_NNPDF30NNLO_Zee_MAXHTPTV280_500_BFilter            1784577   NULL  NNPDF30NNLO  Sherpa                   
+364126  1.8098E-03   0.9751          1.0000E+00  Sherpa_221_NNPDF30NNLO_Zee_MAXHTPTV500_1000                   2687691   NULL  NNPDF30NNLO  Sherpa                   
+364127  1.4870E-04   0.9751          1.0000E+00  Sherpa_221_NNPDF30NNLO_Zee_MAXHTPTV1000_E_CMS                 926534    NULL  NNPDF30NNLO  Sherpa                   
+
+#Sherpa Z+Jets, Z->mumu samples
+364100  1.9823E+00   0.9751          8.2179E-01  Sherpa_221_NNPDF30NNLO_Zmumu_MAXHTPTV0_70_CVetoBVeto          5133076   NULL  NNPDF30NNLO  Sherpa                   
+364101  1.9821E+00   0.9751          1.1356E-01  Sherpa_221_NNPDF30NNLO_Zmumu_MAXHTPTV0_70_CFilterBVeto        3579960   NULL  NNPDF30NNLO  Sherpa                   
+364102  1.9816E+00   0.9751          6.5740E-02  Sherpa_221_NNPDF30NNLO_Zmumu_MAXHTPTV0_70_BFilter             6041162   NULL  NNPDF30NNLO  Sherpa                   
+364103  1.0907E-01   0.9751          6.8978E-01  Sherpa_221_NNPDF30NNLO_Zmumu_MAXHTPTV70_140_CVetoBVeto        5103928   NULL  NNPDF30NNLO  Sherpa                   
+364104  1.0894E-01   0.9751          1.9588E-01  Sherpa_221_NNPDF30NNLO_Zmumu_MAXHTPTV70_140_CFilterBVeto      1750130   NULL  NNPDF30NNLO  Sherpa                   
+364105  1.0898E-01   0.9751          1.2052E-01  Sherpa_221_NNPDF30NNLO_Zmumu_MAXHTPTV70_140_BFilter           5340136   NULL  NNPDF30NNLO  Sherpa                   
+364106  3.9884E-02   0.9751          6.0179E-01  Sherpa_221_NNPDF30NNLO_Zmumu_MAXHTPTV140_280_CVetoBVeto       4519141   NULL  NNPDF30NNLO  Sherpa                   
+364107  3.9857E-02   0.9751          2.3545E-01  Sherpa_221_NNPDF30NNLO_Zmumu_MAXHTPTV140_280_CFilterBVeto     2738913   NULL  NNPDF30NNLO  Sherpa                   
+364108  3.9892E-02   0.9751          1.5628E-01  Sherpa_221_NNPDF30NNLO_Zmumu_MAXHTPTV140_280_BFilter          11513179  NULL  NNPDF30NNLO  Sherpa                   
+364109  8.5260E-03   0.9751          5.6012E-01  Sherpa_221_NNPDF30NNLO_Zmumu_MAXHTPTV280_500_CVetoBVeto       1851053   NULL  NNPDF30NNLO  Sherpa                   
+364110  8.5261E-03   0.9751          2.6632E-01  Sherpa_221_NNPDF30NNLO_Zmumu_MAXHTPTV280_500_CFilterBVeto     928497    NULL  NNPDF30NNLO  Sherpa                   
+364111  8.5276E-03   0.9751          1.7657E-01  Sherpa_221_NNPDF30NNLO_Zmumu_MAXHTPTV280_500_BFilter          1875588   NULL  NNPDF30NNLO  Sherpa                   
+364112  1.7871E-03   0.9751          1.0000E+00  Sherpa_221_NNPDF30NNLO_Zmumu_MAXHTPTV500_1000                 2826987   NULL  NNPDF30NNLO  Sherpa                   
+364113  1.4758E-04   0.9751          1.0000E+00  Sherpa_221_NNPDF30NNLO_Zmumu_MAXHTPTV1000_E_CMS               960929    NULL  NNPDF30NNLO  Sherpa                   
+
+#Sherpa Z+Jets, Z->tautau samples
+364128  1.9817E+00   0.9751          8.2142E-01  Sherpa_221_NNPDF30NNLO_Ztautau_MAXHTPTV0_70_CVetoBVeto        944420    NULL  NNPDF30NNLO  Sherpa                   
+364129  1.9816E+00   0.9751          1.0907E-01  Sherpa_221_NNPDF30NNLO_Ztautau_MAXHTPTV0_70_CFilterBVeto      685624    NULL  NNPDF30NNLO  Sherpa                   
+364130  1.9821E+00   0.9751          6.5759E-02  Sherpa_221_NNPDF30NNLO_Ztautau_MAXHTPTV0_70_BFilter           1211519   NULL  NNPDF30NNLO  Sherpa                   
+364131  1.1056E-01   0.9751          6.9260E-01  Sherpa_221_NNPDF30NNLO_Ztautau_MAXHTPTV70_140_CVetoBVeto      1352349   NULL  NNPDF30NNLO  Sherpa                   
+364132  1.1055E-01   0.9751          1.9020E-01  Sherpa_221_NNPDF30NNLO_Ztautau_MAXHTPTV70_140_CFilterBVeto    470274    NULL  NNPDF30NNLO  Sherpa                   
+364133  1.1063E-01   0.9751          0.110886    Sherpa_221_NNPDF30NNLO_Ztautau_MAXHTPTV70_140_BFilter         1534574   NULL  NNPDF30NNLO  Sherpa                   
+364134  4.0793E-02   0.9751          6.1823E-01  Sherpa_221_NNPDF30NNLO_Ztautau_MAXHTPTV140_280_CVetoBVeto     1471160   NULL  NNPDF30NNLO  Sherpa                   
+364135  4.0718E-02   0.9751          2.3417E-01  Sherpa_221_NNPDF30NNLO_Ztautau_MAXHTPTV140_280_CFilterBVeto   894263    NULL  NNPDF30NNLO  Sherpa                   
+364136  4.0735E-02   0.9751          1.5608E-01  Sherpa_221_NNPDF30NNLO_Ztautau_MAXHTPTV140_280_BFilter        1627346   NULL  NNPDF30NNLO  Sherpa                   
+364137  8.6642E-03   0.9751          5.6327E-01  Sherpa_221_NNPDF30NNLO_Ztautau_MAXHTPTV280_500_CVetoBVeto     682818    NULL  NNPDF30NNLO  Sherpa                   
+364138  8.6756E-03   0.9751          2.6523E-01  Sherpa_221_NNPDF30NNLO_Ztautau_MAXHTPTV280_500_CFilterBVeto   342140    NULL  NNPDF30NNLO  Sherpa                   
+364139  8.6797E-03   0.9751          1.7626E-01  Sherpa_221_NNPDF30NNLO_Ztautau_MAXHTPTV280_500_BFilter        752464    NULL  NNPDF30NNLO  Sherpa                   
+364140  1.8079E-03   0.9751          1.0000E+00  Sherpa_221_NNPDF30NNLO_Ztautau_MAXHTPTV500_1000               1164548   NULL  NNPDF30NNLO  Sherpa                   
+364141  1.4823E-04   0.9751          1.0000E+00  Sherpa_221_NNPDF30NNLO_Ztautau_MAXHTPTV1000_E_CMS             451596    NULL  NNPDF30NNLO  Sherpa                   
+
+
+
+#gg->ZZ Sherpa (nominal)
+345708  4.7321E-06   1.0             1.0000E+00  Sherpa_222_NNPDF30NNLO_ggllllNoHiggs_0M4l130                  e6213_e5984_s3126_r9364_r9315_p3387  152728    NULL  NNPDF30NNLO  Sherpa                   
+345709  1.0556E-05   1.0             1.0000E+00  Sherpa_222_NNPDF30NNLO_ggllllNoHiggs_130M4l                   e6213_e5984_a875_r9364_r9315_p3387   451359    NULL  NNPDF30NNLO  Sherpa                   
+
+##gg->ZZ gg2vv (alternative)
+#mc16_13TeV.343212.Powheggg2vvPythia8EvtGen_gg_ZZ_bkg_2e2mu_13TeV.deriv.DAOD_HIGG2D1.e4568_s3126_r9364_r9315_p3387
+#mc16_13TeV.343213.Powheggg2vvPythia8EvtGen_gg_ZZ_bkg_4l_noTau_13TeV.deriv.DAOD_HIGG2D1.e4568_s3126_r9364_r9315_p3387
+
+
+#Z+Jets
+#Sherpa samples 364114-364127 are preferred of this one #mc16_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee.deriv.DAOD_HIGG2D1.e3601_s3126_r9364_r9315_p3387
+#Sherpa samples 364100-364113 are preferred of this one #mc16_13TeV.361107.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zmumu.deriv.DAOD_HIGG2D1.e3601_s3126_r9364_r9315_p3387
+#Sherpa samples 364128-364141 are preferred of this one #mc16_13TeV.361108.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Ztautau.deriv.DAOD_HIGG2D1.e3601_s3126_r9364_r9315_p3387
+
+
+#ttbar
+410472  7.2977E-01   1.13975636159   1.0545E-01  PhPy8EG_A14_ttbar_hdamp258p75_dil                             e6348_e5984_s3126_r9364_r9315_p3387  17081476  NULL  NULL         Powheg+Pythia8+EvtGen    
+# confirm that 410472 is the best ttbar sample for us. Until now we had used: mc16_13TeV.410501.PowhegPythia8EvtGen_A14_ttbar_hdamp258p75_nonallhad.deriv.DAOD_HIGG2D1.e5458_s3126_r9364_r9315_p3387
+
+#ttbar + Z
+410142  1.1313E-04   1.09            1.0000E+00  Sherpa_NNPDF30NNLO_ttll_mll5                                  e4686_e5984_s3126_r9364_r9315_p3387  1487354   NULL  NNPDF        Sherpa                   
+
+
+#WZ
+361601  4.5103E-03   1.0             1.0000E+00  PowhegPy8EG_CT10nloME_AZNLOCTEQ6L1_WZlvll_mll4                e4475_s3126_r9364_r9315_p3387        4733680   NULL  NULL         Powheg+Pythia8+EvtGen    
+
+
+#Triboson
+364248  3.8550E-07   1.0             2.2480E-01  Sherpa_222_NNPDF30NNLO_ZZZ_4l2v_EW6                           e5887_s3126_r9364_r9315_p3387        31015     NULL  NNPDF30NNLO  Sherpa                   
+364247  1.4500E-08   1.0             1.0000E+00  Sherpa_222_NNPDF30NNLO_ZZZ_6l0v_EW6                           e5887_s3126_r9364_r9315_p3387        33094     NULL  NNPDF30NNLO  Sherpa                   
+364245  1.8810E-07   1.0             1.0000E+00  Sherpa_222_NNPDF30NNLO_WZZ_5l1v_EW6                           e5887_s3126_r9364_r9315_p3387        48137     NULL  NNPDF30NNLO  Sherpa                   
+364243  1.7964E-06   1.0             1.0000E+00  Sherpa_222_NNPDF30NNLO_WWZ_4l2v_EW6                           e5887_s3126_r9364_r9315_p3387        56464     NULL  NNPDF30NNLO  Sherpa                   
+
+#Semileptonic triboson
+## This sample overlaps with [- DIDS 341488]. Thus we repalce it with the 364364 one ## mc16_13TeV.364283.Sherpa_222_NNPDF30NNLO_lllljj_EW6.deriv.DAOD_HIGG2D1.e6055_e5984_s3126_r9364_r9315_p3387
+364364  1.0358E-05   1.0             1.0000E+00  Sherpa_222_NNPDF30NNLO_lllljj_EW6_noHiggs                     e6611_e5984_a875_r9364_r9315_p3387   698287    NULL  NNPDF30NNLO  Sherpa                   
+
+#lsetup  "asetup AthAnalysis,21.2.23" pyAMI
+#getMetadata.py --timestamp="2018-04-24 07:26:14" --physicsGroups="PMG,MCGN" --fields="dataset_number,crossSection,kFactor,genFiltEff,physics_short,ami_tags,events,physics_comment,pdf,generator_name" --inDS="mc16_13TeV.341947.Pythia8EvtGen_A14NNPDF23LO_ZH125_ZZ4l.deriv.DAOD_HIGG2D1.e4161_e5984_s3126_r9364_r9315_p3387,mc16_13TeV.345060.PowhegPythia8EvtGen_NNLOPS_nnlo_30_ggH125_ZZ4l.deriv.DAOD_HIGG2D1.e5682_s3126_r9364_r9315_p3387,mc16_13TeV.341488.PowhegPythia8EvtGen_CT10_AZNLOCTEQ6L1_VBFH125_ZZ4lep.deriv.DAOD_HIGG2D1.e3951_e5984_s3126_r9364_r9315_p3387,mc16_13TeV.341964.Pythia8EvtGen_A14NNPDF23LO_WH125_ZZ4l.deriv.DAOD_HIGG2D1.e4161_e5984_s3126_r9364_r9315_p3387,mc16_13TeV.345046.PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_allhad.deriv.DAOD_HIGG2D1.e6427_e5984_s3126_r9364_r9315_p3387,mc16_13TeV.345047.PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_semilep.deriv.DAOD_HIGG2D1.e6427_e5984_s3126_r9364_r9315_p3387,mc16_13TeV.345048.PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_dilep.deriv.DAOD_HIGG2D1.e6427_e5984_s3126_r9364_r9315_p3387,mc16_13TeV.345066.PowhegPythia8EvtGen_NNPDF3_AZNLO_ggZH125_ZZ4lepZinc.deriv.DAOD_HIGG2D1.e5931_e5984_s3126_r9364_r9315_p3387,mc16_13TeV.344973.aMcAtNloPythia8EvtGen_A14NNPDF23LO_bbH125_yb2_ZZ4lep_noTau.deriv.DAOD_HIGG2D1.e5537_s3126_r9364_r9315_p3387,mc16_13TeV.344974.aMcAtNloPythia8EvtGen_A14NNPDF23LO_bbH125_ybyt_ZZ4lep_noTau.deriv.DAOD_HIGG2D1.e5537_s3126_r9364_r9315_p3387,mc16_13TeV.364250.Sherpa_222_NNPDF30NNLO_llll.deriv.DAOD_HIGG2D1.e5894_s3126_r9364_r9315_p3387,mc16_13TeV.364251.Sherpa_222_NNPDF30NNLO_llll_m4l100_300_filt100_150.deriv.DAOD_HIGG2D1.e5894_s3126_r9364_r9315_p3387,mc16_13TeV.364252.Sherpa_222_NNPDF30NNLO_llll_m4l300.deriv.DAOD_HIGG2D1.e5894_s3126_r9364_r9315_p3387,mc16_13TeV.345708.Sherpa_222_NNPDF30NNLO_ggllllNoHiggs_0M4l130.deriv.DAOD_HIGG2D1.e6213_e5984_s3126_r9364_r9315_p3387,mc16_13TeV.345709.Sherpa_222_NNPDF30NNLO_ggllllNoHiggs_130M4l.deriv.DAOD_HIGG2D1.e6213_e5984_a875_r9364_r9315_p3387,mc16_13TeV.410472.PhPy8EG_A14_ttbar_hdamp258p75_dil.deriv.DAOD_HIGG2D1.e6348_e5984_s3126_r9364_r9315_p3387,mc16_13TeV.410142.Sherpa_NNPDF30NNLO_ttll_mll5.deriv.DAOD_HIGG2D1.e4686_e5984_s3126_r9364_r9315_p3387,mc16_13TeV.361601.PowhegPy8EG_CT10nloME_AZNLOCTEQ6L1_WZlvll_mll4.deriv.DAOD_HIGG2D1.e4475_s3126_r9364_r9315_p3387,mc16_13TeV.364248.Sherpa_222_NNPDF30NNLO_ZZZ_4l2v_EW6.deriv.DAOD_HIGG2D1.e5887_s3126_r9364_r9315_p3387,mc16_13TeV.364247.Sherpa_222_NNPDF30NNLO_ZZZ_6l0v_EW6.deriv.DAOD_HIGG2D1.e5887_s3126_r9364_r9315_p3387,mc16_13TeV.364245.Sherpa_222_NNPDF30NNLO_WZZ_5l1v_EW6.deriv.DAOD_HIGG2D1.e5887_s3126_r9364_r9315_p3387,mc16_13TeV.364243.Sherpa_222_NNPDF30NNLO_WWZ_4l2v_EW6.deriv.DAOD_HIGG2D1.e5887_s3126_r9364_r9315_p3387,mc16_13TeV.364364.Sherpa_222_NNPDF30NNLO_lllljj_EW6_noHiggs.deriv.DAOD_HIGG2D1.e6611_e5984_a875_r9364_r9315_p3387"
