@@ -426,7 +426,6 @@ if __name__ == '__main__':
         #    if "ZXSR" not in histogram.GetName():
         #        canvasList.remove(histogram)
 
-        import pdb; pdb.set_trace()
         # sort canvasList by hist title, use this nice lambda construct        
         canvasList.sort( key = lambda x:x.GetTitle()) # i.e. we are sorting the list by the output of a function, where the function provides takes implicitly elements of the list, and in our case calls the .GetTitle() method of that element of the list and outputs it
 

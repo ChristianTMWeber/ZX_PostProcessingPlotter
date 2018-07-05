@@ -13,9 +13,9 @@ dataset_number/I:crossSection/D:kFactor/D:genFiltEff/D:physics_short/C:ami_tags/
 341488  1.0500E-06   0.978615629651  1.0000E+00  PowhegPythia8EvtGen_CT10_AZNLOCTEQ6L1_VBFH125_ZZ4lep          e3951_e5984_s3126_r9364_r9315_p3387  169585    NULL  NULL         Powheg+Pythia8+EvtGen    
 341964  3.8005E-07   1.0             1.0         Pythia8EvtGen_A14NNPDF23LO_WH125_ZZ4l                         e4161_e5984_s3126_r9364_r9315_p3387  126179    NULL  NULL         Pythia8+EvtGen           
 # superseded by 345046, 345047, and 345048 # mc16_13TeV.342561.aMcAtNloHerwigppEvtGen_UEEE5_CTEQ6L1_CT10ME_ttH125_4l.deriv.DAOD_HIGG2D1.e4540_s3126_r9364_r9315_p3387
-345046  2.8736E-05   1.0             1.0000E+00  PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_allhad   e6427_e5984_s3126_r9364_r9315_p3387  99424     NULL  NULL         Powheg+Pythia8+EvtGen    
-345047  2.7596E-05   1.0             4.3791E-01  PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_semilep  e6427_e5984_s3126_r9364_r9315_p3387  99780     NULL  NULL         Powheg+Pythia8+EvtGen    
-345048  6.6238E-06   1.0             1.0000E+00  PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_dilep    e6427_e5984_s3126_r9364_r9315_p3387  49946     NULL  NULL         Powheg+Pythia8+EvtGen    
+345046  2.8736E-08   1.0             1.0000E+00  PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_allhad   e6427_e5984_s3126_r9364_r9315_p3387  99424     NULL  NULL         Powheg+Pythia8+EvtGen    
+345047  2.7596E-08   1.0             1.0000E+00  PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_semilep  e6427_e5984_s3126_r9364_r9315_p3387  99780     NULL  NULL         Powheg+Pythia8+EvtGen    
+345048  6.6238E-08   1.0             1.0000E+00  PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_dilep    e6427_e5984_s3126_r9364_r9315_p3387  49946     NULL  NULL         Powheg+Pythia8+EvtGen    
 345066  3.3963E-08   1.0             1.0000E+00  PowhegPythia8EvtGen_NNPDF3_AZNLO_ggZH125_ZZ4lepZinc           e5931_e5984_s3126_r9364_r9315_p3387  271438    NULL  NULL         Powheg+Pythia8+EvtGen    
 
 

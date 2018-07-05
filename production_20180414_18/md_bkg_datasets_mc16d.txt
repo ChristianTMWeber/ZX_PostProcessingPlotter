@@ -8,9 +8,9 @@ dataset_number/I:crossSection/D:kFactor/D:genFiltEff/D:physics_short/C:ami_tags/
 341964  3.8005E-07   1.0             1.0         Pythia8EvtGen_A14NNPDF23LO_WH125_ZZ4l                         e4161_e5984_s3126_r10201_r10210_p3387  160897    NULL  NULL         Pythia8+EvtGen           
 341947  2.1070E-07  1.0             0.010256    Pythia8EvtGen_A14NNPDF23LO_ZH125_ZZ4l                         e4161_e5984_s3126_r10201_r10210_p3387  158606    NULL  NULL         Pythia8+EvtGen           
 345066  3.3963E-08   1.0             1.0000E+00  PowhegPythia8EvtGen_NNPDF3_AZNLO_ggZH125_ZZ4lepZinc           e5931_e5984_s3126_r10201_r10210_p3387  271679    NULL  NULL         Powheg+Pythia8+EvtGen    
-345046  2.8736E-05   1.0             1.0000E+00  PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_allhad   e6427_e5984_s3126_r10201_r10210_p3387  129212    NULL  NULL         Powheg+Pythia8+EvtGen    
-345047  2.7596E-05   1.0             4.3791E-01  PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_semilep  e6427_e5984_s3126_r10201_r10210_p3387  129658    NULL  NULL         Powheg+Pythia8+EvtGen    
-345048  6.6238E-06   1.0             1.0000E+00  PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_dilep    e6427_e5984_s3126_r10201_r10210_p3387  59924     NULL  NULL         Powheg+Pythia8+EvtGen    
+345046  2.8736E-08   1.0             1.0000E+00  PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_allhad   e6427_e5984_s3126_r10201_r10210_p3387  129212    NULL  NULL         Powheg+Pythia8+EvtGen    
+345047  2.7596E-08   1.0             1.0000E+00  PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_semilep  e6427_e5984_s3126_r10201_r10210_p3387  129658    NULL  NULL         Powheg+Pythia8+EvtGen    
+345048  6.6238E-08   1.0             1.0000E+00  PowhegPythia8EvtGen_A14NNPDF23_NNPDF30ME_ttH125_ZZ4l_dilep    e6427_e5984_s3126_r10201_r10210_p3387  59924     NULL  NULL         Powheg+Pythia8+EvtGen    
 344973  6.616E-08    1.0             1.0000E+00  aMcAtNloPythia8EvtGen_A14NNPDF23LO_bbH125_yb2_ZZ4lep_noTau    e5537_e5984_s3126_r10201_r10210_p3387  287756    NULL  NULL         aMcAtNlo+Pythia8+EvtGen  
 344974  -5.158E-09   1.0             1.0000E+00  aMcAtNloPythia8EvtGen_A14NNPDF23LO_bbH125_ybyt_ZZ4lep_noTau   e5537_e5984_s3126_r10201_r10210_p3387  47789     NULL  NULL         aMcAtNlo+Pythia8+EvtGen  
 
