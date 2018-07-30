@@ -2,7 +2,7 @@
 #   
 # python programm to make plotsout of the post processing outputs   
 #
-#
+# to run debugger: python -m pdb
 #
 #############################
 
@@ -14,7 +14,7 @@ import re # to do regular expression matching
 import copy # for making deep copies
 import argparse # to parse command line options
 #import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
-
+import RootTools as RootTools# root tool that I have taken from a program by Turra
 
 class DSIDHelper:
 
@@ -158,7 +158,13 @@ def mergeHistsByMapping(backgroundSamples, mappingDict) :
 
     return mergedSamplesDICT
 
+def getHistIntegralWithUnertainty(hist, lowerLimit = 1, upperLimit = None ):
+    
+    if upperLimit is None: upperLimit = hist.GetNbinsX()
+    integralUncertainty = ROOT.Double()
 
+    integral = hist.IntegralAndError( lowerLimit , upperLimit, integralUncertainty)
+    return integral, integralUncertainty
 
 
 
@@ -232,6 +238,8 @@ def setupTLegend():
     TLegend.SetFillColor(ROOT.kWhite)
     TLegend.SetLineColor(ROOT.kWhite)
     TLegend.SetNColumns(2);
+    TLegend.SetFillStyle(0);  # make legend background transparent
+    TLegend.SetBorderSize(0); # and remove its border without a border
 
     return TLegend
 
@@ -272,6 +280,100 @@ def printRootCanvasPDF(myRootCanvas, isLastCanvas, fileName, tableOfContents = N
 
     if tableOfContents is None: myRootCanvas.Print(fileName)
     else: myRootCanvas.Print(fileName, "Title:" + tableOfContents)
+
+#def adjustYRangeOnTPad(myTPad, scale = 1.):
+#
+#    maxima = []; minima = [];  
+#
+#    TPadPrimitives = myTPad.GetListOfPrimitives()
+#
+#    for prim in TPadPrimitives:
+#
+#        if isinstance(prim,ROOT.TH1) or isinstance(prim,ROOT.THStack): 
+#            import pdb; pdb.set_trace() # import
+#            maxima.append( prim.GetMaximum() )
+#            minima.append( prim.GetMinimum() )
+#
+#    maximum = max(maxima); minmum = min(minima); 
+#
+#    for prim in TPadPrimitives:
+#        if isinstance(prim,ROOT.TH1) or isinstance(prim,ROOT.THStack): 
+#            prim.SetMaximum( maximum * scale )
+#            prim.SetMinimum( minmum  / scale )
+#
+#    return None
+
+def getBinContentsPlusError(myTH1):  
+    return [ myTH1.GetBinContent(n)+myTH1.GetBinError(n) for n in range(1, myTH1.GetNbinsX() +1) ]
+
+
+
+
+
+def mergeTHStackHists(myTHStack):
+    # Take a THStack and merge all the histograms comprising it into a single new one
+    # requires that all the thists hace identical binning
+
+    ROOT.SetOwnership(backgroundTHStack, False) # We need to set this, to aoid a segmentation fault: https://root-forum.cern.ch/t/crash-on-exit-with-thstack-draw-and-gethists/11221
+    constituentHists =  myTHStack.GetHists() 
+
+    mergedHist  = constituentHists[0].Clone( constituentHists.GetName() + "_merged")
+
+    for hist in constituentHists:
+        if hist != constituentHists[0]: mergedHist.Add(hist)
+
+    return mergedHist
+
+def getFirstAndLastNonEmptyBinInHist(hist, offset = 0, adjustXAxisRange = False):
+
+    if isinstance(hist,ROOT.THStack):  hist = mergeTHStackHists(hist)
+
+    nBins = hist.GetNbinsX()
+
+    first =0 ;last=0
+
+    for n in xrange(1,nBins+1): 
+        if hist.GetBinContent(n) != 0: 
+            first = n ; break
+    for n in xrange(nBins+1,1,-1):
+        if hist.GetBinContent(n) != 0: 
+            last = n ; break
+
+    #if adjustXAxisRange:
+
+    if first is not 0: first -= offset
+    if last  is not 0: last  += offset
+
+
+    return (first, last)
+
+
+def getFirstAndLastNonEmptyBinInTPad(myTPad):
+
+
+
+    first = float("-inf"); last = float("+inf")
+
+    TPadPrimitives = myTPad.GetListOfPrimitives()
+
+
+
+    for prim in TPadPrimitives:
+        if isinstance(prim,ROOT.TH1) or isinstance(prim,ROOT.THStack): 
+            (firstTmp,lastTmp) = getFirstAndLastNonEmptyBinInHist(prim)
+            foundAnyHists = True
+
+
+#To get the y value corresponding to bin k, h->GetBinContent(k);
+#To get the bin number k corresponding to an x value, do
+#  int k = h->GetXaxis()->FindBin(x);
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
 
@@ -370,7 +472,7 @@ if __name__ == '__main__':
 
             backgroundTHStack = ROOT.THStack(histEnding,histEnding)
             #backgroundTHStack.SetMaximum(25.)
-            canvas = ROOT.TCanvas(histEnding,histEnding,1280,720);
+            canvas = ROOT.TCanvas(histEnding,histEnding,1300/2,1300/2);
             legend = setupTLegend()
 
             gotDataSample = False # change this to true later if we do have data samples
@@ -381,7 +483,7 @@ if __name__ == '__main__':
 
                 DSID = histName.split("_")[1] # get the DSID from the name of the histogram, which should be like bla_DSID_bla_...
                 currentTH1 = TDir.Get(histName).Clone() # get a clone of the histogram, so that we can scale it, without changeing the original
-
+                currentTH1.Rebin(2)
                 #currentTH1.GetYaxis().SetRange(0,25);
                 
                 if int(DSID) > 0: # Signal & Background have DSID > 0
@@ -401,24 +503,94 @@ if __name__ == '__main__':
             #DSIDMappingDict = DISDHelper.physicsSubProcessByDSID
             DSIDMappingDict = DISDHelper.physicsProcessByDSID
 
+            #print(backgroundSamples)
+            #import pdb; pdb.set_trace() # import the debugger and instruct
             sortedSamples = mergeHistsByMapping(backgroundSamples, DSIDMappingDict)
+            statsTexts = []
             
             for key in sortedSamples.keys(): # add merged samples to the backgroundTHStack
                 mergedHist = sortedSamples[key]
                 backgroundTHStack.Add( mergedHist )
                 legend.AddEntry(mergedHist , key , "f");
+                statsTexts.append( key + ": %.2f #pm %.2f" %( getHistIntegralWithUnertainty(mergedHist)) )
+
+            # create a pad for the CrystalBall fit + data
+            histPadYStart = 3./13
+            histPad = ROOT.TPad("histPad", "histPad", 0, histPadYStart, 1, 1);
+            histPad.SetBottomMargin(0.); # Upper and lower plot are joined
+            histPad.SetGridx();          # Vertical grid
+            histPad.Draw();              # Draw the upper pad: pad1
+            histPad.cd();                # pad1 becomes the current pad
 
             backgroundTHStack.Draw("Hist")
+
+
+            backgroundMergedTH1 = mergeTHStackHists(backgroundTHStack)
+
+            backgroundMergedTH1.Draw("same E2 ")
+            #backgroundMergedTH1.SetMarkerStyle(25 )
+            backgroundMergedTH1.SetFillStyle(3004)
+            backgroundMergedTH1.SetFillColor(1)
+
+            statsTexts.append( "  " )       
+            statsTexts.append( "Background: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(backgroundMergedTH1)) )
+
+
+
+
             # use the x-axis label from the original plot in the THStack, needs to be called after 'Draw()'
-            backgroundTHStack.GetXaxis().SetTitle( mergedHist.GetXaxis().GetTitle() )
+            #backgroundTHStack.GetXaxis().SetTitle( mergedHist.GetXaxis().GetTitle() )
 
             if gotDataSample: # add data samples
                 dataTH1.Draw("same")
+                if max(getBinContentsPlusError(dataTH1)) > backgroundTHStack.GetMaximum(): backgroundTHStack.SetMaximum( max(getBinContentsPlusError(dataTH1)) +1 )
+                
                 legend.AddEntry(currentTH1, "data", "l")
 
-            legend.Draw();
+                statsTexts.append("Data: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(dataTH1) ) )  
+
+            axRangeLow, axRangeHigh = getFirstAndLastNonEmptyBinInHist(backgroundTHStack, offset = 1)
+            backgroundTHStack.GetXaxis().SetRange(axRangeLow,axRangeHigh)
+            
+            statsTPave=ROOT.TPaveText(0.60,0.65,0.9,0.87,"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
+            for stats in statsTexts:   statsTPave.AddText(stats);
+            statsTPave.Draw();
+            legend.Draw(); # do legend things
+
+
+            canvas.cd()
+
+            ratioPad = ROOT.TPad("ratioPad", "ratioPad", 0, 0, 1, histPadYStart);
+            ratioPad.SetTopMargin(0.)
+            ratioPad.SetBottomMargin(0.3)
+            ratioPad.SetGridx(); ratioPad.SetGridy(); 
+            ratioPad.Draw();              # Draw the upper pad: pad1
+            ratioPad.cd();                # pad1 becomes the current pad
+
+
+
+            if gotDataSample:
+
+                ratioHist = dataTH1.Clone( dataTH1.GetName()+"_Clone" )
+                ratioHist.Divide(backgroundMergedTH1)
+                ratioHist.GetXaxis().SetRange(axRangeLow, axRangeHigh)
+                ratioHist.SetStats( False) # remove stats box
+                
+                ratioHist.SetTitle("")
+                
+                ratioHist.GetYaxis().SetNdivisions( 506, True)  # XYY x minor divisions YY major ones, optimizing around these values = TRUE
+
+                ratioHist.GetYaxis().SetLabelSize(0.1)
+                ratioHist.GetXaxis().SetLabelSize(0.12)
+                ratioHist.GetXaxis().SetTitleSize(0.12)
+                ratioHist.Draw()
+
+
+
             canvas.Update() # we need to update the canvas, so that changes to it (like the drawing of a legend get reflected in its status)
             canvasList.append( copy.deepcopy(canvas) ) # save a deep copy of the canvas for later use
+            #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
 
 
 
@@ -429,9 +601,11 @@ if __name__ == '__main__':
         # sort canvasList by hist title, use this nice lambda construct        
         canvasList.sort( key = lambda x:x.GetTitle()) # i.e. we are sorting the list by the output of a function, where the function provides takes implicitly elements of the list, and in our case calls the .GetTitle() method of that element of the list and outputs it
 
-        indexFile = open("indexFile.txt", "w") # w for (over) write
+        outputNamePrefix = postProcessedData.GetName().split(".")[0] + "_"
+
+        indexFile = open(outputNamePrefix+"indexFile.txt", "w") # w for (over) write
         # Write the Histograms to a ROOT File
-        outoutROOTFile = ROOT.TFile("outHistograms.root","RECREATE")
+        outoutROOTFile = ROOT.TFile(outputNamePrefix+"outHistograms.root","RECREATE")
         counter = 0
         for histogram in canvasList: 
             
@@ -441,7 +615,7 @@ if __name__ == '__main__':
             histogram.Write() # write to the .ROOT file
 
             printRootCanvasPDF(histogram, isLastCanvas = histogram==canvasList[-1] , 
-                               fileName = "outHistograms.pdf", tableOfContents = str(counter) + " - " + histogram.GetTitle() ) # write to .PDF
+                               fileName = outputNamePrefix+"outHistograms.pdf", tableOfContents = str(counter) + " - " + histogram.GetTitle() ) # write to .PDF
             indexFile.write(str(counter) + "\t" + histogram.GetName() + "\n"); 
         outoutROOTFile.Close()
         indexFile.close()
