@@ -473,6 +473,7 @@ if __name__ == '__main__':
             backgroundTHStack = ROOT.THStack(histEnding,histEnding)
             #backgroundTHStack.SetMaximum(25.)
             canvas = ROOT.TCanvas(histEnding,histEnding,1300/2,1300/2);
+            ROOT.SetOwnership(canvas, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
             legend = setupTLegend()
 
             gotDataSample = False # change this to true later if we do have data samples
@@ -484,7 +485,6 @@ if __name__ == '__main__':
                 DSID = histName.split("_")[1] # get the DSID from the name of the histogram, which should be like bla_DSID_bla_...
                 currentTH1 = TDir.Get(histName).Clone() # get a clone of the histogram, so that we can scale it, without changeing the original
                 currentTH1.Rebin(2)
-                #currentTH1.GetYaxis().SetRange(0,25);
                 
                 if int(DSID) > 0: # Signal & Background have DSID > 0
                     currentTH1.SetFillStyle(1001) # 1001 - Solid Fill: https://root.cern.ch/doc/v608/classTAttFill.html
@@ -517,6 +517,7 @@ if __name__ == '__main__':
             # create a pad for the CrystalBall fit + data
             histPadYStart = 3./13
             histPad = ROOT.TPad("histPad", "histPad", 0, histPadYStart, 1, 1);
+            ROOT.SetOwnership(histPad, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
             histPad.SetBottomMargin(0.); # Upper and lower plot are joined
             histPad.SetGridx();          # Vertical grid
             histPad.Draw();              # Draw the upper pad: pad1
@@ -544,7 +545,7 @@ if __name__ == '__main__':
             if gotDataSample: # add data samples
                 dataTH1.Draw("same")
                 if max(getBinContentsPlusError(dataTH1)) > backgroundTHStack.GetMaximum(): backgroundTHStack.SetMaximum( max(getBinContentsPlusError(dataTH1)) +1 )
-                
+
                 legend.AddEntry(currentTH1, "data", "l")
 
                 statsTexts.append("Data: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(dataTH1) ) )  
@@ -560,7 +561,9 @@ if __name__ == '__main__':
 
             canvas.cd()
 
+            # define a TPad where we can add a histogram of the ratio of the data and MC bins
             ratioPad = ROOT.TPad("ratioPad", "ratioPad", 0, 0, 1, histPadYStart);
+            ROOT.SetOwnership(ratioPad, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
             ratioPad.SetTopMargin(0.)
             ratioPad.SetBottomMargin(0.3)
             ratioPad.SetGridx(); ratioPad.SetGridy(); 
@@ -569,8 +572,7 @@ if __name__ == '__main__':
 
 
 
-            if gotDataSample:
-
+            if gotDataSample: # fill the ratio pad with the ratio of the data bins to  mc bckground bins
                 ratioHist = dataTH1.Clone( dataTH1.GetName()+"_Clone" )
                 ratioHist.Divide(backgroundMergedTH1)
                 ratioHist.GetXaxis().SetRange(axRangeLow, axRangeHigh)
@@ -579,7 +581,6 @@ if __name__ == '__main__':
                 ratioHist.SetTitle("")
                 
                 ratioHist.GetYaxis().SetNdivisions( 506, True)  # XYY x minor divisions YY major ones, optimizing around these values = TRUE
-
                 ratioHist.GetYaxis().SetLabelSize(0.1)
                 ratioHist.GetXaxis().SetLabelSize(0.12)
                 ratioHist.GetXaxis().SetTitleSize(0.12)
