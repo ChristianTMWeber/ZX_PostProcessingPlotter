@@ -14,7 +14,7 @@ import re # to do regular expression matching
 import copy # for making deep copies
 import argparse # to parse command line options
 #import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
-import RootTools as RootTools# root tool that I have taken from a program by Turra
+import functions.RootTools as RootTools# root tool that I have taken from a program by Turra
 
 class DSIDHelper:
 
