@@ -154,9 +154,23 @@ def mergeHistsByMapping(backgroundSamples, mappingDict) :
         DSIDTarget = mappingDict[int(DSID)]
 
         if DSIDTarget in mergedSamplesDICT.keys():  mergedSamplesDICT[DSIDTarget].Add(histogram)
-        else:                                       mergedSamplesDICT[DSIDTarget]=histogram.Clone()
+        else:                                       mergedSamplesDICT[DSIDTarget]=histogram.Clone();
 
     return mergedSamplesDICT
+
+def colorDictOfHists(mergedSamplesDICT):
+    mergeFillColors = itertools.cycle([ ROOT.kViolet,   ROOT.kYellow,   ROOT.kCyan,   ROOT.kBlue,   ROOT.kRed,   ROOT.kMagenta,   ROOT.kPink,   ROOT.kOrange,   ROOT.kSpring,   ROOT.kGreen,   ROOT.kTeal,   ROOT.kAzure,
+                                        ROOT.kViolet-6, ROOT.kYellow-6, ROOT.kCyan-6, ROOT.kBlue-6, ROOT.kRed-6, ROOT.kMagenta-6, ROOT.kPink-6, ROOT.kOrange-6, ROOT.kSpring-6, ROOT.kGreen-6, ROOT.kTeal-6, ROOT.kAzure-6,
+                                        ROOT.kViolet-2, ROOT.kYellow-2, ROOT.kCyan-2, ROOT.kBlue-2, ROOT.kRed-2, ROOT.kMagenta-2, ROOT.kPink-2, ROOT.kOrange-2, ROOT.kSpring-2, ROOT.kGreen-2, ROOT.kTeal-2, ROOT.kAzure-2,]) 
+
+    if isinstance(mergedSamplesDICT, dict ):
+        for process in mergedSamplesDICT.keys(): mergedSamplesDICT[process].SetFillColor(mergeFillColors.next())
+
+    elif isinstance(mergedSamplesDICT, list ):
+        for hist in mergedSamplesDICT.keys():    hist.SetFillColor(mergeFillColors.next())
+
+    return None
+
 
 def getHistIntegralWithUnertainty(hist, lowerLimit = 1, upperLimit = None ):
     
@@ -215,6 +229,10 @@ def splitHistNamesByPlotvariable(histNameList, delimeter = "_", nonEndingStringP
 
         if currentEnding in histsByEnding.keys():   histsByEnding[currentEnding].append(histName)
         else:                               histsByEnding[currentEnding] = [histName]
+
+    # sort hist names alphabetically, to have a well defined squence of histograms 
+    for histEnding in histsByEnding.keys(): # iterate over all the 'endings'
+        histsByEnding[histEnding].sort() # sort hist names alphabetically, to have a well defined squence of histograms 
 
     return histsByEnding
 
@@ -466,9 +484,12 @@ if __name__ == '__main__':
         for histEnding in histsByEnding.keys(): # iterate over all the 'endings'
 
             # define fill colors, use itertools to cycle through them, access via fillColors.next()
-            fillColors = itertools.cycle([ROOT.kBlue,   ROOT.kMagenta,  ROOT.kRed,    ROOT.kYellow,   
-                                          ROOT.kGreen,  ROOT.kCyan,     ROOT.kViolet, ROOT.kPink, 
-                                          ROOT.kOrange, ROOT.kSpring,    ROOT.kTeal,   ROOT.kAzure]) 
+            fillColors = itertools.cycle([ROOT.kBlue,   ROOT.kViolet,   ROOT.kMagenta,   ROOT.kPink,   ROOT.kRed,   ROOT.kOrange,   ROOT.kYellow,   ROOT.kSpring,   ROOT.kGreen,   ROOT.kTeal,   ROOT.kCyan,   ROOT.kAzure,
+                                          ROOT.kBlue-6, ROOT.kViolet-6, ROOT.kMagenta-6, ROOT.kPink-6, ROOT.kRed-6, ROOT.kOrange-6, ROOT.kYellow-6, ROOT.kSpring-6, ROOT.kGreen-6, ROOT.kTeal-6, ROOT.kCyan-6, ROOT.kAzure-6,
+                                          ROOT.kBlue+2, ROOT.kViolet+2, ROOT.kMagenta+2, ROOT.kPink+2, ROOT.kRed+2, ROOT.kOrange+2, ROOT.kYellow+2, ROOT.kSpring+2, ROOT.kGreen+2, ROOT.kTeal+2, ROOT.kCyan+2, ROOT.kAzure+2]) 
+            #ROOT.kBlue, ROOT.kViolet, ROOT.kMagenta, ROOT.kPink, ROOT.kRed, ROOT.kOrange, ROOT.kYellow, ROOT.kSpring, ROOT.kGreen, ROOT.kTeal, ROOT.kCyan, ROOT.kAzure
+            #ROOT.kBlue-6, ROOT.kViolet-6, ROOT.kMagenta-6, ROOT.kPink-6, ROOT.kRed-6, ROOT.kOrange-6, ROOT.kYellow-6, ROOT.kSpring-6, ROOT.kGreen-6, ROOT.kTeal-6, ROOT.kCyan-6, ROOT.kAzure-6
+            #ROOT.kBlue+2, ROOT.kViolet+2, ROOT.kMagenta+2, ROOT.kPink+2, ROOT.kRed+2, ROOT.kOrange+2, ROOT.kYellow+2, ROOT.kSpring+2, ROOT.kGreen+2, ROOT.kTeal+2, ROOT.kCyan+2, ROOT.kAzure+2
 
             backgroundTHStack = ROOT.THStack(histEnding,histEnding)
             #backgroundTHStack.SetMaximum(25.)
@@ -484,7 +505,7 @@ if __name__ == '__main__':
 
                 DSID = histName.split("_")[1] # get the DSID from the name of the histogram, which should be like bla_DSID_bla_...
                 currentTH1 = TDir.Get(histName).Clone() # get a clone of the histogram, so that we can scale it, without changeing the original
-                currentTH1.Rebin(2)
+                currentTH1.Rebin(1)
                 
                 if int(DSID) > 0: # Signal & Background have DSID > 0
                     currentTH1.SetFillStyle(1001) # 1001 - Solid Fill: https://root.cern.ch/doc/v608/classTAttFill.html
@@ -506,6 +527,7 @@ if __name__ == '__main__':
             #print(backgroundSamples)
             #import pdb; pdb.set_trace() # import the debugger and instruct
             sortedSamples = mergeHistsByMapping(backgroundSamples, DSIDMappingDict)
+            colorDictOfHists(sortedSamples) # change the fill colors of the hists in a nice way
             statsTexts = []
             
             for key in sortedSamples.keys(): # add merged samples to the backgroundTHStack
