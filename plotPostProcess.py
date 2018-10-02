@@ -172,9 +172,12 @@ def colorDictOfHists(mergedSamplesDICT):
     return None
 
 
-def getHistIntegralWithUnertainty(hist, lowerLimit = 1, upperLimit = None ):
+def getHistIntegralWithUnertainty(hist, lowerLimit = 0, upperLimit = None ):
+
+    #TH1::Integral returns the integral of bins in the bin range (default(1,Nbins).
+    #If you want to include the Under/Overflow, use h.Integral(0,Nbins+1)
     
-    if upperLimit is None: upperLimit = hist.GetNbinsX()
+    if upperLimit is None: upperLimit = hist.GetNbinsX() +1
     integralUncertainty = ROOT.Double()
 
     integral = hist.IntegralAndError( lowerLimit , upperLimit, integralUncertainty)
@@ -420,7 +423,7 @@ if __name__ == '__main__':
     parser.add_argument("-d", "--metaData", type=str, 
         help="location of the metadata file for the given mc campaign. If not provided, we will use a default location" )
     parser.add_argument( "--DSID_Binning", type=str, help = "set how the different DSIDS are combined, ",
-        choices=["physicsProcess","physicsSubProcess","DSID"] , default="physicsProcess", )
+        choices=["physicsProcess","physicsSubProcess","DSID"] , default="physicsProcess" )
 
     args = parser.parse_args()
 
