@@ -2,6 +2,8 @@
 #   
 # python programm to make plotsout of the post processing outputs   
 #
+# run as:       python plotPostProcess.py ZZdPostProcessOutput.root --mcCampaign mc16a 
+#
 # to run debugger: python -m pdb
 #
 #############################
