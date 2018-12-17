@@ -17,6 +17,7 @@ import copy # for making deep copies
 import argparse # to parse command line options
 #import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
 import functions.RootTools as RootTools# root tool that I have taken from a program by Turra
+import os
 
 class DSIDHelper:
 
@@ -638,7 +639,8 @@ if __name__ == '__main__':
         # sort canvasList by hist title, use this nice lambda construct        
         canvasList.sort( key = lambda x:x.GetTitle()) # i.e. we are sorting the list by the output of a function, where the function provides takes implicitly elements of the list, and in our case calls the .GetTitle() method of that element of the list and outputs it
 
-        outputNamePrefix = postProcessedData.GetName().split(".")[0] + "_"
+        postProcessedDataFileName = os.path.basename(postProcessedData.GetName() ) # split off the file name from the path+fileName string if necessary
+        outputNamePrefix = postProcessedDataFileName.split(".")[0] + "_"
 
         indexFile = open(outputNamePrefix+"indexFile.txt", "w") # w for (over) write
         # Write the Histograms to a ROOT File
