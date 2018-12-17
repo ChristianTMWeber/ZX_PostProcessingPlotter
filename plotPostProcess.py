@@ -114,7 +114,7 @@ class DSIDHelper:
 
 
 def getTDirsAndContents(TDir, outputDict = {}, recursiveCounter = 0):
-    # for a given TDirectory (remember that a TFile is also a TDirectory) get its contents
+    # for a given TDirectory (remember that a TFile is also a TDirectory) get all TH1 (recursively if needed)
     # output will be {TDirObject : names of objects that are not TDirs themselves}
     # we can do this recursively up to a depth of 'recursiveCounter' (if it is set to >0)
     # Then the output will be like 
@@ -124,17 +124,21 @@ def getTDirsAndContents(TDir, outputDict = {}, recursiveCounter = 0):
 
     TDirKeys = TDir.GetListOfKeys() # output is a TList
 
-    contentList = [] # store the non-TDirecotry contents of the current dir here
+    TH1List = [] # store the non-TDirecotry contents of the current dir here
 
     for TKey in TDirKeys: 
-        # if current TKey refers to a dir, look recursively within (if out recursive counter is still not zero)
+        # if current TKey refers to a dir, look recursively within (if our recursive counter is still not zero)
         # otherwise note the name of the contents
-        if TKey.IsFolder() and recursiveCounter >= 1 : 
+        if TKey.IsFolder() :
+            if isinstance( TDir.Get(TKey.GetName()) ,ROOT.TTree): continue # turns out TTrees are also folders, but they don't contain Hists that we are interested in
+            if recursiveCounter < 1       : continue # make sure we can exhaust our recursion counter
+            
             subdir = TDir.Get(TKey.GetName())
             outputDict = getTDirsAndContents(subdir, outputDict, recursiveCounter = recursiveCounter-1 )
-        else: contentList.append(TKey.GetName())
+        elif isinstance(TDir.Get(TKey.GetName()), ROOT.TH1 ) and not isinstance(TDir.Get(TKey.GetName()), ROOT.TH2 ):  #check that the TKey indeed refers to a TH1
+            TH1List.append(TKey.GetName())
 
-    outputDict[TDir] = contentList
+    outputDict[TDir] = TH1List
 
     return outputDict
 
@@ -456,8 +460,7 @@ if __name__ == '__main__':
     ######################################################
 
     # get the histograms in the diffrent TDirectories within the provided .root file
-    dirsAndContents = getTDirsAndContents(postProcessedData, recursiveCounter = 1)
-
+    dirsAndContents = getTDirsAndContents(postProcessedData, recursiveCounter = float("inf"))
 
     ######### get sumOfWeights #########
 
@@ -510,7 +513,7 @@ if __name__ == '__main__':
             for histName in histsByEnding[histEnding]: 
 
                 DSID = histName.split("_")[1] # get the DSID from the name of the histogram, which should be like bla_DSID_bla_...
-                currentTH1 = TDir.Get(histName).Clone() # get a clone of the histogram, so that we can scale it, without changeing the original
+                currentTH1 = TDir.Get(histName)#.Clone() # get a clone of the histogram, so that we can scale it, without changeing the original
                 currentTH1.Rebin(1)
                 
                 if int(DSID) > 0: # Signal & Background have DSID > 0
