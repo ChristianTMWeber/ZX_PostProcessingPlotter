@@ -604,7 +604,7 @@ if __name__ == '__main__':
             ratioPad = ROOT.TPad("ratioPad", "ratioPad", 0, 0, 1, histPadYStart);
             ROOT.SetOwnership(ratioPad, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
             ratioPad.SetTopMargin(0.)
-            ratioPad.SetBottomMargin(0.3)
+            #ratioPad.SetBottomMargin(0.3)
             ratioPad.SetGridx(); ratioPad.SetGridy(); 
             ratioPad.Draw();              # Draw the upper pad: pad1
             ratioPad.cd();                # pad1 becomes the current pad
