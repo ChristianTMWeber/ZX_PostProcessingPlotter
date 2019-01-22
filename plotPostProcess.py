@@ -431,6 +431,8 @@ if __name__ == '__main__':
         help="location of the metadata file for the given mc campaign. If not provided, we will use a default location" )
     parser.add_argument( "--DSID_Binning", type=str, help = "set how the different DSIDS are combined, ",
         choices=["physicsProcess","physicsSubProcess","DSID"] , default="physicsProcess" )
+    parser.add_argument( "--holdAtPlot", type=bool, default=False , 
+      help = "Debugging option. If True sets a debugger tracer and activates the debugger at the point where the plot has has been fully assembled." ) 
 
     args = parser.parse_args()
 
@@ -627,7 +629,7 @@ if __name__ == '__main__':
 
             canvas.Update() # we need to update the canvas, so that changes to it (like the drawing of a legend get reflected in its status)
             canvasList.append( copy.deepcopy(canvas) ) # save a deep copy of the canvas for later use
-            #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+            if args.holdAtPlot: import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
 
 
