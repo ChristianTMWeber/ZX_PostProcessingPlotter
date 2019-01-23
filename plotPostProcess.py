@@ -495,6 +495,8 @@ if __name__ == '__main__':
 
         canvasList = [] # store here our canvases, each canvas contains a plot fir a given 'ending', i.e. a given kinematic variable
 
+        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
         for histEnding in histsByEnding.keys(): # iterate over all the 'endings'
 
             # define fill colors, use itertools to cycle through them, access via fillColors.next()
