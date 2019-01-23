@@ -557,21 +557,26 @@ if __name__ == '__main__':
             histPadYStart = 3./13
             histPad = ROOT.TPad("histPad", "histPad", 0, histPadYStart, 1, 1);
             ROOT.SetOwnership(histPad, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
-            histPad.SetBottomMargin(0.); # Upper and lower plot are joined
-            histPad.SetGridx();          # Vertical grid
+            histPad.SetBottomMargin(0.04); # Upper and lower plot are joined
+            #histPad.SetGridx();          # Vertical grid
             histPad.Draw();              # Draw the upper pad: pad1
             histPad.cd();                # pad1 becomes the current pad
 
             backgroundTHStack.Draw("Hist")
 
 
-            backgroundMergedTH1 = mergeTHStackHists(backgroundTHStack)
+            backgroundMergedTH1 = mergeTHStackHists(backgroundTHStack) # get a merged background to draw uncertainty bars on the total backgroun
 
             backgroundMergedTH1.Draw("same E2 ")
             #backgroundMergedTH1.SetMarkerStyle(25 )
             backgroundMergedTH1.SetFillStyle(3004)
             backgroundMergedTH1.SetFillColor(1)
 
+            backgroundTHStack.GetYaxis().SetTitle("Events / " + str(backgroundMergedTH1.GetBinWidth(1) )+" GeV" )
+            backgroundTHStack.GetYaxis().SetTitleSize(0.05)
+            backgroundTHStack.GetYaxis().SetTitleOffset(0.8)
+            backgroundTHStack.GetYaxis().CenterTitle()
+            
             statsTexts.append( "  " )       
             statsTexts.append( "Background: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(backgroundMergedTH1)) )
 
@@ -604,8 +609,8 @@ if __name__ == '__main__':
             ratioPad = ROOT.TPad("ratioPad", "ratioPad", 0, 0, 1, histPadYStart);
             ROOT.SetOwnership(ratioPad, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
             ratioPad.SetTopMargin(0.)
-            #ratioPad.SetBottomMargin(0.3)
-            ratioPad.SetGridx(); ratioPad.SetGridy(); 
+            ratioPad.SetBottomMargin(0.3)
+            ratioPad.SetGridy(); #ratioPad.SetGridx(); 
             ratioPad.Draw();              # Draw the upper pad: pad1
             ratioPad.cd();                # pad1 becomes the current pad
 
@@ -621,6 +626,12 @@ if __name__ == '__main__':
                 
                 ratioHist.GetYaxis().SetNdivisions( 506, True)  # XYY x minor divisions YY major ones, optimizing around these values = TRUE
                 ratioHist.GetYaxis().SetLabelSize(0.1)
+
+                ratioHist.GetYaxis().SetTitle("Data / MC")
+                ratioHist.GetYaxis().SetTitleSize(0.13)
+                ratioHist.GetYaxis().SetTitleOffset(0.25)
+                ratioHist.GetYaxis().CenterTitle()
+
                 ratioHist.GetXaxis().SetLabelSize(0.12)
                 ratioHist.GetXaxis().SetTitleSize(0.12)
                 ratioHist.Draw()
