@@ -447,7 +447,7 @@ def fillMasterHistDict( inputFileDict , masterHistDict = collections.defaultdict
         DSIDHelper = inputFileDict[mcTag]["DSIDHelper"]
 
         # get the histograms in the diffrent TDirectories within the provided .root file
-        dirsAndContents = getTDirsAndContents(postProcessedData, recursiveCounter = float("inf"))
+        dirsAndContents = getTDirsAndContents(postProcessedData, outputDict = {}, recursiveCounter = float("inf"))
 
 
 
