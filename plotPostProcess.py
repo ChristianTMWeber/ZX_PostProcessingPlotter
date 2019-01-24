@@ -18,6 +18,8 @@ import argparse # to parse command line options
 #import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
 import functions.RootTools as RootTools# root tool that I have taken from a program by Turra
 import os
+import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
+
 
 class DSIDHelper:
 
@@ -397,10 +399,110 @@ def getFirstAndLastNonEmptyBinInTPad(myTPad):
 #  int k = h->GetXaxis()->FindBin(x);
 
 
+def getWellStructedDictFromCommandLineOptions( args, inputFileDict = collections.defaultdict(dict) ):
+
+    # assemble the input files, mc-campaign tags and metadata file locations into dict
+    # well structered dict is sorted by mc-campign tag and has 
+
+    inputFileDict = collections.defaultdict(dict)
+
+    for n in xrange(0, len(args.input) ): 
+
+        mcCampaign = args.mcCampaign[n]
+
+        inputFileDict[mcCampaign]["inputStr"] = args.input[n]
+        inputFileDict[mcCampaign]["TFile"] =  ROOT.TFile(args.input[n],"READ"); # open the file with te data from the ZdZdPostProcessing
+
+        # fill in the metadata location
+        if args.metaData is None: metaDataLocation = defaultBkgMetaFilePaths[mcCampaign]
+        else:                     metaDataLocation = args.metaData[n]
+        inputFileDict[mcCampaign]["bkgMetaFilePath"] = metaDataLocation
+
+        ######################################################
+        # Set up DSID helper
+        ######################################################
+        # the DSID helper has two main functions
+        # 1) administrating the metadata 
+        #    i.e. parsing the meta data files and based on them providing a scaling for the MC samples
+        # 2) grouping DSIDs into physics categories for the plots
+        #    e.g. grouping DSIDs 345060 and 341488 (among others) into one histogram for the "H->ZZ*->4l" process
+
+        inputFileDict[mcCampaign]["DSIDHelper"] = DSIDHelper()
+        inputFileDict[mcCampaign]["DSIDHelper"].importMetaData(metaDataLocation) # since the DSID helper administrates the meta data for the MC samples we must provide it with the meta data locati
+
+    return inputFileDict
+
+
+def fillMasterHistDict( inputFileDict , masterHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) ):
+
+    # split the histograms in inputFileDict by HistEnding, mcCampaign, and DSID 
+    # and put them into a collections.defaultdict to indext them by HistEnding, mcCampaign, and DSID
+    #
+    # masterHistDict[ HistEnding ][ mcCampaign ][ DSID ][ ROOT.TH1 ] 
+
+
+    for mcTag in inputFileDict.keys():
+
+        postProcessedData = inputFileDict[mcTag]["TFile"]
+        DSIDHelper = inputFileDict[mcTag]["DSIDHelper"]
+
+        # get the histograms in the diffrent TDirectories within the provided .root file
+        dirsAndContents = getTDirsAndContents(postProcessedData, recursiveCounter = float("inf"))
 
 
 
+        ######### get sumOfWeights #########
+        # we take the histograms that store the sumOfWeights are in the top-level of the TFile, i.e. not in a sub-TDirectory
+        topLevelTObjects = {postProcessedData : dirsAndContents[postProcessedData]}
+        del dirsAndContents[postProcessedData] # remove the top level entries, they are only ought to contain the sumOfWeights
+        sumOfWeights = getSumOfWeigts(topLevelTObjects)
 
+        for TDir in dirsAndContents.keys(): # We iterate through the different TDirs in the files
+            histNames = dirsAndContents[TDir] # get the list of histograms in this TDir, specifically get the list of histogram names in that directory
+
+            # we have histograms that show distributions of kinematic variables after cuts (analysisHists)
+            # and histograms that show how many events are left after each cut (cutflowHists), we wanna plot the former (analysisHists)
+            # so let's get a list of the analysisHists
+            analysisHists = []
+            for histName in histNames :  
+                if "cutflow" in histName: continue
+                if histName.startswith("h2_"): continue
+                if histName.endswith("Weight"): continue
+                analysisHists.append(histName)
+
+            # get a mapping like {ending, [histnames with that ending], ... }, because hists with a common ending shall be plotted together
+            histsByEnding = splitHistNamesByPlotvariable(analysisHists) 
+
+            for histEnding in histsByEnding.keys(): # iterate over all the 'endings'
+                for histName in histsByEnding[histEnding]: 
+
+                    DSID = histName.split("_")[1] # get the DSID from the name of the histogram, which should be like bla_DSID_bla_...
+                    currentTH1 = TDir.Get(histName)#.Clone() # get a clone of the histogram, so that we can scale it, without changeing the original
+                    
+                    if int(DSID) > 0: # Signal & Background have DSID > 0
+                        scale = lumiMap[mcTag] * 1000000. * DSIDHelper.getProduct_CrossSec_kFactor_genFiltEff(DSID) / sumOfWeights[int(DSID)]
+                        currentTH1.Scale(scale) # scale the histogram
+
+                    masterHistDict[ histEnding ][ mcTag ][ DSID ] = currentTH1
+
+    return masterHistDict
+
+def mergeMultiMCTagMasterHistDict(masterHistDict, combinedMCTagHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) ):
+
+    if len( masterHistDict.values()[0].keys() ) == 1:  # if there's only one MCTag we do not need to combine the hists, and we can return the input dict
+        return masterHistDict 
+
+    for histEnding in masterHistDict.keys():
+        for mcTag in masterHistDict[histEnding].keys():
+            for DSID in masterHistDict[histEnding][mcTag].keys():
+
+                currentTH1 =  masterHistDict[histEnding][mcTag][DSID]
+
+                if DSID not in combinedMCTagHistDict[histEnding]["allMCCampaigns"].keys(): 
+                    combinedMCTagHistDict[histEnding]["allMCCampaigns"][DSID] = currentTH1.Clone()
+                else : combinedMCTagHistDict[histEnding]["allMCCampaigns"][DSID].Add(currentTH1)
+
+    return combinedMCTagHistDict
 
 
 if __name__ == '__main__':
@@ -411,7 +513,7 @@ if __name__ == '__main__':
 
     # default locations of the meta data files for mc16a and mc16d, 
     # alternative can be provided via command line argument
-    bkgMetaFilePaths= {"mc16a" : "production_20180414_18/md_bkg_datasets_mc16a.txt",
+    defaultBkgMetaFilePaths= {"mc16a" : "production_20180414_18/md_bkg_datasets_mc16a.txt",
                        "mc16d" : "production_20180414_18/md_bkg_datasets_mc16d.txt"}
     
     # campaigns integrated luminosity,  complete + partial
@@ -424,39 +526,39 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("input", type=str, help="name or path to the input file")
-    parser.add_argument("-c", "--mcCampaign", type=str, help="name of the mc campaign, i.e. mc16a or mc16d",
-        choices=["mc16a","mc16d"], default="mc16a")
-    parser.add_argument("-d", "--metaData", type=str, 
+    parser.add_argument("input", type=str, nargs='*', help="name or path to the input files")
+    parser.add_argument("-c", "--mcCampaign", nargs='*', type=str, choices=["mc16a","mc16d"], required=True,
+        help="name of the mc campaign, i.e. mc16a or mc16d, need to provide exactly 1 mc-campaign tag for each input file, \
+        make sure that sequence of mc-campaign tags matches the sequence of 'input' strings")
+    parser.add_argument("-d", "--metaData", type=str, nargs='*',
         help="location of the metadata file for the given mc campaign. If not provided, we will use a default location" )
     parser.add_argument( "--DSID_Binning", type=str, help = "set how the different DSIDS are combined, ",
         choices=["physicsProcess","physicsSubProcess","DSID"] , default="physicsProcess" )
     parser.add_argument( "--holdAtPlot", type=bool, default=False , 
-      help = "Debugging option. If True sets a debugger tracer and activates the debugger at the point where the plot has has been fully assembled." ) 
+        help = "Debugging option. If True sets a debugger tracer and \
+        activates the debugger at the point where the plot has has been fully assembled." ) 
 
     args = parser.parse_args()
 
-    # open the file with te data from the ZdZdPostProcessing
-    postProcessedData = ROOT.TFile(args.input,"READ");
-
-    # define the MC campaign that we are using
-    mcCampaign = args.mcCampaign
-
-    # get the default metadata if a custom one has not been specified in the command line arguments
-    if args.metaData is None: metaDataFile = bkgMetaFilePaths[mcCampaign]
-
 
     ######################################################
-    # Set up DSID helper
+    # do some checks to make sure the command line options have been provided correctly
     ######################################################
-    # the DSID helper has two main functions
-    # 1) administrating the metadata 
-    #    i.e. parsing the meta data files and based on them providing a scaling for the MC samples
-    # 2) grouping DSIDs into physics categories for the plots
-    #    e.g. grouping DSIDs 345060 and 341488 (among others) into one histogram for the "H->ZZ*->4l" process
 
-    DISDHelper = DSIDHelper()
-    DISDHelper.importMetaData(metaDataFile) # since the DSID helper administrates the meta data for the MC samples we must provide it with the meta data location
+    assert len(args.input) ==  len(args.mcCampaign), "We do not have exactly one mc-campaign tag per input file"
+
+    
+    assert all( x==1   for x in collections.Counter( args.mcCampaign ).values() ), "\
+    Some mc-campaign tags have been declared more than once. \
+    For now we are only setup to support one file per MC-tag. Until we changed that, 'hadd' them in bash"
+
+    if args.metaData is not None: assert len(args.input) ==  len(args.metaData), "We do not have exactly one mc-campaign tag per input file"
+
+
+    # assemble the input files, mc-campaign tags and metadata file locations into dict
+    # well structered dict is sorted by mc-campign tag and has 
+    inputFileDict = getWellStructedDictFromCommandLineOptions( args, inputFileDict = collections.defaultdict(dict) )
+
 
 
 
@@ -464,81 +566,126 @@ if __name__ == '__main__':
     # Do the data processing from here on
     ######################################################
 
-    # get the histograms in the diffrent TDirectories within the provided .root file
-    dirsAndContents = getTDirsAndContents(postProcessedData, recursiveCounter = float("inf"))
 
-    ######### get sumOfWeights #########
 
-    # we take the histograms that store the sumOfWeights are in the top-level of the TFile, i.e. not in a sub-TDirectory
-    topLevelTObjects = {postProcessedData : dirsAndContents[postProcessedData]}
-    del dirsAndContents[postProcessedData] # remove the top level entries, they are only ought to contain the sumOfWeights
+    masterHistDict = fillMasterHistDict( inputFileDict )
 
-    sumOfWeights = getSumOfWeigts(topLevelTObjects)
+    combinedMCTagHistDict = mergeMultiMCTagMasterHistDict(masterHistDict)
 
-    ######### process the cutflow histograms #########
+    canvasList = []
 
-    for TDir in dirsAndContents.keys(): # We iterate through the different TDirs in the files
-        histNames = dirsAndContents[TDir] # get the list of histograms in this TDir, specifically get the list of histogram names in that directory
+    for histEnding in combinedMCTagHistDict.keys():
 
-        # we have histograms that show distributions of kinematic variables after cuts (analysisHists)
-        # and histograms that show how many events are left after each cut (cutflowHists), we wanna plot the former (analysisHists)
-        # so let's get a list of the analysisHists
-        analysisHists = []
-        for histName in histNames :  
-            if "cutflow" in histName: continue
-            if histName.startswith("h2_"): continue
-            if histName.endswith("Weight"): continue
-            analysisHists.append(histName)
+        backgroundTHStack = ROOT.THStack(histEnding,histEnding)
+        backgroundSamples = [] # store the background samples as list of tuples [ (DSID, TH1) , ...] 
+        #backgroundTHStack.SetMaximum(25.)
+        canvas = ROOT.TCanvas(histEnding,histEnding,1300/2,1300/2);
+        ROOT.SetOwnership(canvas, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
+        legend = setupTLegend()
 
-        # get a mapping like {ending, [hists with that ending], ... }, because hists with a common ending shall be plotted together
-        histsByEnding = splitHistNamesByPlotvariable(analysisHists) 
 
-        canvasList = [] # store here our canvases, each canvas contains a plot fir a given 'ending', i.e. a given kinematic variable
+        # define fill colors, use itertools to cycle through them, access via fillColors.next()
+        fillColors = itertools.cycle([ROOT.kBlue,   ROOT.kViolet,   ROOT.kMagenta,   ROOT.kPink,   ROOT.kRed,   ROOT.kOrange,   ROOT.kYellow,   ROOT.kSpring,   ROOT.kGreen,   ROOT.kTeal,   ROOT.kCyan,   ROOT.kAzure,
+                                      ROOT.kBlue-6, ROOT.kViolet-6, ROOT.kMagenta-6, ROOT.kPink-6, ROOT.kRed-6, ROOT.kOrange-6, ROOT.kYellow-6, ROOT.kSpring-6, ROOT.kGreen-6, ROOT.kTeal-6, ROOT.kCyan-6, ROOT.kAzure-6,
+                                      ROOT.kBlue+2, ROOT.kViolet+2, ROOT.kMagenta+2, ROOT.kPink+2, ROOT.kRed+2, ROOT.kOrange+2, ROOT.kYellow+2, ROOT.kSpring+2, ROOT.kGreen+2, ROOT.kTeal+2, ROOT.kCyan+2, ROOT.kAzure+2]) 
+        #ROOT.kBlue, ROOT.kViolet, ROOT.kMagenta, ROOT.kPink, ROOT.kRed, ROOT.kOrange, ROOT.kYellow, ROOT.kSpring, ROOT.kGreen, ROOT.kTeal, ROOT.kCyan, ROOT.kAzure
+        #ROOT.kBlue-6, ROOT.kViolet-6, ROOT.kMagenta-6, ROOT.kPink-6, ROOT.kRed-6, ROOT.kOrange-6, ROOT.kYellow-6, ROOT.kSpring-6, ROOT.kGreen-6, ROOT.kTeal-6, ROOT.kCyan-6, ROOT.kAzure-6
+        #ROOT.kBlue+2, ROOT.kViolet+2, ROOT.kMagenta+2, ROOT.kPink+2, ROOT.kRed+2, ROOT.kOrange+2, ROOT.kYellow+2, ROOT.kSpring+2, ROOT.kGreen+2, ROOT.kTeal+2, ROOT.kCyan+2, ROOT.kAzure+2
 
-        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
-        for histEnding in histsByEnding.keys(): # iterate over all the 'endings'
 
-            # define fill colors, use itertools to cycle through them, access via fillColors.next()
-            fillColors = itertools.cycle([ROOT.kBlue,   ROOT.kViolet,   ROOT.kMagenta,   ROOT.kPink,   ROOT.kRed,   ROOT.kOrange,   ROOT.kYellow,   ROOT.kSpring,   ROOT.kGreen,   ROOT.kTeal,   ROOT.kCyan,   ROOT.kAzure,
-                                          ROOT.kBlue-6, ROOT.kViolet-6, ROOT.kMagenta-6, ROOT.kPink-6, ROOT.kRed-6, ROOT.kOrange-6, ROOT.kYellow-6, ROOT.kSpring-6, ROOT.kGreen-6, ROOT.kTeal-6, ROOT.kCyan-6, ROOT.kAzure-6,
-                                          ROOT.kBlue+2, ROOT.kViolet+2, ROOT.kMagenta+2, ROOT.kPink+2, ROOT.kRed+2, ROOT.kOrange+2, ROOT.kYellow+2, ROOT.kSpring+2, ROOT.kGreen+2, ROOT.kTeal+2, ROOT.kCyan+2, ROOT.kAzure+2]) 
-            #ROOT.kBlue, ROOT.kViolet, ROOT.kMagenta, ROOT.kPink, ROOT.kRed, ROOT.kOrange, ROOT.kYellow, ROOT.kSpring, ROOT.kGreen, ROOT.kTeal, ROOT.kCyan, ROOT.kAzure
-            #ROOT.kBlue-6, ROOT.kViolet-6, ROOT.kMagenta-6, ROOT.kPink-6, ROOT.kRed-6, ROOT.kOrange-6, ROOT.kYellow-6, ROOT.kSpring-6, ROOT.kGreen-6, ROOT.kTeal-6, ROOT.kCyan-6, ROOT.kAzure-6
-            #ROOT.kBlue+2, ROOT.kViolet+2, ROOT.kMagenta+2, ROOT.kPink+2, ROOT.kRed+2, ROOT.kOrange+2, ROOT.kYellow+2, ROOT.kSpring+2, ROOT.kGreen+2, ROOT.kTeal+2, ROOT.kCyan+2, ROOT.kAzure+2
+        gotDataSample = False # change this to true later if we do have data samples
 
-            backgroundTHStack = ROOT.THStack(histEnding,histEnding)
-            #backgroundTHStack.SetMaximum(25.)
-            canvas = ROOT.TCanvas(histEnding,histEnding,1300/2,1300/2);
-            ROOT.SetOwnership(canvas, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
-            legend = setupTLegend()
+        assert len( combinedMCTagHistDict[histEnding].keys() ) == 1, "We ended up with more than MC tag after the comining the masterHistDict. That shouldn't be the case"
 
-            gotDataSample = False # change this to true later if we do have data samples
+        for mcTag in combinedMCTagHistDict[histEnding].keys():
 
-            backgroundSamples = [] # store the background samples as list of tuples [ (DSID, TH1) , ...] 
 
-            for histName in histsByEnding[histEnding]: 
 
-                DSID = histName.split("_")[1] # get the DSID from the name of the histogram, which should be like bla_DSID_bla_...
-                currentTH1 = TDir.Get(histName)#.Clone() # get a clone of the histogram, so that we can scale it, without changeing the original
-                currentTH1.Rebin(1)
-                
-                if int(DSID) > 0: # Signal & Background have DSID > 0
-                    currentTH1.SetFillStyle(1001) # 1001 - Solid Fill: https://root.cern.ch/doc/v608/classTAttFill.html
-                    currentTH1.SetFillColor(fillColors.next())
+            for DSID in combinedMCTagHistDict[histEnding][mcTag].keys():
 
-                    scale = lumiMap[mcCampaign] * 1000000. * DISDHelper.getProduct_CrossSec_kFactor_genFiltEff(DSID) / sumOfWeights[int(DSID)]
+                    currentTH1 = combinedMCTagHistDict[histEnding][mcTag][DSID]
+                    #currentTH1.Rebin(1)
 
-                    currentTH1.Scale(scale) # scale the histogram
+                    if int(DSID) > 0: # Signal & Background have DSID > 0
+                        currentTH1.SetFillStyle(1001) # 1001 - Solid Fill: https://root.cern.ch/doc/v608/classTAttFill.html
+                        currentTH1.SetFillColor(fillColors.next())
 
-                    backgroundSamples.append( ( int(DSID), currentTH1) )
+                        backgroundSamples.append( ( int(DSID), currentTH1) )
 
-                else:   # data has DSID 0 for us  
-                    gotDataSample = True
-                    dataTH1 = currentTH1
+                    else:   # data has DSID 0 for us  
+                        gotDataSample = True
+                        dataTH1 = currentTH1
 
-            if   args.DSID_Binning == "physicsProcess" :    DSIDMappingDict = DISDHelper.physicsProcessByDSID
-            elif args.DSID_Binning == "physicsSubProcess" : DSIDMappingDict = DISDHelper.physicsSubProcessByDSID
+#    ######### process the cutflow histograms #########
+#
+#
+#
+#    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+#
+#
+#    for TDir in dirsAndContents.keys(): # We iterate through the different TDirs in the files
+#        histNames = dirsAndContents[TDir] # get the list of histograms in this TDir, specifically get the list of histogram names in that directory
+#
+#        # we have histograms that show distributions of kinematic variables after cuts (analysisHists)
+#        # and histograms that show how many events are left after each cut (cutflowHists), we wanna plot the former (analysisHists)
+#        # so let's get a list of the analysisHists
+#        analysisHists = []
+#        for histName in histNames :  
+#            if "cutflow" in histName: continue
+#            if histName.startswith("h2_"): continue
+#            if histName.endswith("Weight"): continue
+#            analysisHists.append(histName)
+#
+#        # get a mapping like {ending, [histnames with that ending], ... }, because hists with a common ending shall be plotted together
+#        histsByEnding = splitHistNamesByPlotvariable(analysisHists) 
+#
+#        canvasList = [] # store here our canvases, each canvas contains a plot fir a given 'ending', i.e. a given kinematic variable
+#
+#        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+#
+#        for histEnding in histsByEnding.keys(): # iterate over all the 'endings'
+#
+#            # define fill colors, use itertools to cycle through them, access via fillColors.next()
+#            fillColors = itertools.cycle([ROOT.kBlue,   ROOT.kViolet,   ROOT.kMagenta,   ROOT.kPink,   ROOT.kRed,   ROOT.kOrange,   ROOT.kYellow,   ROOT.kSpring,   ROOT.kGreen,   ROOT.kTeal,   ROOT.kCyan,   ROOT.kAzure,
+#                                          ROOT.kBlue-6, ROOT.kViolet-6, ROOT.kMagenta-6, ROOT.kPink-6, ROOT.kRed-6, ROOT.kOrange-6, ROOT.kYellow-6, ROOT.kSpring-6, ROOT.kGreen-6, ROOT.kTeal-6, ROOT.kCyan-6, ROOT.kAzure-6,
+#                                          ROOT.kBlue+2, ROOT.kViolet+2, ROOT.kMagenta+2, ROOT.kPink+2, ROOT.kRed+2, ROOT.kOrange+2, ROOT.kYellow+2, ROOT.kSpring+2, ROOT.kGreen+2, ROOT.kTeal+2, ROOT.kCyan+2, ROOT.kAzure+2]) 
+#            #ROOT.kBlue, ROOT.kViolet, ROOT.kMagenta, ROOT.kPink, ROOT.kRed, ROOT.kOrange, ROOT.kYellow, ROOT.kSpring, ROOT.kGreen, ROOT.kTeal, ROOT.kCyan, ROOT.kAzure
+#            #ROOT.kBlue-6, ROOT.kViolet-6, ROOT.kMagenta-6, ROOT.kPink-6, ROOT.kRed-6, ROOT.kOrange-6, ROOT.kYellow-6, ROOT.kSpring-6, ROOT.kGreen-6, ROOT.kTeal-6, ROOT.kCyan-6, ROOT.kAzure-6
+#            #ROOT.kBlue+2, ROOT.kViolet+2, ROOT.kMagenta+2, ROOT.kPink+2, ROOT.kRed+2, ROOT.kOrange+2, ROOT.kYellow+2, ROOT.kSpring+2, ROOT.kGreen+2, ROOT.kTeal+2, ROOT.kCyan+2, ROOT.kAzure+2
+#
+#            backgroundTHStack = ROOT.THStack(histEnding,histEnding)
+#            #backgroundTHStack.SetMaximum(25.)
+#            canvas = ROOT.TCanvas(histEnding,histEnding,1300/2,1300/2);
+#            ROOT.SetOwnership(canvas, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
+#            legend = setupTLegend()
+#
+#            gotDataSample = False # change this to true later if we do have data samples
+#
+#            backgroundSamples = [] # store the background samples as list of tuples [ (DSID, TH1) , ...] 
+#
+#            for histName in histsByEnding[histEnding]: 
+#
+#                DSID = histName.split("_")[1] # get the DSID from the name of the histogram, which should be like bla_DSID_bla_...
+#                currentTH1 = TDir.Get(histName)#.Clone() # get a clone of the histogram, so that we can scale it, without changeing the original
+#                currentTH1.Rebin(1)
+#                
+#                if int(DSID) > 0: # Signal & Background have DSID > 0
+#                    currentTH1.SetFillStyle(1001) # 1001 - Solid Fill: https://root.cern.ch/doc/v608/classTAttFill.html
+#                    currentTH1.SetFillColor(fillColors.next())
+#
+#                    scale = lumiMap[mcCampaign] * 1000000. * DSIDHelper.getProduct_CrossSec_kFactor_genFiltEff(DSID) / sumOfWeights[int(DSID)]
+#
+#                    currentTH1.Scale(scale) # scale the histogram
+#
+#                    backgroundSamples.append( ( int(DSID), currentTH1) )
+#
+#                else:   # data has DSID 0 for us  
+#                    gotDataSample = True
+#                    dataTH1 = currentTH1
+
+            if   args.DSID_Binning == "physicsProcess" :    DSIDMappingDict = inputFileDict.values()[0]['DSIDHelper'].physicsProcessByDSID
+            elif args.DSID_Binning == "physicsSubProcess" : DSIDMappingDict = inputFileDict.values()[0]['DSIDHelper'].physicsSubProcessByDSID
             elif args.DSID_Binning == "DSID" : # if we choose to do the DSID_Binning by DSID, we build here a a mapping DSID -> str(DSID)
                 DSIDMappingDict = {}
                 for aTuple in backgroundSamples: DSIDMappingDict[aTuple[0]] = str( aTuple[0] )  #DSID, histogram = aTuple
@@ -647,32 +794,34 @@ if __name__ == '__main__':
 
 
 
-        #for histogram in canvasList: 
-        #    if "ZXSR" not in histogram.GetName():
-        #        canvasList.remove(histogram)
+    #for histogram in canvasList: 
+    #    if "ZXSR" not in histogram.GetName():
+    #        canvasList.remove(histogram)
 
-        # sort canvasList by hist title, use this nice lambda construct        
-        canvasList.sort( key = lambda x:x.GetTitle()) # i.e. we are sorting the list by the output of a function, where the function provides takes implicitly elements of the list, and in our case calls the .GetTitle() method of that element of the list and outputs it
+    # sort canvasList by hist title, use this nice lambda construct        
+    canvasList.sort( key = lambda x:x.GetTitle()) # i.e. we are sorting the list by the output of a function, where the function provides takes implicitly elements of the list, and in our case calls the .GetTitle() method of that element of the list and outputs it
 
-        postProcessedDataFileName = os.path.basename(postProcessedData.GetName() ) # split off the file name from the path+fileName string if necessary
-        outputNamePrefix = postProcessedDataFileName.split(".")[0] + "_"
 
-        indexFile = open(outputNamePrefix+"indexFile.txt", "w") # w for (over) write
-        # Write the Histograms to a ROOT File
-        outoutROOTFile = ROOT.TFile(outputNamePrefix+"outHistograms.root","RECREATE")
-        counter = 0
-        for histogram in canvasList: 
-            
-            counter +=1
-            
-            histogram.SetName( str(counter) + " - " + histogram.GetName() )
-            histogram.Write() # write to the .ROOT file
 
-            printRootCanvasPDF(histogram, isLastCanvas = histogram==canvasList[-1] , 
-                               fileName = outputNamePrefix+"outHistograms.pdf", tableOfContents = str(counter) + " - " + histogram.GetTitle() ) # write to .PDF
-            indexFile.write(str(counter) + "\t" + histogram.GetName() + "\n"); 
-        outoutROOTFile.Close()
-        indexFile.close()
+    postProcessedDataFileName = os.path.basename( args.input[0] ) # split off the file name from the path+fileName string if necessary
+    outputNamePrefix = postProcessedDataFileName.split(".")[0] + "_" + "_".join(args.mcCampaign)+"_"
+
+    indexFile = open(outputNamePrefix+"indexFile.txt", "w") # w for (over) write
+    # Write the Histograms to a ROOT File
+    outoutROOTFile = ROOT.TFile(outputNamePrefix+"outHistograms.root","RECREATE")
+    counter = 0
+    for histogram in canvasList: 
+        
+        counter +=1
+        
+        histogram.SetName( str(counter) + " - " + histogram.GetName() )
+        histogram.Write() # write to the .ROOT file
+
+        printRootCanvasPDF(histogram, isLastCanvas = histogram==canvasList[-1] , 
+                           fileName = outputNamePrefix+"outHistograms.pdf", tableOfContents = str(counter) + " - " + histogram.GetTitle() ) # write to .PDF
+        indexFile.write(str(counter) + "\t" + histogram.GetName() + "\n"); 
+    outoutROOTFile.Close()
+    indexFile.close()
 
 
 
