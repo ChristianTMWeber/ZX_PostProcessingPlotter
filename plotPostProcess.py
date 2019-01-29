@@ -517,7 +517,13 @@ if __name__ == '__main__':
                        "mc16d" : "production_20180414_18/md_bkg_datasets_mc16d.txt"}
     
     # campaigns integrated luminosity,  complete + partial
-    lumiMap= { "mc16a" : 36.1029, "mc16d" : 43.5382, "units" : "fb-1"}
+    lumiMap= { "mc16a" : 36.21496, "mc16d" : 44.3074, "mc16e": 59.9372, "units" : "fb-1"}
+    	#taken by Justin from: https://twiki.cern.ch/twiki/bin/view/Atlas/LuminosityForPhysics#2018_13_TeV_proton_proton_placeh
+    	#2015: 3.21956 fb^-1 +- 2.1% (final uncertainty) (3.9 fb^-1 recorded)
+    	#2016: 32.9954 fb^-1 +- 2.2% (final uncertainty) (35.6 fb^-1 recorded)
+    	#2017: 44.3074 fb^-1 +- 2.4% (preliminary uncertainty) (46.9 fb^-1 recorded)
+    	#2018: 59.9372 fb^-1 +- 5% (uncertainty TBD, use this as a placeholder) (62.2 fb^-1 recorded)
+    	#Total: 140.46 fb^-1
 
 
     ######################################################
