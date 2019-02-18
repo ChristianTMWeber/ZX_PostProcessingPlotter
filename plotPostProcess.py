@@ -511,7 +511,7 @@ if __name__ == '__main__':
 
 
     # campaigns integrated luminosity,  complete + partial
-    lumiMap= { "mc16a" : 36.21496, "mc16d" : 44.3074, "mc16e": 59.9372, "units" : "fb-1"}
+    lumiMap= { "mc16a" : 36.21496, "mc16d" : 44.3074, "mc16e": 59.9372, "mc16ade": 140.45956, "units" : "fb-1"}
     	#taken by Justin from: https://twiki.cern.ch/twiki/bin/view/Atlas/LuminosityForPhysics#2018_13_TeV_proton_proton_placeh
     	#2015: 3.21956 fb^-1 +- 2.1% (final uncertainty) (3.9 fb^-1 recorded)
     	#2016: 32.9954 fb^-1 +- 2.2% (final uncertainty) (35.6 fb^-1 recorded)
@@ -527,13 +527,17 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument("input", type=str, nargs='*', help="name or path to the input files")
-    parser.add_argument("-c", "--mcCampaign", nargs='*', type=str, choices=["mc16a","mc16d","mc16e"], required=True,
+
+    parser.add_argument("-c", "--mcCampaign", nargs='*', type=str, choices=["mc16a","mc16d","mc16e","mc16ade"], required=True,
         help="name of the mc campaign, i.e. mc16a or mc16d, need to provide exactly 1 mc-campaign tag for each input file, \
         make sure that sequence of mc-campaign tags matches the sequence of 'input' strings")
+
     parser.add_argument("-d", "--metaData", type=str, default="metadata/md_bkg_datasets.txt" ,
         help="location of the metadata file for the given mc campaign. If not provided, we will use a default location" )
+
     parser.add_argument( "--DSID_Binning", type=str, help = "set how the different DSIDS are combined, ",
         choices=["physicsProcess","physicsSubProcess","DSID"] , default="physicsProcess" )
+
     parser.add_argument( "--holdAtPlot", type=bool, default=False , 
         help = "Debugging option. If True sets a debugger tracer and \
         activates the debugger at the point where the plot has has been fully assembled." ) 
@@ -551,8 +555,6 @@ if __name__ == '__main__':
     assert all( x==1   for x in collections.Counter( args.mcCampaign ).values() ), "\
     Some mc-campaign tags have been declared more than once. \
     For now we are only setup to support one file per MC-tag. Until we changed that, 'hadd' them in bash"
-
-    #if args.metaData is not None: assert len(args.input) ==  len(args.metaData), "We do not have exactly one mc-campaign tag per input file"
 
 
     # assemble the input files, mc-campaign tags and metadata file locations into dict
