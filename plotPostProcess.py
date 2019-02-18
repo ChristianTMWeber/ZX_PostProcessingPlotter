@@ -414,9 +414,7 @@ def getWellStructedDictFromCommandLineOptions( args, inputFileDict = collections
         inputFileDict[mcCampaign]["TFile"] =  ROOT.TFile(args.input[n],"READ"); # open the file with te data from the ZdZdPostProcessing
 
         # fill in the metadata location
-        if args.metaData is None: metaDataLocation = defaultBkgMetaFilePaths[mcCampaign]
-        else:                     metaDataLocation = args.metaData[n]
-        inputFileDict[mcCampaign]["bkgMetaFilePath"] = metaDataLocation
+        inputFileDict[mcCampaign]["bkgMetaFilePath"] = args.metaData
 
         ######################################################
         # Set up DSID helper
@@ -428,7 +426,7 @@ def getWellStructedDictFromCommandLineOptions( args, inputFileDict = collections
         #    e.g. grouping DSIDs 345060 and 341488 (among others) into one histogram for the "H->ZZ*->4l" process
 
         inputFileDict[mcCampaign]["DSIDHelper"] = DSIDHelper()
-        inputFileDict[mcCampaign]["DSIDHelper"].importMetaData(metaDataLocation) # since the DSID helper administrates the meta data for the MC samples we must provide it with the meta data locati
+        inputFileDict[mcCampaign]["DSIDHelper"].importMetaData(args.metaData) # since the DSID helper administrates the meta data for the MC samples we must provide it with the meta data locati
 
     return inputFileDict
 
@@ -511,11 +509,7 @@ if __name__ == '__main__':
     # Define some default or hardcoded values
     ######################################################
 
-    # default locations of the meta data files for mc16a and mc16d, 
-    # alternative can be provided via command line argument
-    defaultBkgMetaFilePaths= {"mc16a" : "production_20180414_18/md_bkg_datasets_mc16a.txt",
-                       "mc16d" : "production_20180414_18/md_bkg_datasets_mc16d.txt"}
-    
+
     # campaigns integrated luminosity,  complete + partial
     lumiMap= { "mc16a" : 36.21496, "mc16d" : 44.3074, "mc16e": 59.9372, "units" : "fb-1"}
     	#taken by Justin from: https://twiki.cern.ch/twiki/bin/view/Atlas/LuminosityForPhysics#2018_13_TeV_proton_proton_placeh
@@ -533,10 +527,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument("input", type=str, nargs='*', help="name or path to the input files")
-    parser.add_argument("-c", "--mcCampaign", nargs='*', type=str, choices=["mc16a","mc16d"], required=True,
+    parser.add_argument("-c", "--mcCampaign", nargs='*', type=str, choices=["mc16a","mc16d","mc16e"], required=True,
         help="name of the mc campaign, i.e. mc16a or mc16d, need to provide exactly 1 mc-campaign tag for each input file, \
         make sure that sequence of mc-campaign tags matches the sequence of 'input' strings")
-    parser.add_argument("-d", "--metaData", type=str, nargs='*',
+    parser.add_argument("-d", "--metaData", type=str, default="metadata/md_bkg_datasets.txt" ,
         help="location of the metadata file for the given mc campaign. If not provided, we will use a default location" )
     parser.add_argument( "--DSID_Binning", type=str, help = "set how the different DSIDS are combined, ",
         choices=["physicsProcess","physicsSubProcess","DSID"] , default="physicsProcess" )
@@ -558,7 +552,7 @@ if __name__ == '__main__':
     Some mc-campaign tags have been declared more than once. \
     For now we are only setup to support one file per MC-tag. Until we changed that, 'hadd' them in bash"
 
-    if args.metaData is not None: assert len(args.input) ==  len(args.metaData), "We do not have exactly one mc-campaign tag per input file"
+    #if args.metaData is not None: assert len(args.input) ==  len(args.metaData), "We do not have exactly one mc-campaign tag per input file"
 
 
     # assemble the input files, mc-campaign tags and metadata file locations into dict
@@ -796,7 +790,6 @@ if __name__ == '__main__':
             canvas.Update() # we need to update the canvas, so that changes to it (like the drawing of a legend get reflected in its status)
             canvasList.append( copy.deepcopy(canvas) ) # save a deep copy of the canvas for later use
             if args.holdAtPlot: import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-
 
 
 
