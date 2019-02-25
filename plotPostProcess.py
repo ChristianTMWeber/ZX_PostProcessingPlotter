@@ -512,12 +512,12 @@ if __name__ == '__main__':
 
     # campaigns integrated luminosity,  complete + partial
     lumiMap= { "mc16a" : 36.21496, "mc16d" : 44.3074, "mc16e": 59.9372, "mc16ade": 140.45956, "units" : "fb-1"}
-    	#taken by Justin from: https://twiki.cern.ch/twiki/bin/view/Atlas/LuminosityForPhysics#2018_13_TeV_proton_proton_placeh
-    	#2015: 3.21956 fb^-1 +- 2.1% (final uncertainty) (3.9 fb^-1 recorded)
-    	#2016: 32.9954 fb^-1 +- 2.2% (final uncertainty) (35.6 fb^-1 recorded)
-    	#2017: 44.3074 fb^-1 +- 2.4% (preliminary uncertainty) (46.9 fb^-1 recorded)
-    	#2018: 59.9372 fb^-1 +- 5% (uncertainty TBD, use this as a placeholder) (62.2 fb^-1 recorded)
-    	#Total: 140.46 fb^-1
+    #taken by Justin from: https://twiki.cern.ch/twiki/bin/view/Atlas/LuminosityForPhysics#2018_13_TeV_proton_proton_placeh
+    #2015: 3.21956 fb^-1 +- 2.1% (final uncertainty) (3.9 fb^-1 recorded)
+    #2016: 32.9954 fb^-1 +- 2.2% (final uncertainty) (35.6 fb^-1 recorded)
+    #2017: 44.3074 fb^-1 +- 2.4% (preliminary uncertainty) (46.9 fb^-1 recorded)
+    #2018: 59.9372 fb^-1 +- 5% (uncertainty TBD, use this as a placeholder) (62.2 fb^-1 recorded)
+    #Total: 140.46 fb^-1
 
 
     ######################################################
@@ -541,6 +541,14 @@ if __name__ == '__main__':
     parser.add_argument( "--holdAtPlot", type=bool, default=False , 
         help = "Debugging option. If True sets a debugger tracer and \
         activates the debugger at the point where the plot has has been fully assembled." ) 
+
+    parser.add_argument( "--outputName", type=str, default=None , 
+        help = "Pick the name of the output files. \
+        We'll produce three of them: a root file output (.root), pdfs of the histograms (.pdf) and a .txt indexing the histogram names.\
+        If no outputName is choosen, we will default to <inputFileName>_<mcCampaign>_outHistograms." ) 
+
+    parser.add_argument( "--rebin", type=int, default=1 , 
+    help = "We can rebin the bins. Choose rebin > 1 to rebin #<rebin> bins into 1." ) 
 
     args = parser.parse_args()
 
@@ -607,7 +615,7 @@ if __name__ == '__main__':
             for DSID in combinedMCTagHistDict[histEnding][mcTag].keys():
 
                     currentTH1 = combinedMCTagHistDict[histEnding][mcTag][DSID]
-                    #currentTH1.Rebin(1)
+                    currentTH1.Rebin(args.rebin)
 
                     if int(DSID) > 0: # Signal & Background have DSID > 0
                         currentTH1.SetFillStyle(1001) # 1001 - Solid Fill: https://root.cern.ch/doc/v608/classTAttFill.html
@@ -723,6 +731,9 @@ if __name__ == '__main__':
             backgroundMergedTH1.SetFillStyle(3004)
             backgroundMergedTH1.SetFillColor(1)
 
+            #if "eta"   in backgroundMergedTH1.getTitle: yAxisUnit = ""
+            #elif "phi" in backgroundMergedTH1.getTitle: yAxisUnit = " radians"
+
             backgroundTHStack.GetYaxis().SetTitle("Events / " + str(backgroundMergedTH1.GetBinWidth(1) )+" GeV" )
             backgroundTHStack.GetYaxis().SetTitleSize(0.05)
             backgroundTHStack.GetYaxis().SetTitleOffset(0.8)
@@ -805,11 +816,13 @@ if __name__ == '__main__':
 
 
     postProcessedDataFileName = os.path.basename( args.input[0] ) # split off the file name from the path+fileName string if necessary
-    outputNamePrefix = postProcessedDataFileName.split(".")[0] + "_" + "_".join(args.mcCampaign)+"_"
 
-    indexFile = open(outputNamePrefix+"indexFile.txt", "w") # w for (over) write
+    if args.outputName is None: outputName = postProcessedDataFileName.split(".")[0] + "_" + "_".join(args.mcCampaign)+"_"
+    else:                       outputName = args.outputName
+
+    indexFile = open(outputName+".txt", "w") # w for (over) write
     # Write the Histograms to a ROOT File
-    outoutROOTFile = ROOT.TFile(outputNamePrefix+"outHistograms.root","RECREATE")
+    outoutROOTFile = ROOT.TFile(outputName+".root","RECREATE")
     counter = 0
     for histogram in canvasList: 
         
@@ -819,7 +832,7 @@ if __name__ == '__main__':
         histogram.Write() # write to the .ROOT file
 
         printRootCanvasPDF(histogram, isLastCanvas = histogram==canvasList[-1] , 
-                           fileName = outputNamePrefix+"outHistograms.pdf", tableOfContents = str(counter) + " - " + histogram.GetTitle() ) # write to .PDF
+                           fileName = outputName+".pdf", tableOfContents = str(counter) + " - " + histogram.GetTitle() ) # write to .PDF
         indexFile.write(str(counter) + "\t" + histogram.GetName() + "\n"); 
     outoutROOTFile.Close()
     indexFile.close()
