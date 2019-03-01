@@ -503,6 +503,36 @@ def mergeMultiMCTagMasterHistDict(masterHistDict, combinedMCTagHistDict = collec
     return combinedMCTagHistDict
 
 
+def printSubsetOfHists(histList, searchStrings=["M12","M34","M4l"], outputDir = "supportnoteFigs"):
+    # we'll iterate over all of the lists in the histList, 
+    # check each of the hists names against a list of searchStrings using regular expressions
+    # and if the histogram name mates one of the search strings, we will print it to one of their own PDFs 
+    # and a common .root file
+
+    # let's make a search string for the regular expression
+    # if we anna check if 'str1', 'str2' or 'str3' is in a given word we can do this with regular expressions
+    # by executing re.search( "(str1)|(str2)|(str3)", "givenWord" )
+    # here we build that search string
+    searchString =  "(" +  ")|(".join(searchStrings) + ")" 
+
+    if not os.path.exists(outputDir): os.makedirs(outputDir) 
+
+    outoutROOTFile = ROOT.TFile(outputDir +"/figures.root","RECREATE")
+
+    for currentCanvas in histList:
+
+        reMatchObject = re.search(searchString, currentCanvas.GetName() ) # do the matching of the histogram name against any of the search strings
+
+        if reMatchObject is not None: 
+            printRootCanvasPDF(currentCanvas, True, "supportnoteFigs"+"/"+currentCanvas.GetName()+".pdf", tableOfContents = None)
+            currentCanvas.Write() # write to the .ROOT file
+
+    outoutROOTFile.Close()
+
+    return None
+
+
+
 if __name__ == '__main__':
 
     ######################################################
@@ -827,6 +857,8 @@ if __name__ == '__main__':
     for histogram in canvasList: 
         
         counter +=1
+
+        tempName = histogram.GetName()
         
         histogram.SetName( str(counter) + " - " + histogram.GetName() )
         histogram.Write() # write to the .ROOT file
@@ -834,10 +866,12 @@ if __name__ == '__main__':
         printRootCanvasPDF(histogram, isLastCanvas = histogram==canvasList[-1] , 
                            fileName = outputName+".pdf", tableOfContents = str(counter) + " - " + histogram.GetTitle() ) # write to .PDF
         indexFile.write(str(counter) + "\t" + histogram.GetName() + "\n"); 
+
+        histogram.SetName(tempName)
     outoutROOTFile.Close()
     indexFile.close()
 
-
+    printSubsetOfHists( canvasList, searchStrings=["M12","M34","M4l"], outputDir = "supportnoteFigs")
 
     print("All plots processed!")
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
