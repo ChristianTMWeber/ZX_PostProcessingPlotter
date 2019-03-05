@@ -114,7 +114,7 @@ class DSIDHelper:
         self.physicsShort=physicsShort
         return metaDataDict, physicsShort
 
-
+# end  class DSIDHelper
 
 
 
@@ -192,39 +192,6 @@ def getHistIntegralWithUnertainty(hist, lowerLimit = 0, upperLimit = None ):
     integral = hist.IntegralAndError( lowerLimit , upperLimit, integralUncertainty)
     return integral, integralUncertainty
 
-
-
-
-#def binStringListByEnding(listOfStrings, endingStr):
-#    # sorts a list of strings into two other lists, by asking for each of the strings
-#    # if it ends with the desired ending string
-#    hasCorrectEnding = []
-#    hasWrongEnding = []
-#
-#    for string in listOfStrings:
-#        if string.endswith(endingStr): hasCorrectEnding.append(string)
-#        else:                       hasWrongEnding.append(string)
-#
-#    return hasCorrectEnding, hasWrongEnding
-#
-#def splitHistNamesByPlotvariable(histNameList, delimeter = "_", nonEndingStringParts = 2): 
-#    # we wanna group the hist names together that shall be plotted together
-#    # we we are doing that by grouping them together by the endings
-#    # by default we take the strings to be splittable by the delimeter "_"
-#    # and that only the first two parts of the string are not part of the ending
-#
-#    histsByPlotVariable = {}
-#
-#    while(histNameList): # while that list is not empty
-#        
-#        histNameParts = histNameList[0].split(delimeter)
-#        currentEnding = delimeter.join(histNameParts[nonEndingStringParts:]) # by conventoin we take the first part of the hist name to be an indicator of the type of object, and the second part the DSID
-#
-#        currentHists, histNameList = binStringListByEnding(histNameList, currentEnding)
-#
-#        histsByPlotVariable[currentEnding] = currentHists
-#
-#    return histsByPlotVariable
 
 def splitHistNamesByPlotvariable(histNameList, delimeter = "_", nonEndingStringParts = 2): 
     # create a mapping {ending1 : [histogram names with ending1], ending2 : ...}
@@ -313,34 +280,9 @@ def printRootCanvasPDF(myRootCanvas, isLastCanvas, fileName, tableOfContents = N
 
     return None
 
-#def adjustYRangeOnTPad(myTPad, scale = 1.):
-#
-#    maxima = []; minima = [];  
-#
-#    TPadPrimitives = myTPad.GetListOfPrimitives()
-#
-#    for prim in TPadPrimitives:
-#
-#        if isinstance(prim,ROOT.TH1) or isinstance(prim,ROOT.THStack): 
-#            import pdb; pdb.set_trace() # import
-#            maxima.append( prim.GetMaximum() )
-#            minima.append( prim.GetMinimum() )
-#
-#    maximum = max(maxima); minmum = min(minima); 
-#
-#    for prim in TPadPrimitives:
-#        if isinstance(prim,ROOT.TH1) or isinstance(prim,ROOT.THStack): 
-#            prim.SetMaximum( maximum * scale )
-#            prim.SetMinimum( minmum  / scale )
-#
-#    return None
 
 def getBinContentsPlusError(myTH1):  
     return [ myTH1.GetBinContent(n)+myTH1.GetBinError(n) for n in range(1, myTH1.GetNbinsX() +1) ]
-
-
-
-
 
 def mergeTHStackHists(myTHStack):
     # Take a THStack and merge all the histograms comprising it into a single new one
@@ -709,71 +651,7 @@ if __name__ == '__main__':
                         dataTH1 = currentTH1
 
 #    ######### process the cutflow histograms #########
-#
-#
-#
-#    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-#
-#
-#    for TDir in dirsAndContents.keys(): # We iterate through the different TDirs in the files
-#        histNames = dirsAndContents[TDir] # get the list of histograms in this TDir, specifically get the list of histogram names in that directory
-#
-#        # we have histograms that show distributions of kinematic variables after cuts (analysisHists)
-#        # and histograms that show how many events are left after each cut (cutflowHists), we wanna plot the former (analysisHists)
-#        # so let's get a list of the analysisHists
-#        analysisHists = []
-#        for histName in histNames :  
-#            if "cutflow" in histName: continue
-#            if histName.startswith("h2_"): continue
-#            if histName.endswith("Weight"): continue
-#            analysisHists.append(histName)
-#
-#        # get a mapping like {ending, [histnames with that ending], ... }, because hists with a common ending shall be plotted together
-#        histsByEnding = splitHistNamesByPlotvariable(analysisHists) 
-#
-#        canvasList = [] # store here our canvases, each canvas contains a plot fir a given 'ending', i.e. a given kinematic variable
-#
-#        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-#
-#        for histEnding in histsByEnding.keys(): # iterate over all the 'endings'
-#
-#            # define fill colors, use itertools to cycle through them, access via fillColors.next()
-#            fillColors = itertools.cycle([ROOT.kBlue,   ROOT.kViolet,   ROOT.kMagenta,   ROOT.kPink,   ROOT.kRed,   ROOT.kOrange,   ROOT.kYellow,   ROOT.kSpring,   ROOT.kGreen,   ROOT.kTeal,   ROOT.kCyan,   ROOT.kAzure,
-#                                          ROOT.kBlue-6, ROOT.kViolet-6, ROOT.kMagenta-6, ROOT.kPink-6, ROOT.kRed-6, ROOT.kOrange-6, ROOT.kYellow-6, ROOT.kSpring-6, ROOT.kGreen-6, ROOT.kTeal-6, ROOT.kCyan-6, ROOT.kAzure-6,
-#                                          ROOT.kBlue+2, ROOT.kViolet+2, ROOT.kMagenta+2, ROOT.kPink+2, ROOT.kRed+2, ROOT.kOrange+2, ROOT.kYellow+2, ROOT.kSpring+2, ROOT.kGreen+2, ROOT.kTeal+2, ROOT.kCyan+2, ROOT.kAzure+2]) 
-#            #ROOT.kBlue, ROOT.kViolet, ROOT.kMagenta, ROOT.kPink, ROOT.kRed, ROOT.kOrange, ROOT.kYellow, ROOT.kSpring, ROOT.kGreen, ROOT.kTeal, ROOT.kCyan, ROOT.kAzure
-#            #ROOT.kBlue-6, ROOT.kViolet-6, ROOT.kMagenta-6, ROOT.kPink-6, ROOT.kRed-6, ROOT.kOrange-6, ROOT.kYellow-6, ROOT.kSpring-6, ROOT.kGreen-6, ROOT.kTeal-6, ROOT.kCyan-6, ROOT.kAzure-6
-#            #ROOT.kBlue+2, ROOT.kViolet+2, ROOT.kMagenta+2, ROOT.kPink+2, ROOT.kRed+2, ROOT.kOrange+2, ROOT.kYellow+2, ROOT.kSpring+2, ROOT.kGreen+2, ROOT.kTeal+2, ROOT.kCyan+2, ROOT.kAzure+2
-#
-#            backgroundTHStack = ROOT.THStack(histEnding,histEnding)
-#            #backgroundTHStack.SetMaximum(25.)
-#            canvas = ROOT.TCanvas(histEnding,histEnding,1300/2,1300/2);
-#            ROOT.SetOwnership(canvas, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
-#            legend = setupTLegend()
-#
-#            gotDataSample = False # change this to true later if we do have data samples
-#
-#            backgroundSamples = [] # store the background samples as list of tuples [ (DSID, TH1) , ...] 
-#
-#            for histName in histsByEnding[histEnding]: 
-#
-#                DSID = histName.split("_")[1] # get the DSID from the name of the histogram, which should be like bla_DSID_bla_...
-#                currentTH1 = TDir.Get(histName)#.Clone() # get a clone of the histogram, so that we can scale it, without changeing the original
-#                currentTH1.Rebin(1)
-#                
-#                if int(DSID) > 0: # Signal & Background have DSID > 0
-#                    currentTH1.SetFillStyle(1001) # 1001 - Solid Fill: https://root.cern.ch/doc/v608/classTAttFill.html
-#                    currentTH1.SetFillColor(fillColors.next())
-#
-#                    scale = lumiMap[mcCampaign] * 1000000. * DSIDHelper.getProduct_CrossSec_kFactor_genFiltEff(DSID) / sumOfWeights[int(DSID)]
-#
-#                    currentTH1.Scale(scale) # scale the histogram
-#
-#                    backgroundSamples.append( ( int(DSID), currentTH1) )
-#
-#                else:   # data has DSID 0 for us  
-#                    gotDataSample = True
-#                    dataTH1 = currentTH1
+
 
             if   args.DSID_Binning == "physicsProcess" :    DSIDMappingDict = inputFileDict.values()[0]['DSIDHelper'].physicsProcessByDSID
             elif args.DSID_Binning == "physicsSubProcess" : DSIDMappingDict = inputFileDict.values()[0]['DSIDHelper'].physicsSubProcessByDSID
