@@ -35,6 +35,10 @@ class DSIDHelper:
                        "Z+(ttbar/J/Psi/Upsilon)" : [410142] 
                     }
 
+    physicsProcessColor = {"H->ZZ*->4l" : ROOT.kRed  , "ZZ*->4l" :   ROOT.kAzure+1 ,
+                      "Reducible (Z+Jets, WZ, ttbar)"  : ROOT.kYellow , "VVV/VBS" : ROOT.kCyan,
+                       "Z+(ttbar/J/Psi/Upsilon)" : ROOT.kGreen    }
+
     physicsSubProcess = {"ggH" : [345060], "VBFH":[341488], "WH" : [341964], "ZH" : [341947],
                      "ggZH" : [345066], "ttH125" : [345046, 345047, 345048], "bbH" : [344973, 344974],
                      "qq->ZZ*->4l" : [364250, 364251, 364252], "gg->ZZ*->4l" : [345708, 345709],
@@ -49,11 +53,35 @@ class DSIDHelper:
                      }
 
     def __init__(self):
+
+        assert self.physicsProcess.keys() == self.physicsProcessColor.keys(), 'physicsProcess and physicsProcessColor do not have a consistent set of dict-keys'
+
         self.physicsProcessByDSID    = self.makeReverseDict( self.physicsProcess);
         self.physicsSubProcessByDSID = self.makeReverseDict( self.physicsSubProcess);
 
 
+    def colorDictOfHists(self, mergedSamplesDICT, coloringScheme = None):
 
+        # define a color iterator in case we need it
+        fillColors = itertools.cycle([ ROOT.kViolet,   ROOT.kYellow,   ROOT.kCyan,   ROOT.kBlue,   ROOT.kRed,   ROOT.kMagenta,   ROOT.kPink,   ROOT.kOrange,   ROOT.kSpring,   ROOT.kGreen,   ROOT.kTeal,   ROOT.kAzure,
+                                       ROOT.kViolet-6, ROOT.kYellow-6, ROOT.kCyan-6, ROOT.kBlue-6, ROOT.kRed-6, ROOT.kMagenta-6, ROOT.kPink-6, ROOT.kOrange-6, ROOT.kSpring-6, ROOT.kGreen-6, ROOT.kTeal-6, ROOT.kAzure-6,
+                                       ROOT.kViolet-2, ROOT.kYellow-2, ROOT.kCyan-2, ROOT.kBlue-2, ROOT.kRed-2, ROOT.kMagenta-2, ROOT.kPink-2, ROOT.kOrange-2, ROOT.kSpring-2, ROOT.kGreen-2, ROOT.kTeal-2, ROOT.kAzure-2,]) 
+
+
+        if isinstance(mergedSamplesDICT, dict ): 
+            for process in mergedSamplesDICT.keys(): 
+
+                if coloringScheme == "physicsProcess":    color = self.physicsProcessColor[process]
+                #elif coloringScheme == "physicsProcess":    color = self.physicsProcessColor[process]
+                else: color = fillColors.next()
+
+
+                mergedSamplesDICT[process].SetFillColor( color )
+
+        elif isinstance(mergedSamplesDICT, list ): # if we happen to color a list of hists, we will just iterate over our colors
+            for hist in mergedSamplesDICT.keys():    hist.SetFillColor(fillColors.next())
+
+        return None
 
     def getProduct_CrossSec_kFactor_genFiltEff(self, DSID):
         DSID = int(DSID)
@@ -166,19 +194,6 @@ def mergeHistsByMapping(backgroundSamples, mappingDict) :
         else:                                       mergedSamplesDICT[DSIDTarget]=histogram.Clone();
 
     return mergedSamplesDICT
-
-def colorDictOfHists(mergedSamplesDICT):
-    mergeFillColors = itertools.cycle([ ROOT.kViolet,   ROOT.kYellow,   ROOT.kCyan,   ROOT.kBlue,   ROOT.kRed,   ROOT.kMagenta,   ROOT.kPink,   ROOT.kOrange,   ROOT.kSpring,   ROOT.kGreen,   ROOT.kTeal,   ROOT.kAzure,
-                                        ROOT.kViolet-6, ROOT.kYellow-6, ROOT.kCyan-6, ROOT.kBlue-6, ROOT.kRed-6, ROOT.kMagenta-6, ROOT.kPink-6, ROOT.kOrange-6, ROOT.kSpring-6, ROOT.kGreen-6, ROOT.kTeal-6, ROOT.kAzure-6,
-                                        ROOT.kViolet-2, ROOT.kYellow-2, ROOT.kCyan-2, ROOT.kBlue-2, ROOT.kRed-2, ROOT.kMagenta-2, ROOT.kPink-2, ROOT.kOrange-2, ROOT.kSpring-2, ROOT.kGreen-2, ROOT.kTeal-2, ROOT.kAzure-2,]) 
-
-    if isinstance(mergedSamplesDICT, dict ):
-        for process in mergedSamplesDICT.keys(): mergedSamplesDICT[process].SetFillColor(mergeFillColors.next())
-
-    elif isinstance(mergedSamplesDICT, list ):
-        for hist in mergedSamplesDICT.keys():    hist.SetFillColor(mergeFillColors.next())
-
-    return None
 
 
 def getHistIntegralWithUnertainty(hist, lowerLimit = 0, upperLimit = None ):
@@ -657,7 +672,7 @@ if __name__ == '__main__':
             #print(backgroundSamples)
             #import pdb; pdb.set_trace() # import the debugger and instruct
             sortedSamples = mergeHistsByMapping(backgroundSamples, DSIDMappingDict)
-            colorDictOfHists(sortedSamples) # change the fill colors of the hists in a nice way
+            myDSIDHelper.colorDictOfHists(sortedSamples, args.DSID_Binning) # change the fill colors of the hists in a nice way
             statsTexts = []
 
             statsTexts.append( "#font[72]{ATLAS} internal")
