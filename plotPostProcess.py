@@ -357,25 +357,10 @@ def getWellStructedDictFromCommandLineOptions( args, inputFileDict = collections
         inputFileDict[mcCampaign]["inputStr"] = args.input[n]
         inputFileDict[mcCampaign]["TFile"] =  ROOT.TFile(args.input[n],"READ"); # open the file with te data from the ZdZdPostProcessing
 
-        # fill in the metadata location
-        inputFileDict[mcCampaign]["bkgMetaFilePath"] = args.metaData
-
-        ######################################################
-        # Set up DSID helper
-        ######################################################
-        # the DSID helper has two main functions
-        # 1) administrating the metadata 
-        #    i.e. parsing the meta data files and based on them providing a scaling for the MC samples
-        # 2) grouping DSIDs into physics categories for the plots
-        #    e.g. grouping DSIDs 345060 and 341488 (among others) into one histogram for the "H->ZZ*->4l" process
-
-        inputFileDict[mcCampaign]["DSIDHelper"] = DSIDHelper()
-        inputFileDict[mcCampaign]["DSIDHelper"].importMetaData(args.metaData) # since the DSID helper administrates the meta data for the MC samples we must provide it with the meta data locati
-
     return inputFileDict
 
 
-def fillMasterHistDict( inputFileDict , masterHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) ):
+def fillMasterHistDict( inputFileDict , aDSIDHelper, masterHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) ):
 
     # split the histograms in inputFileDict by HistEnding, mcCampaign, and DSID 
     # and put them into a collections.defaultdict to indext them by HistEnding, mcCampaign, and DSID
@@ -386,7 +371,6 @@ def fillMasterHistDict( inputFileDict , masterHistDict = collections.defaultdict
     for mcTag in inputFileDict.keys():
 
         postProcessedData = inputFileDict[mcTag]["TFile"]
-        DSIDHelper = inputFileDict[mcTag]["DSIDHelper"]
 
         # get the histograms in the diffrent TDirectories within the provided .root file
         dirsAndContents = getTDirsAndContents(postProcessedData, outputDict = {}, recursiveCounter = float("inf"))
@@ -422,7 +406,7 @@ def fillMasterHistDict( inputFileDict , masterHistDict = collections.defaultdict
                     currentTH1 = TDir.Get(histName)#.Clone() # get a clone of the histogram, so that we can scale it, without changeing the original
                     
                     if int(DSID) > 0: # Signal & Background have DSID > 0
-                        scale = lumiMap[mcTag] * 1000000. * DSIDHelper.getProduct_CrossSec_kFactor_genFiltEff(DSID) / sumOfWeights[int(DSID)]
+                        scale = lumiMap[mcTag] * 1000000. * aDSIDHelper.getProduct_CrossSec_kFactor_genFiltEff(DSID) / sumOfWeights[int(DSID)]
                         currentTH1.Scale(scale) # scale the histogram
 
                     masterHistDict[ histEnding ][ mcTag ][ DSID ] = currentTH1
@@ -588,6 +572,17 @@ if __name__ == '__main__':
     For now we are only setup to support one file per MC-tag. Until we changed that, 'hadd' them in bash"
 
 
+    ######################################################
+    # Set up DSID helper
+    ######################################################
+    # the DSID helper has two main functions
+    # 1) administrating the metadata 
+    #    i.e. parsing the meta data files and based on them providing a scaling for the MC samples
+    # 2) grouping DSIDs into physics categories for the plots
+    #    e.g. grouping DSIDs 345060 and 341488 (among others) into one histogram for the "H->ZZ*->4l" process
+    myDSIDHelper = DSIDHelper()
+    myDSIDHelper.importMetaData(args.metaData) # since the DSID helper administrates the meta data for the MC samples we must provide it with the meta data locati
+
     # assemble the input files, mc-campaign tags and metadata file locations into dict
     # well structered dict is sorted by mc-campign tag and has 
     inputFileDict = getWellStructedDictFromCommandLineOptions( args, inputFileDict = collections.defaultdict(dict) )
@@ -601,7 +596,7 @@ if __name__ == '__main__':
 
 
 
-    masterHistDict = fillMasterHistDict( inputFileDict )
+    masterHistDict = fillMasterHistDict( inputFileDict, myDSIDHelper )
 
     combinedMCTagHistDict = mergeMultiMCTagMasterHistDict(masterHistDict)
 
@@ -653,8 +648,8 @@ if __name__ == '__main__':
 #    ######### process the cutflow histograms #########
 
 
-            if   args.DSID_Binning == "physicsProcess" :    DSIDMappingDict = inputFileDict.values()[0]['DSIDHelper'].physicsProcessByDSID
-            elif args.DSID_Binning == "physicsSubProcess" : DSIDMappingDict = inputFileDict.values()[0]['DSIDHelper'].physicsSubProcessByDSID
+            if   args.DSID_Binning == "physicsProcess" :    DSIDMappingDict = myDSIDHelper.physicsProcessByDSID
+            elif args.DSID_Binning == "physicsSubProcess" : DSIDMappingDict = myDSIDHelper.physicsSubProcessByDSID
             elif args.DSID_Binning == "DSID" : # if we choose to do the DSID_Binning by DSID, we build here a a mapping DSID -> str(DSID)
                 DSIDMappingDict = {}
                 for aTuple in backgroundSamples: DSIDMappingDict[aTuple[0]] = str( aTuple[0] )  #DSID, histogram = aTuple
