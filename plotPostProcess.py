@@ -587,6 +587,8 @@ if __name__ == '__main__':
     For now we are only setup to support one file per MC-tag. Until we changed that, 'hadd' them in bash"
 
 
+    #activateATLASPlotStyle()
+
     ######################################################
     # Set up DSID helper
     ######################################################
