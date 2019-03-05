@@ -311,6 +311,8 @@ def printRootCanvasPDF(myRootCanvas, isLastCanvas, fileName, tableOfContents = N
     if tableOfContents is None: myRootCanvas.Print(fileName)
     else: myRootCanvas.Print(fileName, "Title:" + tableOfContents)
 
+    return None
+
 #def adjustYRangeOnTPad(myTPad, scale = 1.):
 #
 #    maxima = []; minima = [];  
@@ -502,6 +504,24 @@ def mergeMultiMCTagMasterHistDict(masterHistDict, combinedMCTagHistDict = collec
 
     return combinedMCTagHistDict
 
+def findTypeInTList(TList, desiredType, doRecursive = True):
+    # let's find all of the instances of <desiredType> in the TList 
+    # do it recursively if possibly by checking of any element of the given TList can yield a TList itself
+    # return a list of the found instances of <desiredType>
+
+    instancesOfDesiredType = [] # save all the found instances of <desiredType> here
+
+    for element in TList:
+        if doRecursive:
+            try: # let's try to see if the current element can produce a TList itself
+                subTList = element.GetListOfPrimitives()
+                instancesOfDesiredType.extend( findTypeInTList(subTList, desiredType) ) # 
+            except:  pass # if it can't, do nothing
+        if isinstance(element,desiredType):  instancesOfDesiredType.append(element)
+
+    return instancesOfDesiredType
+
+
 
 def printSubsetOfHists(histList, searchStrings=["M12","M34","M4l"], outputDir = "supportnoteFigs"):
     # we'll iterate over all of the lists in the histList, 
@@ -524,14 +544,45 @@ def printSubsetOfHists(histList, searchStrings=["M12","M34","M4l"], outputDir = 
         reMatchObject = re.search(searchString, currentCanvas.GetName() ) # do the matching of the histogram name against any of the search strings
 
         if reMatchObject is not None: 
+
+            # change the displayed title of the plot ( it is the title in the THStack )
+            THStacklist = findTypeInTList(currentCanvas.GetListOfPrimitives() ,ROOT.THStack) 
+
+
+
+            tempTitle = THStacklist[0].GetTitle()
+            THStacklist[0].SetTitle(" ")
+            
+            
             printRootCanvasPDF(currentCanvas, True, "supportnoteFigs"+"/"+currentCanvas.GetName()+".pdf", tableOfContents = None)
             currentCanvas.Write() # write to the .ROOT file
+
+            THStacklist[0].SetTitle(tempTitle)
 
     outoutROOTFile.Close()
 
     return None
 
+def addRegionAndChannelToStatsText(canvasName):
 
+    outList = ""
+
+    shortName = canvasName.split("_")[0]
+
+    # fill in region
+    if "SR" in shortName:    outList += "Signal Region"
+    elif "CRC" in shortName: outList += "VR1"
+    elif "CRD" in shortName: outList += "VR2"
+
+    outList += ", "
+
+    if "4m" in shortName:     outList += "4#mu"
+    elif "2e2m" in shortName: outList += "2e2#mu"
+    elif "2m2e" in shortName: outList += "2#mu2e"
+    elif "4e" in shortName:   outList += "4e"
+    else:     outList += "4#mu, 2e2#mu, 2#mu2e, 2#mu2e"
+
+    return outList
 
 if __name__ == '__main__':
 
@@ -735,7 +786,14 @@ if __name__ == '__main__':
             sortedSamples = mergeHistsByMapping(backgroundSamples, DSIDMappingDict)
             colorDictOfHists(sortedSamples) # change the fill colors of the hists in a nice way
             statsTexts = []
-            
+
+            statsTexts.append( "#font[72]{ATLAS} internal")
+            statsTexts.append( "#sqrt{s} = 13 TeV, %.1f fb^{-1}" %(lumiMap[mcTag] ) ) 
+
+            statsTexts.append( addRegionAndChannelToStatsText(canvas.GetName() ) ) 
+            statsTexts.append( "  " ) 
+
+
             for key in sortedSamples.keys(): # add merged samples to the backgroundTHStack
                 mergedHist = sortedSamples[key]
                 backgroundTHStack.Add( mergedHist )
