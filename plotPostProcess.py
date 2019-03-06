@@ -586,8 +586,7 @@ if __name__ == '__main__':
     Some mc-campaign tags have been declared more than once. \
     For now we are only setup to support one file per MC-tag. Until we changed that, 'hadd' them in bash"
 
-
-    #activateATLASPlotStyle()
+    activateATLASPlotStyle()
 
     ######################################################
     # Set up DSID helper
@@ -694,7 +693,7 @@ if __name__ == '__main__':
             histPadYStart = 3./13
             histPad = ROOT.TPad("histPad", "histPad", 0, histPadYStart, 1, 1);
             ROOT.SetOwnership(histPad, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
-            histPad.SetBottomMargin(0.04); # Upper and lower plot are joined
+            histPad.SetBottomMargin(0.06); # Seperation between upper and lower plots
             #histPad.SetGridx();          # Vertical grid
             histPad.Draw();              # Draw the upper pad: pad1
             histPad.cd();                # pad1 becomes the current pad
@@ -704,17 +703,19 @@ if __name__ == '__main__':
 
             backgroundMergedTH1 = mergeTHStackHists(backgroundTHStack) # get a merged background to draw uncertainty bars on the total backgroun
 
-            backgroundMergedTH1.Draw("same E2 ")
-            #backgroundMergedTH1.SetMarkerStyle(25 )
-            backgroundMergedTH1.SetFillStyle(3004)
-            backgroundMergedTH1.SetFillColor(1)
+            backgroundMergedTH1.Draw("same E2 ")   # "E2" Draw error bars with rectangles:  https://root.cern.ch/doc/v608/classTHistPainter.html
+            backgroundMergedTH1.SetMarkerStyle(0 ) # SetMarkerStyle(0 ) remove marker from combined backgroun
+            backgroundMergedTH1.SetFillStyle(3244)#(3001) # fill style: https://root.cern.ch/doc/v614/classTAttFill.html#F2
+            backgroundMergedTH1.SetFillColor(1)    # black: https://root.cern.ch/doc/v614/classTAttFill.html#F2
+
+            legend.AddEntry(backgroundMergedTH1 , "MC stat. uncertainty" , "f");
 
             #if "eta"   in backgroundMergedTH1.getTitle: yAxisUnit = ""
             #elif "phi" in backgroundMergedTH1.getTitle: yAxisUnit = " radians"
 
             backgroundTHStack.GetYaxis().SetTitle("Events / " + str(backgroundMergedTH1.GetBinWidth(1) )+" GeV" )
             backgroundTHStack.GetYaxis().SetTitleSize(0.05)
-            backgroundTHStack.GetYaxis().SetTitleOffset(0.8)
+            backgroundTHStack.GetYaxis().SetTitleOffset(1.2)
             backgroundTHStack.GetYaxis().CenterTitle()
             
             statsTexts.append( "  " )       
@@ -728,16 +729,24 @@ if __name__ == '__main__':
 
             if gotDataSample: # add data samples
                 dataTH1.Draw("same")
-                if max(getBinContentsPlusError(dataTH1)) > backgroundTHStack.GetMaximum(): backgroundTHStack.SetMaximum( max(getBinContentsPlusError(dataTH1)) +1 )
+                #if max(getBinContentsPlusError(dataTH1)) > backgroundTHStack.GetMaximum(): backgroundTHStack.SetMaximum( max(getBinContentsPlusError(dataTH1)) +1 ) # rescale Y axis limit
+                #backgroundTHStack.SetMaximum( max(getBinContentsPlusError(dataTH1)*1.3) )
 
                 legend.AddEntry(currentTH1, "data", "l")
 
                 statsTexts.append("Data: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(dataTH1) ) )  
 
+            # rescale Y-axis
+            largestYValue = [max(getBinContentsPlusError(dataTH1) )]
+            if gotDataSample:  largestYValue.append( max( getBinContentsPlusError(backgroundMergedTH1) ) )
+            backgroundTHStack.SetMaximum( max(largestYValue) * 1.3 )
+
+            #rescale X-axis
             axRangeLow, axRangeHigh = getFirstAndLastNonEmptyBinInHist(backgroundTHStack, offset = 1)
             backgroundTHStack.GetXaxis().SetRange(axRangeLow,axRangeHigh)
             
-            statsTPave=ROOT.TPaveText(0.60,0.65,0.9,0.87,"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
+            #statsOffset = (0.6,0.55), statsWidths = (0.3,0.32)
+            statsTPave=ROOT.TPaveText(0.60,0.55,0.9,0.87,"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
             for stats in statsTexts:   statsTPave.AddText(stats);
             statsTPave.Draw();
             legend.Draw(); # do legend things
@@ -819,7 +828,7 @@ if __name__ == '__main__':
     outoutROOTFile.Close()
     indexFile.close()
 
-    printSubsetOfHists( canvasList, searchStrings=["M12","M34","M4l"], outputDir = "supportnoteFigs")
+    printSubsetOfHists( canvasList, searchStrings=["M34","M4l"], outputDir = "supportnoteFigs")
 
     print("All plots processed!")
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
