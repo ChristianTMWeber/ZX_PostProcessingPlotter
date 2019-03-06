@@ -9,7 +9,7 @@
 #############################
 
 import ROOT # to do all the ROOT stuff
-import numpy as np # good ol' numpy
+#import numpy as np # good ol' numpy
 import warnings # to warn about things that might not have gone right
 import itertools # to cycle over lists in a nice automated way
 import re # to do regular expression matching
@@ -32,12 +32,13 @@ class DSIDHelper:
                                                           364113, 364128, 364129, 364130, 364131, 364132, 364133, 364134, 364135, 
                                                           364136, 364137, 364138, 364139, 364140, 364141, 361601, 410472],
                        "VVV/VBS" : [364248, 364247, 364245, 364243, 364364],
-                       "Z+(ttbar/J/Psi/Upsilon)" : [410142] 
+                       "Z+(ttbar/J/Psi/Upsilon)" : [410142],
+                       "ZZd signal" : [343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242]
                     }
 
     physicsProcessColor = {"H->ZZ*->4l" : ROOT.kRed  , "ZZ*->4l" :   ROOT.kAzure+1 ,
                       "Reducible (Z+Jets, WZ, ttbar)"  : ROOT.kYellow , "VVV/VBS" : ROOT.kCyan,
-                       "Z+(ttbar/J/Psi/Upsilon)" : ROOT.kGreen    }
+                       "Z+(ttbar/J/Psi/Upsilon)" : ROOT.kGreen, "ZZd signal": ROOT.kViolet   }
 
     physicsSubProcess = {"ggH" : [345060], "VBFH":[341488], "WH" : [341964], "ZH" : [341947],
                      "ggZH" : [345066], "ttH125" : [345046, 345047, 345048], "bbH" : [344973, 344974],
