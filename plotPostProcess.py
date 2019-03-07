@@ -19,7 +19,7 @@ import argparse # to parse command line options
 import functions.RootTools as RootTools# root tool that I have taken from a program by Turra
 import os
 import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
-
+import resource # print 'Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 
 class DSIDHelper:
 
@@ -53,6 +53,23 @@ class DSIDHelper:
                                           364135, 364136, 364137, 364138, 364139, 364140, 364141]
                      }
 
+    ######################################################
+    # Define some default or hardcoded values
+    ######################################################
+
+
+    # campaigns integrated luminosity,  complete + partial
+    lumiMap = { "mc16a" : 36.21496, "mc16d" : 44.3074, "mc16e": 59.9372, "mc16ade": 140.45956, "units" : "fb-1"}
+    #taken by Justin from: https://twiki.cern.ch/twiki/bin/view/Atlas/LuminosityForPhysics#2018_13_TeV_proton_proton_placeh
+    #2015: 3.21956 fb^-1 +- 2.1% (final uncertainty) (3.9 fb^-1 recorded)
+    #2016: 32.9954 fb^-1 +- 2.2% (final uncertainty) (35.6 fb^-1 recorded)
+    #2017: 44.3074 fb^-1 +- 2.4% (preliminary uncertainty) (46.9 fb^-1 recorded)
+    #2018: 59.9372 fb^-1 +- 5% (uncertainty TBD, use this as a placeholder) (62.2 fb^-1 recorded)
+    #Total: 140.46 fb^-1
+
+
+    sumOfEventWeightsDict = {}
+
     def __init__(self):
 
         assert self.physicsProcess.keys() == self.physicsProcessColor.keys(), 'physicsProcess and physicsProcessColor do not have a consistent set of dict-keys'
@@ -84,15 +101,37 @@ class DSIDHelper:
 
         return None
 
-    def getProduct_CrossSec_kFactor_genFiltEff(self, DSID):
+
+    def fillSumOfEventWeightsDict(self, TDir):
+
+        TDirKeys = TDir.GetListOfKeys() # output is a TList
+
+        for TKey in TDirKeys: 
+            weightHistCandidate =  TDir.Get(TKey.GetName()) # this is how I access the element that belongs to the current TKey
+
+            if isinstance(weightHistCandidate, ROOT.TDirectoryFile ): continue
+
+            if isinstance(weightHistCandidate, ROOT.TH1 ) and "sumOfWeights" in TKey.GetName():
+
+                DSID = re.search("\d{6}", TKey.GetName() ).group() # if we found a regular expression
+                DSID = int(DSID)
+
+                sumAODWeights = weightHistCandidate.GetBinContent(weightHistCandidate.GetXaxis().FindBin("sumOfEventWeights_xAOD"))
+
+                if DSID in self.sumOfEventWeightsDict.keys(): self.sumOfEventWeightsDict[DSID] += sumAODWeights
+                else:                                         self.sumOfEventWeightsDict[DSID] =  sumAODWeights
+                
+        return None
+
+    def getMCScale(self, DSID, mcTag):
+
         DSID = int(DSID)
-        
+
         prod = self.metaDataDict[DSID]["crossSection"] * self.metaDataDict[DSID]["kFactor"] * self.metaDataDict[DSID]["genFiltEff"]
-        
-        return prod
 
+        scale = self.lumiMap[mcTag] * 1000000. * prod / self.sumOfEventWeightsDict[int(DSID)] 
 
-        
+        return scale
     
     def makeReverseDict(self, inputDict):
         # Lets say we have a dict that goes like:
@@ -146,8 +185,79 @@ class DSIDHelper:
 # end  class DSIDHelper
 
 
+def generateTDirContents(TDir):
+    # this is a python generator 
+    # this one allows me to loop over all of the contents in a given ROOT TDir with a for loop
 
-def getTDirsAndContents(TDir, outputDict = {}, recursiveCounter = 0):
+    TDirKeys = TDir.GetListOfKeys() # output is a TList
+
+    for TKey in TDirKeys: 
+        yield TDir.Get(TKey.GetName()) # this is how I access the element that belongs to the current TKey
+
+
+def generateTDirPathAndContentsRecursive(TDir, baseString = "" , newOwnership = None):
+    # for a given TDirectory (remember that a TFile is also a TDirectory) get all non-directory objects
+    # redturns a tuple ('rootFolderPath', TObject) and is a generator
+
+    baseString += TDir.GetName() +"/"
+
+    for TObject in generateTDirContents(TDir):
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+        if newOwnership is not None: ROOT.SetOwnership(TObject, newOwnership) # do this to prevent an std::bad_alloc error, setting it to to 'True' gives permission to delete it, https://root.cern.ch/root/htmldoc/guides/users-guide/ObjectOwnership.html
+        if isinstance(TObject, ROOT.TDirectoryFile ):
+
+            for recursiveTObject in generateTDirPathAndContentsRecursive(TObject, baseString = baseString, newOwnership = newOwnership):
+                yield recursiveTObject
+
+        else :
+            yield baseString + TObject.GetName() , TObject
+
+def generateTDirContentsRecursive(TDir):
+    # for a given TDirectory (remember that a TFile is also a TDirectory) get all non-directory objects
+    # redturns all TObject and is a generator
+
+    for path, TObject in generateTDirPathAndContentsRecursive(TDir):
+        yield TObject
+
+def idDSID(path):
+    # look for the following patter:  after a / , loog for 6 digits preceeded by any number of character that are not /
+    # return the non / strings and the 6 digits
+    DSIDRegExpression = re.search("(?<=/)[^/]*\d{6}", path)
+
+    # if we found such a pattern, select the six digits, or return 0
+    if DSIDRegExpression: DSID = re.search("\d{6}", DSIDRegExpression.group() ).group() # if we found a regular expression
+    else:                 DSID ="0" 
+
+    return DSID
+
+def idPlotTitle(path, DSID=None ):
+
+    if DSID is None: DSID = idDSID(path)
+
+    pathDSIDCleaned = path.replace("_"+DSID+"_","_")
+
+    plotTitle = pathDSIDCleaned.split("/h_")[-1]
+
+    return plotTitle
+
+def badBaseHist(path, baseHist):
+
+    if "Nominal" not in path: return True
+    elif "Cutflow" in path: return True
+    elif "cutflow" in path: return True
+    elif "h_raw_" in path: return True
+    elif "hraw_" in path: return True
+    elif isinstance( baseHist, ROOT.TH2 ): return True
+    elif not isinstance( baseHist, ROOT.TH1 ): return True
+
+    return False
+
+
+
+
+
+
+def getTDirsAndContents(TDir, outputDict = {}, recursiveCounter = 0, TDirConstraint = "Nominal"):
     # for a given TDirectory (remember that a TFile is also a TDirectory) get all TH1 (recursively if needed)
     # output will be {TDirObject : names of objects that are not TDirs themselves}
     # we can do this recursively up to a depth of 'recursiveCounter' (if it is set to >0)
@@ -155,6 +265,7 @@ def getTDirsAndContents(TDir, outputDict = {}, recursiveCounter = 0):
     # {TDirObject1 : names of objects in TDirObject1 that are not TDirs themselves,
     #  TDirObject2 : names of objects in TDirObject2 that are not TDirs themselves }
     # The relationship between the TDirs is not being stored in this way
+    # TDirConstraint - consider only TH1s that are in a TDirectoru that contains the string <TDirConstraint>
 
     TDirKeys = TDir.GetListOfKeys() # output is a TList
 
@@ -170,7 +281,8 @@ def getTDirsAndContents(TDir, outputDict = {}, recursiveCounter = 0):
             subdir = TDir.Get(TKey.GetName())
             outputDict = getTDirsAndContents(subdir, outputDict, recursiveCounter = recursiveCounter-1 )
         elif isinstance(TDir.Get(TKey.GetName()), ROOT.TH1 ) and not isinstance(TDir.Get(TKey.GetName()), ROOT.TH2 ):  #check that the TKey indeed refers to a TH1
-            TH1List.append(TKey.GetName())
+            
+            if TDirConstraint in TDir.GetName() and "VR1" in TKey.GetName(): TH1List.append(TKey.GetName()) # add the histogram to our list if it is in a TDir that contains the string <TDirConstraint>
 
     outputDict[TDir] = TH1List
 
@@ -391,8 +503,6 @@ def fillMasterHistDict( inputFileDict , aDSIDHelper, masterHistDict = collection
         # get the histograms in the diffrent TDirectories within the provided .root file
         dirsAndContents = getTDirsAndContents(postProcessedData, outputDict = {}, recursiveCounter = float("inf"))
 
-
-
         ######### get sumOfWeights #########
         # we take the histograms that store the sumOfWeights are in the top-level of the TFile, i.e. not in a sub-TDirectory
         topLevelTObjects = {postProcessedData : dirsAndContents[postProcessedData]}
@@ -422,12 +532,32 @@ def fillMasterHistDict( inputFileDict , aDSIDHelper, masterHistDict = collection
                     currentTH1 = TDir.Get(histName)#.Clone() # get a clone of the histogram, so that we can scale it, without changeing the original
                     
                     if int(DSID) > 0: # Signal & Background have DSID > 0
-                        scale = lumiMap[mcTag] * 1000000. * aDSIDHelper.getProduct_CrossSec_kFactor_genFiltEff(DSID) / sumOfWeights[int(DSID)]
+                        scale = aDSIDHelper.getMCScale(DSID, mcTag)
                         currentTH1.Scale(scale) # scale the histogram
 
                     masterHistDict[ histEnding ][ mcTag ][ DSID ] = currentTH1
 
     return masterHistDict
+
+
+def fillMasterHistDict2( currentTH1, histEnding, mcTag, DSID, aDSIDHelper, masterHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) ):
+    # split the histograms in inputFileDict by HistEnding, mcCampaign, and DSID 
+    # and put them into a collections.defaultdict to indext them by HistEnding, mcCampaign, and DSID
+    #
+    # remember that python instantiates functions only once, 
+    # so unless we provice a masterHistDict, we will aggregate results 
+    # in the default one over multiple function calls
+    #
+    # masterHistDict[ HistEnding ][ mcCampaign ][ DSID ][ ROOT.TH1 ] 
+
+    if int(DSID) != 0: # Signal & Background have DSID > 0
+        scale = aDSIDHelper.getMCScale(DSID, mcTag)
+        currentTH1.Scale(scale) # scale the histogram
+
+    masterHistDict[histEnding][mcTag][DSID]=currentTH1
+
+    return masterHistDict
+
 
 def mergeMultiMCTagMasterHistDict(masterHistDict, combinedMCTagHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) ):
 
@@ -505,16 +635,15 @@ def printSubsetOfHists(histList, searchStrings=["M12","M34","M4l"], outputDir = 
 
     return None
 
-def addRegionAndChannelToStatsText(canvasName):
+def addRegionAndChannelToStatsText(shortName):
 
     outList = ""
 
-    shortName = canvasName.split("_")[0]
-
     # fill in region
-    if "SR" in shortName:    outList += "Signal Region"
-    elif "CRC" in shortName: outList += "VR1"
-    elif "CRD" in shortName: outList += "VR2"
+    if "ZXSR" in shortName:    outList += "Signal Region"
+    elif "ZXCRC" in shortName: outList += "VR1"
+    elif "ZXCRD" in shortName: outList += "VR2"
+    else: outList += shortName
 
     outList += ", "
 
@@ -522,25 +651,12 @@ def addRegionAndChannelToStatsText(canvasName):
     elif "2e2m" in shortName: outList += "2e2#mu"
     elif "2m2e" in shortName: outList += "2#mu2e"
     elif "4e" in shortName:   outList += "4e"
-    else:     outList += "4#mu, 2e2#mu, 2#mu2e, 2#mu2e"
+    else:     outList += "4#mu, 2e2#mu, 2#mu2e, 4e"
 
     return outList
 
 if __name__ == '__main__':
 
-    ######################################################
-    # Define some default or hardcoded values
-    ######################################################
-
-
-    # campaigns integrated luminosity,  complete + partial
-    lumiMap= { "mc16a" : 36.21496, "mc16d" : 44.3074, "mc16e": 59.9372, "mc16ade": 140.45956, "units" : "fb-1"}
-    #taken by Justin from: https://twiki.cern.ch/twiki/bin/view/Atlas/LuminosityForPhysics#2018_13_TeV_proton_proton_placeh
-    #2015: 3.21956 fb^-1 +- 2.1% (final uncertainty) (3.9 fb^-1 recorded)
-    #2016: 32.9954 fb^-1 +- 2.2% (final uncertainty) (35.6 fb^-1 recorded)
-    #2017: 44.3074 fb^-1 +- 2.4% (preliminary uncertainty) (46.9 fb^-1 recorded)
-    #2018: 59.9372 fb^-1 +- 5% (uncertainty TBD, use this as a placeholder) (62.2 fb^-1 recorded)
-    #Total: 140.46 fb^-1
 
 
     ######################################################
@@ -549,7 +665,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("input", type=str, nargs='*', help="name or path to the input files")
+    parser.add_argument("input", type=str, help="name or path to the input files")
 
     parser.add_argument("-c", "--mcCampaign", nargs='*', type=str, choices=["mc16a","mc16d","mc16e","mc16ade"], required=True,
         help="name of the mc campaign, i.e. mc16a or mc16d, need to provide exactly 1 mc-campaign tag for each input file, \
@@ -580,9 +696,9 @@ if __name__ == '__main__':
     # do some checks to make sure the command line options have been provided correctly
     ######################################################
 
-    assert len(args.input) ==  len(args.mcCampaign), "We do not have exactly one mc-campaign tag per input file"
+    assert 1 ==  len(args.mcCampaign), "We do not have exactly one mc-campaign tag per input file"
+    #assert len(args.input) ==  len(args.mcCampaign)
 
-    
     assert all( x==1   for x in collections.Counter( args.mcCampaign ).values() ), "\
     Some mc-campaign tags have been declared more than once. \
     For now we are only setup to support one file per MC-tag. Until we changed that, 'hadd' them in bash"
@@ -602,8 +718,37 @@ if __name__ == '__main__':
 
     # assemble the input files, mc-campaign tags and metadata file locations into dict
     # well structered dict is sorted by mc-campign tag and has 
-    inputFileDict = getWellStructedDictFromCommandLineOptions( args, inputFileDict = collections.defaultdict(dict) )
+    #inputFileDict = getWellStructedDictFromCommandLineOptions( args, inputFileDict = collections.defaultdict(dict) )
 
+    #######################
+    # Test generator access to ROOT TH1s 
+
+    #postProcessedData = inputFileDict.values()[0]["TFile"]
+
+
+    postProcessedData = ROOT.TFile(args.input,"READ"); # open the file with te data from the ZdZdPostProcessing
+
+    myDSIDHelper.fillSumOfEventWeightsDict(postProcessedData)
+
+    histCounter = 0 # count how many relevant hists we have
+
+    # loop over all of the TObjects in the given ROOT file
+    for path, baseHist  in generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = True): 
+
+        if badBaseHist(path, baseHist): continue # skip non-relevant histograms
+
+        ROOT.SetOwnership(baseHist, False)  # if we pass badBaseHist the histogram is relevant, so we change the ownership here to False in the attempt to prevent deletion
+
+        # discern DSID and plotTitle to use them when sorting into a tree structure
+        DSID = idDSID(path)
+        plotTitle = idPlotTitle(path, DSID=DSID)
+
+        # build my tree structure here to house the relevant histograms, pre-sorted for plotting
+        masterHistDict = fillMasterHistDict2( baseHist, plotTitle, args.mcCampaign[0], DSID, myDSIDHelper )
+
+        # output a running counter of processed hists and used memory
+        histCounter += 1
+        if histCounter %1000 == 0: print str(histCounter) + " relevant hists processed. \t Memory usage: %s (kB)" % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/8)
 
 
 
@@ -613,9 +758,10 @@ if __name__ == '__main__':
 
 
 
-    masterHistDict = fillMasterHistDict( inputFileDict, myDSIDHelper )
+    #masterHistDict = fillMasterHistDict( inputFileDict, myDSIDHelper )
+    #combinedMCTagHistDict = mergeMultiMCTagMasterHistDict(masterHistDict)
 
-    combinedMCTagHistDict = mergeMultiMCTagMasterHistDict(masterHistDict)
+    combinedMCTagHistDict = masterHistDict
 
     canvasList = []
 
@@ -678,7 +824,7 @@ if __name__ == '__main__':
             statsTexts = []
 
             statsTexts.append( "#font[72]{ATLAS} internal")
-            statsTexts.append( "#sqrt{s} = 13 TeV, %.1f fb^{-1}" %(lumiMap[mcTag] ) ) 
+            statsTexts.append( "#sqrt{s} = 13 TeV, %.1f fb^{-1}" %( myDSIDHelper.lumiMap[mcTag] ) ) 
 
             statsTexts.append( addRegionAndChannelToStatsText(canvas.GetName() ) ) 
             statsTexts.append( "  " ) 
@@ -802,8 +948,8 @@ if __name__ == '__main__':
     canvasList.sort( key = lambda x:x.GetTitle()) # i.e. we are sorting the list by the output of a function, where the function provides takes implicitly elements of the list, and in our case calls the .GetTitle() method of that element of the list and outputs it
 
 
-
-    postProcessedDataFileName = os.path.basename( args.input[0] ) # split off the file name from the path+fileName string if necessary
+    if isinstance(args.input,list):  postProcessedDataFileName = os.path.basename( args.input[0] ) # split off the file name from the path+fileName string if necessary
+    else:                            postProcessedDataFileName = os.path.basename( args.input ) # split off the file name from the path+fileName string if necessary
 
     if args.outputName is None: outputName = postProcessedDataFileName.split(".")[0] + "_" + "_".join(args.mcCampaign)+"_"
     else:                       outputName = args.outputName
