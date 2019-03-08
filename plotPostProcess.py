@@ -240,13 +240,14 @@ def idPlotTitle(path, DSID=None ):
 
     return plotTitle
 
-def badBaseHist(path, baseHist):
+def irrelevantBaseHist(path, baseHist):
 
     if "Nominal" not in path: return True
     elif "Cutflow" in path: return True
     elif "cutflow" in path: return True
     elif "h_raw_" in path: return True
     elif "hraw_" in path: return True
+    elif "pileupWeight" in path: return True
     elif isinstance( baseHist, ROOT.TH2 ): return True
     elif not isinstance( baseHist, ROOT.TH1 ): return True
 
@@ -735,9 +736,9 @@ if __name__ == '__main__':
     # loop over all of the TObjects in the given ROOT file
     for path, baseHist  in generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = True): 
 
-        if badBaseHist(path, baseHist): continue # skip non-relevant histograms
+        if irrelevantBaseHist(path, baseHist): continue # skip non-relevant histograms
 
-        ROOT.SetOwnership(baseHist, False)  # if we pass badBaseHist the histogram is relevant, so we change the ownership here to False in the attempt to prevent deletion
+        ROOT.SetOwnership(baseHist, False)  # if we pass irrelevantBaseHist the histogram is relevant, so we change the ownership here to False in the attempt to prevent deletion
 
         # discern DSID and plotTitle to use them when sorting into a tree structure
         DSID = idDSID(path)
@@ -884,8 +885,8 @@ if __name__ == '__main__':
                 statsTexts.append("Data: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(dataTH1) ) )  
 
             # rescale Y-axis
-            largestYValue = [max(getBinContentsPlusError(dataTH1) )]
-            if gotDataSample:  largestYValue.append( max( getBinContentsPlusError(backgroundMergedTH1) ) )
+            largestYValue = [max(getBinContentsPlusError(backgroundMergedTH1) )]
+            if gotDataSample:  largestYValue.append( max( getBinContentsPlusError(dataTH1) ) )
             backgroundTHStack.SetMaximum( max(largestYValue) * 1.3 )
 
             #rescale X-axis
