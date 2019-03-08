@@ -32,13 +32,22 @@ class DSIDHelper:
                                                           364113, 364128, 364129, 364130, 364131, 364132, 364133, 364134, 364135, 
                                                           364136, 364137, 364138, 364139, 364140, 364141, 361601, 410472],
                        "VVV/VBS" : [364248, 364247, 364245, 364243, 364364],
-                       "Z+(ttbar/J/Psi/Upsilon)" : [410142],
-                       "ZZd signal" : [343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242]
+                       "Z+(ttbar/J/Psi/Upsilon)" : [410142]
                     }
+
+    physicsProcessSignal = {"ZZd, m_{Zd} = 15GeV" : [343234],
+                            "ZZd, m_{Zd} = 20GeV" : [343235],
+                            "ZZd, m_{Zd} = 25GeV" : [343236],
+                            "ZZd, m_{Zd} = 30GeV" : [343237],
+                            "ZZd, m_{Zd} = 35GeV" : [343238],
+                            "ZZd, m_{Zd} = 40GeV" : [343239],
+                            "ZZd, m_{Zd} = 45GeV" : [343240],
+                            "ZZd, m_{Zd} = 50GeV" : [343241],
+                            "ZZd, m_{Zd} = 55GeV" : [343242] }
 
     physicsProcessColor = {"H->ZZ*->4l" : ROOT.kRed  , "ZZ*->4l" :   ROOT.kAzure+1 ,
                       "Reducible (Z+Jets, WZ, ttbar)"  : ROOT.kYellow , "VVV/VBS" : ROOT.kCyan,
-                       "Z+(ttbar/J/Psi/Upsilon)" : ROOT.kGreen, "ZZd signal": ROOT.kViolet   }
+                       "Z+(ttbar/J/Psi/Upsilon)" : ROOT.kGreen} #"ZZd signal, m_{Zd} = 15GeV": ROOT.kViolet   
 
     physicsSubProcess = {"ggH" : [345060], "VBFH":[341488], "WH" : [341964], "ZH" : [341947],
                      "ggZH" : [345066], "ttH125" : [345046, 345047, 345048], "bbH" : [344973, 344974],
@@ -72,32 +81,43 @@ class DSIDHelper:
 
     def __init__(self):
 
-        assert self.physicsProcess.keys() == self.physicsProcessColor.keys(), 'physicsProcess and physicsProcessColor do not have a consistent set of dict-keys'
+        
+        # add the signal into the physics(Sub)Process
+        self.physicsProcess.update(self.physicsProcessSignal)
+        self.physicsSubProcess.update(self.physicsProcessSignal)
 
+        # make the reverse dicts so that we can look up things by DSID
         self.physicsProcessByDSID    = self.makeReverseDict( self.physicsProcess);
         self.physicsSubProcessByDSID = self.makeReverseDict( self.physicsSubProcess);
+        self.physicsProcessSignalByDSID = self.makeReverseDict( self.physicsProcessSignal)
 
+    def isSignalSample(self , KeyOrDSID ):
 
-    def colorDictOfHists(self, mergedSamplesDICT, coloringScheme = None):
+        if KeyOrDSID in self.physicsProcessSignalByDSID: return True
+        elif KeyOrDSID in self.physicsProcessSignal: return True
+        
+        return False
 
-        # define a color iterator in case we need it
+    def colorDictOfHists(self, mergedSamplesDICT, coloringScheme = None, 
         fillColors = itertools.cycle([ ROOT.kViolet,   ROOT.kYellow,   ROOT.kCyan,   ROOT.kBlue,   ROOT.kRed,   ROOT.kMagenta,   ROOT.kPink,   ROOT.kOrange,   ROOT.kSpring,   ROOT.kGreen,   ROOT.kTeal,   ROOT.kAzure,
                                        ROOT.kViolet-6, ROOT.kYellow-6, ROOT.kCyan-6, ROOT.kBlue-6, ROOT.kRed-6, ROOT.kMagenta-6, ROOT.kPink-6, ROOT.kOrange-6, ROOT.kSpring-6, ROOT.kGreen-6, ROOT.kTeal-6, ROOT.kAzure-6,
                                        ROOT.kViolet-2, ROOT.kYellow-2, ROOT.kCyan-2, ROOT.kBlue-2, ROOT.kRed-2, ROOT.kMagenta-2, ROOT.kPink-2, ROOT.kOrange-2, ROOT.kSpring-2, ROOT.kGreen-2, ROOT.kTeal-2, ROOT.kAzure-2,]) 
+        ):
 
+        #if not isinstance(mergedSamplesDICT, dict ): erroe
 
-        if isinstance(mergedSamplesDICT, dict ): 
-            for process in mergedSamplesDICT.keys(): 
+        for process in mergedSamplesDICT.keys(): 
 
-                if coloringScheme == "physicsProcess":    color = self.physicsProcessColor[process]
-                #elif coloringScheme == "physicsProcess":    color = self.physicsProcessColor[process]
-                else: color = fillColors.next()
+            color = self.physicsProcessColor.get(process) # get( X ) returns 'None' if X is not among the keys of the dict
 
+            if color is None: # if 'process' was not among the keys of the physicsProcessColor, pick a color and add it to the dict
+                color = fillColors.next()
+                self.physicsProcessColor[process] = color
 
-                mergedSamplesDICT[process].SetFillColor( color )
+            mergedSamplesDICT[process].SetFillColor( color )
 
-        elif isinstance(mergedSamplesDICT, list ): # if we happen to color a list of hists, we will just iterate over our colors
-            for hist in mergedSamplesDICT.keys():    hist.SetFillColor(fillColors.next())
+        #elif isinstance(mergedSamplesDICT, list ): # if we happen to color a list of hists, we will just iterate over our colors
+        #    for hist in mergedSamplesDICT.keys():    hist.SetFillColor(fillColors.next())
 
         return None
 
@@ -181,6 +201,32 @@ class DSIDHelper:
         self.metaDataDict=metaDataDict
         self.physicsShort=physicsShort
         return metaDataDict, physicsShort
+
+    def defineSequenceOfSortedSamples(self, sortedSamples ):
+
+        # define a sequence of the sorted sampleSamples keys,
+        # such that the background ones go first and the signal ones do second
+        # among the background and signal ones each, have them sorted alphabetically
+
+        backgroundKeys = [];         signalKeys = []
+
+        for key in sortedSamples.keys():
+
+            if self.isSignalSample( key ): signalKeys.append(key)
+            else :  backgroundKeys.append(key)
+
+        backgroundKeys.sort(); signalKeys.sort()
+
+        # put the background and signal keys in lists, the background ones first
+        completeKeyList = backgroundKeys
+        completeKeyList.extend(signalKeys)
+
+        return completeKeyList
+
+
+
+
+
 
 # end  class DSIDHelper
 
@@ -800,7 +846,10 @@ if __name__ == '__main__':
                     currentTH1.Rebin(args.rebin)
 
                     if int(DSID) > 0: # Signal & Background have DSID > 0
-                        currentTH1.SetFillStyle(1001) # 1001 - Solid Fill: https://root.cern.ch/doc/v608/classTAttFill.html
+                        
+                        if myDSIDHelper.isSignalSample( int(DSID) ): currentTH1.SetFillStyle(3345) # make signal shaded 
+                        else: currentTH1.SetFillStyle(1001) # 1001 - Solid Fill: https://root.cern.ch/doc/v608/classTAttFill.html
+
                         currentTH1.SetFillColor(fillColors.next())
 
                         backgroundSamples.append( ( int(DSID), currentTH1) )
@@ -830,8 +879,8 @@ if __name__ == '__main__':
             statsTexts.append( addRegionAndChannelToStatsText(canvas.GetName() ) ) 
             statsTexts.append( "  " ) 
 
-
-            for key in sortedSamples.keys(): # add merged samples to the backgroundTHStack
+            for key in myDSIDHelper.defineSequenceOfSortedSamples( sortedSamples  ): # add merged samples to the backgroundTHStack 
+                #for key in sortedSamples.keys(): # add merged samples to the backgroundTHStack
                 mergedHist = sortedSamples[key]
                 backgroundTHStack.Add( mergedHist )
                 legend.AddEntry(mergedHist , key , "f");
