@@ -203,7 +203,6 @@ class DSIDHelper:
         return metaDataDict, physicsShort
 
     def defineSequenceOfSortedSamples(self, sortedSamples ):
-
         # define a sequence of the sorted sampleSamples keys,
         # such that the background ones go first and the signal ones do second
         # among the background and signal ones each, have them sorted alphabetically
@@ -582,6 +581,8 @@ def fillMasterHistDict( inputFileDict , aDSIDHelper, masterHistDict = collection
                         scale = aDSIDHelper.getMCScale(DSID, mcTag)
                         currentTH1.Scale(scale) # scale the histogram
 
+                    else: currentTH1.Scale( 0 )
+
                     masterHistDict[ histEnding ][ mcTag ][ DSID ] = currentTH1
 
     return masterHistDict
@@ -718,7 +719,7 @@ if __name__ == '__main__':
         help="name of the mc campaign, i.e. mc16a or mc16d, need to provide exactly 1 mc-campaign tag for each input file, \
         make sure that sequence of mc-campaign tags matches the sequence of 'input' strings")
 
-    parser.add_argument("-d", "--metaData", type=str, default="metadata/md_bkg_datasets.txt" ,
+    parser.add_argument("-d", "--metaData", type=str, default="metadata/md_bkg_datasets_mc16e_All.txt" ,
         help="location of the metadata file for the given mc campaign. If not provided, we will use a default location" )
 
     parser.add_argument( "--DSID_Binning", type=str, help = "set how the different DSIDS are combined, ",
@@ -788,6 +789,14 @@ if __name__ == '__main__':
 
         # discern DSID and plotTitle to use them when sorting into a tree structure
         DSID = idDSID(path)
+
+        # 15GeV , 20GeV , 25GeV , 30GeV , 35GeV , 40GeV , 45GeV , 50GeV , 55GeV
+        # 343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242
+
+        if int(DSID) in [ 343234, 343235, 343236,343237, 343238, 343239, 343240, 343241, 343242]: continue # , , 343234, 343235, 343236,343237, 343238, 343239, 343240, 343241, 343242
+        if int(DSID) in [302073, 302074, 302075, 302076, 302077, 302078, 302079, 302080, 302081, 302082, 
+                         302083, 302084, 302085, 302086, 302087, 302088, 302089, 302090, 309475, 309476, 
+                         309477, 309478, 309479, 309480, 309481, 309482, 309483, 309484, 309485, 309709]: continue # non ZZd signal sample DSIDS, i.e. ZdZd signal sample DSIDs
         plotTitle = idPlotTitle(path, DSID=DSID)
 
         # build my tree structure here to house the relevant histograms, pre-sorted for plotting
@@ -887,10 +896,12 @@ if __name__ == '__main__':
                 statsTexts.append( key + ": %.2f #pm %.2f" %( getHistIntegralWithUnertainty(mergedHist)) )
 
             # create a pad for the CrystalBall fit + data
-            histPadYStart = 3./13
+            if gotDataSample: histPadYStart = 3./13
+            else:  histPadYStart = 0
             histPad = ROOT.TPad("histPad", "histPad", 0, histPadYStart, 1, 1);
             ROOT.SetOwnership(histPad, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
-            histPad.SetBottomMargin(0.06); # Seperation between upper and lower plots
+            if gotDataSample: histPad.SetBottomMargin(0.06); # Seperation between upper and lower plots
+            else: histPad.SetBottomMargin(0.12)
             #histPad.SetGridx();          # Vertical grid
             histPad.Draw();              # Draw the upper pad: pad1
             histPad.cd();                # pad1 becomes the current pad
@@ -915,8 +926,10 @@ if __name__ == '__main__':
             backgroundTHStack.GetYaxis().SetTitleOffset(1.2)
             backgroundTHStack.GetYaxis().CenterTitle()
             
+            
+
             statsTexts.append( "  " )       
-            statsTexts.append( "Background: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(backgroundMergedTH1)) )
+            statsTexts.append( "Background + Signal: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(backgroundMergedTH1)) )
 
 
 
@@ -941,7 +954,7 @@ if __name__ == '__main__':
             #rescale X-axis
             axRangeLow, axRangeHigh = getFirstAndLastNonEmptyBinInHist(backgroundTHStack, offset = 1)
             backgroundTHStack.GetXaxis().SetRange(axRangeLow,axRangeHigh)
-            
+
             #statsOffset = (0.6,0.55), statsWidths = (0.3,0.32)
             statsTPave=ROOT.TPaveText(0.60,0.55,0.9,0.87,"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
             for stats in statsTexts:   statsTPave.AddText(stats);
@@ -951,18 +964,21 @@ if __name__ == '__main__':
 
             canvas.cd()
 
-            # define a TPad where we can add a histogram of the ratio of the data and MC bins
-            ratioPad = ROOT.TPad("ratioPad", "ratioPad", 0, 0, 1, histPadYStart);
-            ROOT.SetOwnership(ratioPad, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
-            ratioPad.SetTopMargin(0.)
-            ratioPad.SetBottomMargin(0.3)
-            ratioPad.SetGridy(); #ratioPad.SetGridx(); 
-            ratioPad.Draw();              # Draw the upper pad: pad1
-            ratioPad.cd();                # pad1 becomes the current pad
+
 
 
 
             if gotDataSample: # fill the ratio pad with the ratio of the data bins to  mc bckground bins
+
+                # define a TPad where we can add a histogram of the ratio of the data and MC bins
+                ratioPad = ROOT.TPad("ratioPad", "ratioPad", 0, 0, 1, histPadYStart);
+                ROOT.SetOwnership(ratioPad, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
+                ratioPad.SetTopMargin(0.)
+                ratioPad.SetBottomMargin(0.3)
+                ratioPad.SetGridy(); #ratioPad.SetGridx(); 
+                ratioPad.Draw();              # Draw the upper pad: pad1
+                ratioPad.cd();                # pad1 becomes the current pad
+
                 ratioHist = dataTH1.Clone( dataTH1.GetName()+"_Clone" )
                 ratioHist.Divide(backgroundMergedTH1)
                 ratioHist.GetXaxis().SetRange(axRangeLow, axRangeHigh)
@@ -981,6 +997,7 @@ if __name__ == '__main__':
                 ratioHist.GetXaxis().SetLabelSize(0.12)
                 ratioHist.GetXaxis().SetTitleSize(0.12)
                 ratioHist.Draw()
+            else: backgroundTHStack.GetXaxis().SetTitle( sortedSamples.values()[0].GetXaxis().GetTitle()  )
 
 
 
