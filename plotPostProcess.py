@@ -222,11 +222,6 @@ class DSIDHelper:
 
         return completeKeyList
 
-
-
-
-
-
 # end  class DSIDHelper
 
 
@@ -257,12 +252,6 @@ def generateTDirPathAndContentsRecursive(TDir, baseString = "" , newOwnership = 
         else :
             yield baseString + TObject.GetName() , TObject
 
-def generateTDirContentsRecursive(TDir):
-    # for a given TDirectory (remember that a TFile is also a TDirectory) get all non-directory objects
-    # redturns all TObject and is a generator
-
-    for path, TObject in generateTDirPathAndContentsRecursive(TDir):
-        yield TObject
 
 def idDSID(path):
     # look for the following patter:  after a / , loog for 6 digits preceeded by any number of character that are not /
@@ -299,41 +288,6 @@ def irrelevantBaseHist(path, baseHist):
     return False
 
 
-
-
-
-
-def getTDirsAndContents(TDir, outputDict = {}, recursiveCounter = 0, TDirConstraint = "Nominal"):
-    # for a given TDirectory (remember that a TFile is also a TDirectory) get all TH1 (recursively if needed)
-    # output will be {TDirObject : names of objects that are not TDirs themselves}
-    # we can do this recursively up to a depth of 'recursiveCounter' (if it is set to >0)
-    # Then the output will be like 
-    # {TDirObject1 : names of objects in TDirObject1 that are not TDirs themselves,
-    #  TDirObject2 : names of objects in TDirObject2 that are not TDirs themselves }
-    # The relationship between the TDirs is not being stored in this way
-    # TDirConstraint - consider only TH1s that are in a TDirectoru that contains the string <TDirConstraint>
-
-    TDirKeys = TDir.GetListOfKeys() # output is a TList
-
-    TH1List = [] # store the non-TDirecotry contents of the current dir here
-
-    for TKey in TDirKeys: 
-        # if current TKey refers to a dir, look recursively within (if our recursive counter is still not zero)
-        # otherwise note the name of the contents
-        if TKey.IsFolder() :
-            if isinstance( TDir.Get(TKey.GetName()) ,ROOT.TTree): continue # turns out TTrees are also folders, but they don't contain Hists that we are interested in
-            if recursiveCounter < 1       : continue # make sure we can exhaust our recursion counter
-            
-            subdir = TDir.Get(TKey.GetName())
-            outputDict = getTDirsAndContents(subdir, outputDict, recursiveCounter = recursiveCounter-1 )
-        elif isinstance(TDir.Get(TKey.GetName()), ROOT.TH1 ) and not isinstance(TDir.Get(TKey.GetName()), ROOT.TH2 ):  #check that the TKey indeed refers to a TH1
-            
-            if TDirConstraint in TDir.GetName() and "VR1" in TKey.GetName(): TH1List.append(TKey.GetName()) # add the histogram to our list if it is in a TDir that contains the string <TDirConstraint>
-
-    outputDict[TDir] = TH1List
-
-    return outputDict
-
 def mergeHistsByMapping(backgroundSamples, mappingDict) :
     # backgroundSamples - a list of tuples [(DSID, TH1),...]
     # mappingDict - a dictionary like { DSID1 : descriptor1, DSID2 : descriptor2, ...}
@@ -367,31 +321,6 @@ def getHistIntegralWithUnertainty(hist, lowerLimit = 0, upperLimit = None ):
     return integral, integralUncertainty
 
 
-def splitHistNamesByPlotvariable(histNameList, delimeter = "_", nonEndingStringParts = 2): 
-    # create a mapping {ending1 : [histogram names with ending1], ending2 : ...}
-    # we wanna group the hist names together that shall be plotted together
-    # we we are doing that by grouping them together by the endings
-    # by default we take the strings to be splittable by the delimeter "_"
-    # and that only the first two parts of the string are not part of the ending
-
-    histsByEnding = {}
-
-    for histName in histNameList:
-        histNameParts = histName.split(delimeter)
-        currentEnding = delimeter.join(histNameParts[nonEndingStringParts:]) # by conventoin we take the first part of the hist name to be an indicator of the type of object, and the second part the DSID
-
-        if currentEnding in histsByEnding.keys():   histsByEnding[currentEnding].append(histName)
-        else:                               histsByEnding[currentEnding] = [histName]
-
-    # sort hist names alphabetically, to have a well defined squence of histograms 
-    for histEnding in histsByEnding.keys(): # iterate over all the 'endings'
-        histsByEnding[histEnding].sort() # sort hist names alphabetically, to have a well defined squence of histograms 
-
-    return histsByEnding
-
-
-
-
 def activateATLASPlotStyle():
     # runs the root macro that defines the ATLAS style, and checks that it is active
     # relies on a seperate style macro
@@ -414,30 +343,6 @@ def setupTLegend():
 
     return TLegend
 
-
-
-def getSumOfWeigts(topLevelTObjects):
-    # get the sum of weights for our MC samples
-    # expects as input the following data structure:
-    # {TDirObject1 : [list of the names of the TH1s in the TDirObject1 which contain the sum of weights in the bin named 'sumOfEventWeights_xAOD' ],
-    #  TDirObject2 : [ same like above, but now for the TH1 names in TDirObject2 ],
-    #   etc }
-    # will get the sum of weigts and output them in a dict like  {DSID : sumAODWeights}
-
-    sumOfEventWeightsDict = {}
-
-    for TDir in topLevelTObjects.keys():
-        histNames = topLevelTObjects[TDir]
-
-        for name in histNames:
-            currentTH1 = TDir.Get(name)
-
-            sumAODWeights = currentTH1.GetBinContent(currentTH1.GetXaxis().FindBin("sumOfEventWeights_xAOD"))
-
-            DSID = name.split("_")[1]
-            sumOfEventWeightsDict[int(DSID)] = sumAODWeights
-
-    return sumOfEventWeightsDict
 
 def printRootCanvasPDF(myRootCanvas, isLastCanvas, fileName, tableOfContents = None):
     if fileName is None:  fileName = myRootCanvas.GetTitle() + ".pdf"
@@ -496,96 +401,10 @@ def getFirstAndLastNonEmptyBinInHist(hist, offset = 0, adjustXAxisRange = False)
     return (first, last)
 
 
-def getFirstAndLastNonEmptyBinInTPad(myTPad):
-
-
-
-    first = float("-inf"); last = float("+inf")
-
-    TPadPrimitives = myTPad.GetListOfPrimitives()
-
-
-
-    for prim in TPadPrimitives:
-        if isinstance(prim,ROOT.TH1) or isinstance(prim,ROOT.THStack): 
-            (firstTmp,lastTmp) = getFirstAndLastNonEmptyBinInHist(prim)
-            foundAnyHists = True
-
-
 #To get the y value corresponding to bin k, h->GetBinContent(k);
 #To get the bin number k corresponding to an x value, do
 #  int k = h->GetXaxis()->FindBin(x);
 
-
-def getWellStructedDictFromCommandLineOptions( args, inputFileDict = collections.defaultdict(dict) ):
-
-    # assemble the input files, mc-campaign tags and metadata file locations into dict
-    # well structered dict is sorted by mc-campign tag and has 
-
-    inputFileDict = collections.defaultdict(dict)
-
-    for n in xrange(0, len(args.input) ): 
-
-        mcCampaign = args.mcCampaign[n]
-
-        inputFileDict[mcCampaign]["inputStr"] = args.input[n]
-        inputFileDict[mcCampaign]["TFile"] =  ROOT.TFile(args.input[n],"READ"); # open the file with te data from the ZdZdPostProcessing
-
-    return inputFileDict
-
-
-def fillMasterHistDict( inputFileDict , aDSIDHelper, masterHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) ):
-
-    # split the histograms in inputFileDict by HistEnding, mcCampaign, and DSID 
-    # and put them into a collections.defaultdict to indext them by HistEnding, mcCampaign, and DSID
-    #
-    # masterHistDict[ HistEnding ][ mcCampaign ][ DSID ][ ROOT.TH1 ] 
-
-
-    for mcTag in inputFileDict.keys():
-
-        postProcessedData = inputFileDict[mcTag]["TFile"]
-
-        # get the histograms in the diffrent TDirectories within the provided .root file
-        dirsAndContents = getTDirsAndContents(postProcessedData, outputDict = {}, recursiveCounter = float("inf"))
-
-        ######### get sumOfWeights #########
-        # we take the histograms that store the sumOfWeights are in the top-level of the TFile, i.e. not in a sub-TDirectory
-        topLevelTObjects = {postProcessedData : dirsAndContents[postProcessedData]}
-        del dirsAndContents[postProcessedData] # remove the top level entries, they are only ought to contain the sumOfWeights
-        sumOfWeights = getSumOfWeigts(topLevelTObjects)
-
-        for TDir in dirsAndContents.keys(): # We iterate through the different TDirs in the files
-            histNames = dirsAndContents[TDir] # get the list of histograms in this TDir, specifically get the list of histogram names in that directory
-
-            # we have histograms that show distributions of kinematic variables after cuts (analysisHists)
-            # and histograms that show how many events are left after each cut (cutflowHists), we wanna plot the former (analysisHists)
-            # so let's get a list of the analysisHists
-            analysisHists = []
-            for histName in histNames :  
-                if "cutflow" in histName: continue
-                if histName.startswith("h2_"): continue
-                if histName.endswith("Weight"): continue
-                analysisHists.append(histName)
-
-            # get a mapping like {ending, [histnames with that ending], ... }, because hists with a common ending shall be plotted together
-            histsByEnding = splitHistNamesByPlotvariable(analysisHists) 
-
-            for histEnding in histsByEnding.keys(): # iterate over all the 'endings'
-                for histName in histsByEnding[histEnding]: 
-
-                    DSID = histName.split("_")[1] # get the DSID from the name of the histogram, which should be like bla_DSID_bla_...
-                    currentTH1 = TDir.Get(histName)#.Clone() # get a clone of the histogram, so that we can scale it, without changeing the original
-                    
-                    if int(DSID) > 0: # Signal & Background have DSID > 0
-                        scale = aDSIDHelper.getMCScale(DSID, mcTag)
-                        currentTH1.Scale(scale) # scale the histogram
-
-                    else: currentTH1.Scale( 0 )
-
-                    masterHistDict[ histEnding ][ mcTag ][ DSID ] = currentTH1
-
-    return masterHistDict
 
 
 def fillMasterHistDict2( currentTH1, histEnding, mcTag, DSID, aDSIDHelper, masterHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) ):
@@ -606,23 +425,6 @@ def fillMasterHistDict2( currentTH1, histEnding, mcTag, DSID, aDSIDHelper, maste
 
     return masterHistDict
 
-
-def mergeMultiMCTagMasterHistDict(masterHistDict, combinedMCTagHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) ):
-
-    if len( masterHistDict.values()[0].keys() ) == 1:  # if there's only one MCTag we do not need to combine the hists, and we can return the input dict
-        return masterHistDict 
-
-    for histEnding in masterHistDict.keys():
-        for mcTag in masterHistDict[histEnding].keys():
-            for DSID in masterHistDict[histEnding][mcTag].keys():
-
-                currentTH1 =  masterHistDict[histEnding][mcTag][DSID]
-
-                if DSID not in combinedMCTagHistDict[histEnding]["allMCCampaigns"].keys(): 
-                    combinedMCTagHistDict[histEnding]["allMCCampaigns"][DSID] = currentTH1.Clone()
-                else : combinedMCTagHistDict[histEnding]["allMCCampaigns"][DSID].Add(currentTH1)
-
-    return combinedMCTagHistDict
 
 def findTypeInTList(TList, desiredType, doRecursive = True):
     # let's find all of the instances of <desiredType> in the TList 
@@ -766,7 +568,6 @@ if __name__ == '__main__':
 
     # assemble the input files, mc-campaign tags and metadata file locations into dict
     # well structered dict is sorted by mc-campign tag and has 
-    #inputFileDict = getWellStructedDictFromCommandLineOptions( args, inputFileDict = collections.defaultdict(dict) )
 
     #######################
     # Test generator access to ROOT TH1s 
@@ -812,10 +613,6 @@ if __name__ == '__main__':
     # Do the data processing from here on
     ######################################################
 
-
-
-    #masterHistDict = fillMasterHistDict( inputFileDict, myDSIDHelper )
-    #combinedMCTagHistDict = mergeMultiMCTagMasterHistDict(masterHistDict)
 
     combinedMCTagHistDict = masterHistDict
 
