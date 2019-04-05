@@ -16,7 +16,7 @@ import re # to do regular expression matching
 import copy # for making deep copies
 import argparse # to parse command line options
 #import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
-import functions.RootTools as RootTools# root tool that I have taken from a program by Turra
+#import functions.RootTools as RootTools# root tool that I have taken from a program by Turra
 import os
 import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
 import resource # print 'Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
@@ -274,7 +274,7 @@ def idPlotTitle(path, DSID=None ):
 
     return plotTitle
 
-def irrelevantBaseHist(path, baseHist):
+def irrelevantTObject(path, baseHist, requiredRootType = ROOT.TH1):
 
     if "Nominal" not in path: return True
     elif "Cutflow" in path: return True
@@ -283,7 +283,7 @@ def irrelevantBaseHist(path, baseHist):
     elif "hraw_" in path: return True
     elif "pileupWeight" in path: return True
     elif isinstance( baseHist, ROOT.TH2 ): return True
-    elif not isinstance( baseHist, ROOT.TH1 ): return True
+    elif not isinstance( baseHist, requiredRootType ): return True
 
     return False
 
@@ -584,9 +584,9 @@ if __name__ == '__main__':
     # loop over all of the TObjects in the given ROOT file
     for path, baseHist  in generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = True): 
 
-        if irrelevantBaseHist(path, baseHist): continue # skip non-relevant histograms
+        if irrelevantTObject(path, baseHist): continue # skip non-relevant histograms
 
-        ROOT.SetOwnership(baseHist, False)  # if we pass irrelevantBaseHist the histogram is relevant, so we change the ownership here to False in the attempt to prevent deletion
+        ROOT.SetOwnership(baseHist, False)  # if we pass irrelevantTObject the histogram is relevant, so we change the ownership here to False in the attempt to prevent deletion
 
         # discern DSID and plotTitle to use them when sorting into a tree structure
         DSID = idDSID(path)
