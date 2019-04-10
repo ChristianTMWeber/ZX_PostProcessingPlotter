@@ -124,6 +124,12 @@ class DSIDHelper:
 
     def fillSumOfEventWeightsDict(self, TDir):
 
+        if isinstance(TDir, str): # if we got a filename, instead of a ROOT.TFile, open it here, call fillSumOfEventWeightsDict and close it again
+            tempTFile = ROOT.TFile(TDir,"READ")
+            self.fillSumOfEventWeightsDict(tempTFile)
+            tempTFile.Close()
+            return None
+
         TDirKeys = TDir.GetListOfKeys() # output is a TList
 
         for TKey in TDirKeys: 
@@ -143,7 +149,11 @@ class DSIDHelper:
                 
         return None
 
-    def getMCScale(self, DSID, mcTag):
+    def getMCScale(self, DSID, mcTag = None):
+
+        assert( self.sumOfEventWeightsDict), "sumOfEventWeightsDict is empty, please fill it with the method 'fillSumOfEventWeightsDict' "
+
+        if mcTag is None: mcTag = self.mcTag
 
         DSID = int(DSID)
 
@@ -173,7 +183,7 @@ class DSIDHelper:
         return reverseDict
 
 
-    def importMetaData(self,metadataFileLocation):
+    def importMetaData(self,metadataFileLocation, mcTag = None):
         # parse the metada data from a metadata text file that we furnish
         # we expect the metadata file to have the stucture:
         # <DSID> <crossSection> <kFactor> <genFiltEff>   <...>
@@ -200,6 +210,8 @@ class DSIDHelper:
 
         self.metaDataDict=metaDataDict
         self.physicsShort=physicsShort
+
+        if mcTag is not None: self.mcTag = mcTag
         return metaDataDict, physicsShort
 
     def defineSequenceOfSortedSamples(self, sortedSamples ):
