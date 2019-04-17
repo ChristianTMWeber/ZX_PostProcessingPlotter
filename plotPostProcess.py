@@ -21,6 +21,8 @@ import os
 import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
 import resource # print 'Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 
+from functions.compareVersions import compareVersions # to compare root versions
+
 class DSIDHelper:
 
 
@@ -43,7 +45,22 @@ class DSIDHelper:
                             "ZZd, m_{Zd} = 40GeV" : [343239],
                             "ZZd, m_{Zd} = 45GeV" : [343240],
                             "ZZd, m_{Zd} = 50GeV" : [343241],
-                            "ZZd, m_{Zd} = 55GeV" : [343242] }
+                            "ZZd, m_{Zd} = 55GeV" : [343242],
+                            "ZdZd, m_{Zd} =0.5GeV" : [302073],
+                            "ZdZd, m_{Zd} =  1GeV" : [302074],
+                            "ZdZd, m_{Zd} =  2GeV" : [302075],
+                            "ZdZd, m_{Zd} =  5GeV" : [302076],
+                            "ZdZd, m_{Zd} = 10GeV" : [302077],
+                            "ZdZd, m_{Zd} = 15GeV" : [302078],
+                            "ZdZd, m_{Zd} = 20GeV" : [302079],
+                            "ZdZd, m_{Zd} = 25GeV" : [302080],
+                            "ZdZd, m_{Zd} = 30GeV" : [302081],
+                            "ZdZd, m_{Zd} = 35GeV" : [302082],
+                            "ZdZd, m_{Zd} = 40GeV" : [302083],
+                            "ZdZd, m_{Zd} = 45GeV" : [302084],
+                            "ZdZd, m_{Zd} = 50GeV" : [302085],
+                            "ZdZd, m_{Zd} = 55GeV" : [302086],
+                            "ZdZd, m_{Zd} = 60GeV" : [302087]}
 
     physicsProcessColor = {"H->ZZ*->4l" : ROOT.kRed  , "ZZ*->4l" :   ROOT.kAzure+1 ,
                       "Reducible (Z+Jets, WZ, ttbar)"  : ROOT.kYellow , "VVV/VBS" : ROOT.kCyan,
@@ -565,6 +582,21 @@ if __name__ == '__main__':
     Some mc-campaign tags have been declared more than once. \
     For now we are only setup to support one file per MC-tag. Until we changed that, 'hadd' them in bash"
 
+    # check root version
+    currentROOTVersion = ROOT.gROOT.GetVersion()
+
+    if compareVersions( currentROOTVersion, "6.04/16") > 0:
+        warnings.warn("Running on newer than ideal root version. Designed for version 6.04/16, current version is  "
+                       + currentROOTVersion + ". This should work but might consume much more memory then otherwise. ")
+        # the underlying issue for the extra memory consumption is the root memory managment. 
+        # For the version 6.04/16 our method of given root ownership of the parsed opjects to delete them works and memory utilization is lower
+        # for the newer versions this way of affecting the ownership results in a crash. So we don't deal with it and accept higher memory utilization
+        ownershipSetpoint = None
+    else: ownershipSetpoint = True
+
+
+
+
     activateATLASPlotStyle()
 
     ######################################################
@@ -593,8 +625,8 @@ if __name__ == '__main__':
 
     histCounter = 0 # count how many relevant hists we have
 
-    # loop over all of the TObjects in the given ROOT file
-    for path, baseHist  in generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = True): 
+    # loop over all of the TObjects in the given ROOT file                         # newOwnership set to none for newer root versions, set to true for older ones
+    for path, baseHist  in generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = ownershipSetpoint): 
 
         if irrelevantTObject(path, baseHist): continue # skip non-relevant histograms
 
