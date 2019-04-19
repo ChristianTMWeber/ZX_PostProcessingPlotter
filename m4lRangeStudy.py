@@ -85,12 +85,12 @@ def defineSetOfM4lFilteredHists( RDF, lowerLimitList, upperLimitList, myTH1DMode
             if makeComplimentaryHists:
                 # we want events whose m4l is either of two non-overlapping intervals: m4l \in (A,B) or m4l \in (C,D), with A<B<C<D, let's define those
                 #                                A                  B           C                       D
-                leftAndRightIntervals  = (min(lowerLimitList), m4lLowLimit, m4lUpperLimit      , max(upperLimitList) )
-                cutString = "( m4l > %i $$ m4l < %i ) || m4l > %i $$ m4l < %i )" %( leftAndRightIntervals )
+                leftAndRightIntervals  = (min(lowerLimitList), m4lAbove, m4lBelow      , max(upperLimitList) )
+                cutString = "( m4l > %i && m4l < %i ) || ( m4l > %i && m4l < %i )" %( leftAndRightIntervals )
 
                 filteredRDFComplimentary = RDF.Filter( cutString )
 
-                histoDictComplimenatry[ (m4lAbove,m4lBelow) ]  = returnFilteredHist( filteredRDFComplimentary ,targetVariable , myTH1DModel = myTH1DModel , weightVariable = weightVariable, makeComplimentaryHists = False )
+                histoDictComplimenatry[ (m4lAbove,m4lBelow) ]  = returnFilteredHist( filteredRDFComplimentary ,targetVariable , myTH1DModel = myTH1DModel , weightVariable = weightVariable )
                 
 
 
@@ -112,7 +112,13 @@ def addToTargetHists(targetHistDict, sourceHistDict, scale = 1.):
 
     return None
 
+def getTH2BinContentByXYValue( aTH2, xVal, yVal):
+    # because TH2.GetBinContent() expects bin numbers
 
+    xBin = aTH2.GetXaxis().FindBin(xVal)
+    yBin = aTH2.GetYaxis().FindBin(yVal)
+
+    return aTH2.GetBinContent(xBin,yBin)
 
 def fillTH2WithTargetHists( TH2Hist, histDict, ):
 
@@ -121,7 +127,6 @@ def fillTH2WithTargetHists( TH2Hist, histDict, ):
         #print(currentTH1.Integral())
         if isinstance(currentTH1, ROOT.TH1) : TH2Hist.Fill(m4lLowLimit,m4lUpperLimit, currentTH1.Integral() )
         if isinstance(currentTH1, float) :    TH2Hist.Fill(m4lLowLimit,m4lUpperLimit, currentTH1 )
-        TH2Hist.GetBinContent(m4lLowLimit,m4lUpperLimit)
 
     #import pdb; pdb.set_trace() # import
 
@@ -219,6 +224,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    doDeltaSigError =True
 
     ######################################################
     # do some checks to make sure the command line options have been provided correctly
@@ -301,7 +307,7 @@ if __name__ == '__main__':
         RDFrameVariables = myDataFrame.Define("m34","llll_m34 / 1000").Define("m4l","llll_m4l / 1000") # define our variables
 
         # we want to have multiple m4l filtered histograms. Let's define them here
-        RDFHistDict, RDFHistDictComplimentary  = defineSetOfM4lFilteredHists( RDFrameVariables, m4lRangeLow, m4lRangeHigh , myTH1DModel = myTH1DModel,  weightVariable = 'weight', targetVariable = "m34")
+        RDFHistDict, RDFHistDictComplimentary  = defineSetOfM4lFilteredHists( RDFrameVariables, m4lRangeLow, m4lRangeHigh , myTH1DModel = myTH1DModel,  weightVariable = 'weight', targetVariable = "m34", makeComplimentaryHists = doDeltaSigError)
 
         # get the DSID to decide whether the given histogram is signal or background
         DSID = postProcess.idDSID(path)
@@ -354,6 +360,7 @@ if __name__ == '__main__':
     signalOverviewDict = {}
     ratioTH2Dict = {}  
     significanceTH2Dict = {}
+    deltaSignificanceTH2Dict = {}
 
     for DSID in dictOfSignalTargetHists:
 
@@ -375,6 +382,24 @@ if __name__ == '__main__':
         significanceTitleString = "signal significance in ZX m34 signal region: "  + currentSignalSampleName
         getSignificance = lambda signalHist, backgroundHist : doArithmeticOnQualifiedHistIntegrals(signalHist, backgroundHist ,  arithmetic = lambda A, B : A/math.sqrt(A+B) )
         significanceTH2Dict[DSID] = makeResultsTH2( dictOfSignalTargetHists[DSID] , targetHistsBackground, significanceTitleString, getSignificance )
+
+
+        #### calculate the difference in significance to a specific reference one
+        deltaSignificanceTitleString = "\Delta significance in ZX m34 signal region: "  + currentSignalSampleName
+
+        deltaSigTH2 = myTH2Template.Clone(deltaSignificanceTitleString)
+
+        refSignificance = getTH2BinContentByXYValue(significanceTH2Dict[DSID], min(m4lRangeLow), max(m4lRangeHigh) )
+        getDeltaSignificance = lambda signalHist, backgroundHist : doArithmeticOnQualifiedHistIntegrals(signalHist, backgroundHist ,  arithmetic = lambda A, B : A/math.sqrt(A+B) - refSignificance )
+        deltaSignificanceTH2Dict[DSID] = makeResultsTH2( dictOfSignalTargetHists[DSID] , targetHistsBackground, deltaSignificanceTitleString, getDeltaSignificance )
+
+        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+
+
+
+
+
 
 
 
