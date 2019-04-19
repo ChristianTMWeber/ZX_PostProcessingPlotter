@@ -132,37 +132,6 @@ def fillTH2WithTargetHists( TH2Hist, histDict, ):
 
     return None
 
-
-def histByHistGetIntegralsAndApplyArithmetics(histDict1, histDict2, arithmetic = None  ):
-    # pass a function that takes two floats and returns one as 'arithmetic' parameters,
-    # the two inputs weil will be the ratio of the integrals from histDict1[ givenKey ] and histDict2[ givenKey ] 
-    # where the integral boulds are given by the smallest integral in histDict1[ givenKey ] that subtents 95% of the events in there
-    # for example if want want to take the ratio choose
-    if arithmetic is None: arithmetic = lambda A, B : A/B
-
-    assert( set(histDict1.keys()) == set(histDict2.keys()) )
-
-    outputDict = {}
-
-    for key in histDict1: 
-        hist1 = histDict1[ key ]
-        hist2 = histDict2[ key ]
-
-        xLow, xHigh = getSmallestInterval( hist1, desiredWidth = 0.99) # get the smallest intervall that subtends a fraction 'desiredWidth' of all events
-
-        # let's practice lambda functions, and define one that gives me, for a given histogram 'aHist' and an 'xValue', the bin number for the hist of interest
-        # the syntax is the following: 
-        #  <name of the function>  =   lambda(as sign for python that we get an inline function here)   <parameters of the function>  :   <definition of the function?
-        getBinNr = lambda aHist, xValue : aHist.GetXaxis().FindBin(xValue)
-
-        integral1 = hist1.Integral( getBinNr(hist1, xLow),getBinNr(hist1, xHigh) )
-        integral2 = hist2.Integral( getBinNr(hist2, xLow),getBinNr(hist2, xHigh) )
-
-
-        outputDict[key] = arithmetic(integral1,integral2)
-
-    return outputDict
-
 def doArithmeticOnQualifiedHistIntegrals(hist1, hist2, arithmetic = None , desiredWidth = 0.99 ):
     # pass a function that takes two floats and returns one as 'arithmetic' parameters,
     # the two inputs weil will be the ratio of the integrals from histDict1[ givenKey ] and histDict2[ givenKey ] 
@@ -405,7 +374,6 @@ if __name__ == '__main__':
         #### Plot the expected significance
         significanceTitleString = "signal significance in ZX m34 signal region: "  + currentSignalSampleName
         getSignificance = lambda signalHist, backgroundHist : doArithmeticOnQualifiedHistIntegrals(signalHist, backgroundHist ,  arithmetic = lambda A, B : A/math.sqrt(A+B) )
-
         significanceTH2Dict[DSID] = makeResultsTH2( dictOfSignalTargetHists[DSID] , targetHistsBackground, significanceTitleString, getSignificance )
 
 
