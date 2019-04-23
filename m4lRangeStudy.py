@@ -126,8 +126,13 @@ def fillTH2WithTargetHists( TH2Hist, histDict, ):
 
     return None
 
-def getBinNr( aHist, xValue) : 
+def getBinNr( aHist, xValue) : # for a given ROOT.TH1 and xValue, get the relevant bin nr
     return aHist.GetXaxis().FindBin(xValue)
+
+def getHistXRange(hist): # for a given TH1, get the range on the x-Axis
+    nBins = hist.GetNbinsX()
+    return hist.GetBinLowEdge(1), hist.GetBinLowEdge(nBins) + hist.GetBinWidth(nBins)
+
 
 def doArithmeticOnQualifiedHistIntegrals(hist1, hist2, arithmetic = None , desiredWidth = 0.99 , integralInterval = None):
     # pass a function that takes two floats and returns one as 'arithmetic' parameters,
@@ -182,7 +187,7 @@ def makeResultsTH2( signalHistDict , backgroundHistDict, titleString, signalBack
     return currentSignalTH2
 
 
-def calculateDeltaSigError( signalHistDict , backgroundHistDict, signalErrorHistDict , backgroundErrorHistDict, titleString, signalBackgroundComparisonOperation, integralReferenceDict = None ):
+def calculateDeltaSigError( signalHistDict , backgroundHistDict, signalErrorHistDict , backgroundErrorHistDict, titleString, integralInterval ):
 
     def getIntegralNotBasedOnBin(hist, lowLimit, highLimit):
 
@@ -207,7 +212,7 @@ def calculateDeltaSigError( signalHistDict , backgroundHistDict, signalErrorHist
         signalErrorHist = signalErrorHistDict[(m4lLowLimit, m4lUpperLimit)]
         backgroundErrorHist = backgroundErrorHistDict[(m4lLowLimit, m4lUpperLimit)]
 
-        xLow, xHigh = getSmallestInterval( signalHist , desiredWidth = 0.99)
+        xLow, xHigh = integralInterval(signalHist)
 
 
         signalIntegral, _     = getIntegralNotBasedOnBin(signalHist,          xLow, xHigh)
@@ -251,24 +256,22 @@ if __name__ == '__main__':
     parser.add_argument("-d", "--metaData", type=str, default="metadata/md_bkg_datasets_mc16e_All.txt" ,
         help="location of the metadata file for the given mc campaign. If not provided, we will use a default location" )
 
-    parser.add_argument( "--DSID_Binning", type=str, help = "set how the different DSIDS are combined, ",
-        choices=["physicsProcess","physicsSubProcess","DSID"] , default="physicsProcess" )
-
-    parser.add_argument( "--holdAtPlot", type=bool, default=False , 
-        help = "Debugging option. If True sets a debugger tracer and \
-        activates the debugger at the point where the plot has has been fully assembled." ) 
-
-    parser.add_argument( "--outputName", type=str, default=None , 
-        help = "Pick the name of the output files. \
-        We'll produce three of them: a root file output (.root), pdfs of the histograms (.pdf) and a .txt indexing the histogram names.\
-        If no outputName is choosen, we will default to <inputFileName>_<mcCampaign>_outHistograms." ) 
-
-    parser.add_argument( "--rebin", type=int, default=1 , 
-    help = "We can rebin the bins. Choose rebin > 1 to rebin #<rebin> bins into 1." ) 
+    parser.add_argument("-a", "--analysisType", type=str, choices=["ZX","ZdZd"], default="ZX" ,
+        help="Selects the analysis that we follow. This especially changes what our target kinematic variable is\
+        (m34 for ZX and (m12+m34)/2 for ZdZd), as well as a few other minor changes (plot titles, etc.)" )
 
     args = parser.parse_args()
 
-    doDeltaSigError =True
+    analysisType = args.analysisType 
+
+    if analysisType == "ZX":
+        targetVar = "m34"
+        integralRangeFunction = lambda hist1: getSmallestInterval( hist1, desiredWidth = 0.99 ) # get the smallest intervall that subtends a fraction 'desiredWidth' of all events
+    elif analysisType == "ZdZd":
+        targetVar = "mll_avg"
+        integralRangeFunction = lambda hist1: getHistXRange(hist1) # for ZdZd we want to integrate over the whole mll_avg range
+
+    doDeltaSigError = True
 
     ######################################################
     # do some checks to make sure the command line options have been provided correctly
@@ -304,7 +307,7 @@ if __name__ == '__main__':
     
     # define a hist which will define the the binning and a few other things for all histograms to follow
     targetHistTemplate = ROOT.TH1D( "templateHist", "templateHist", 150,0,150)
-    targetHistTemplate.GetXaxis().SetTitle("m34 [GeV]")
+    targetHistTemplate.GetXaxis().SetTitle(targetVar+" [GeV]")
 
 
     # target hists: a dict of TH1Ds mapping the tuple (m4lLow, m4lHigh) -> TH1D for that tuple, for each pair of (m4lLow, m4lHigh) that we consider 
@@ -348,10 +351,11 @@ if __name__ == '__main__':
 
         myDataFrame = ROOT.RDataFrame(tDirPath,args.input) # setup the RDataFrame that we will use to parse the TTree
 
-        RDFrameVariables = myDataFrame.Define("m34","llll_m34 / 1000").Define("m4l","llll_m4l / 1000") # define our variables
+        RDFrameVariables = myDataFrame.Define("m34","llll_m34 / 1000").Define("m4l","llll_m4l / 1000")  # define our variables
+        if analysisType == "ZdZd" : RDFrameVariables=RDFrameVariables.Define("mll_avg","(llll_m12 + llll_m34 ) / 2000")
 
         # we want to have multiple m4l filtered histograms. Let's define them here
-        RDFHistDict, RDFHistDictComplimentary  = defineSetOfM4lFilteredHists( RDFrameVariables, m4lRangeLow, m4lRangeHigh , myTH1DModel = myTH1DModel,  weightVariable = 'weight', targetVariable = "m34", makeComplimentaryHists = doDeltaSigError)
+        RDFHistDict, RDFHistDictComplimentary  = defineSetOfM4lFilteredHists( RDFrameVariables, m4lRangeLow, m4lRangeHigh , myTH1DModel = myTH1DModel,  weightVariable = 'weight', targetVariable = targetVar, makeComplimentaryHists = doDeltaSigError)
 
         # get the DSID to decide whether the given histogram is signal or background
         DSID = postProcess.idDSID(path)
@@ -393,12 +397,17 @@ if __name__ == '__main__':
     # Create TH2s overviews of Signal and Background
     ######################################################
 
-    # background
-    backgroundTitleString = "#background events in ZX m34 signal region"
-    backgroundTH2 = myTH2Template.Clone(backgroundTitleString)
-    backgroundTH2.SetTitle(backgroundTitleString)
-
-    fillTH2WithTargetHists( backgroundTH2, targetHistsBackground)
+    # Here's what we wanna do: we want overview histograms that show the number background events, signal events, signal/background ratio,
+    # expected significance, difference in significance (in relation to a specific m4l cut), and the uncertainty in the previous difference in significance
+    # So each one of those will be presented in an TH2 where the x-Axis contains the different lower m4l limits, and the y-Axis the different upper limits
+    # to facilitate that I have the function 'makeResultsTH2' 
+    # proviced with two dicts of (m4lLowLimit, m4lHighLimit) -> ROOT.TH1  , let's call those two dicts signalDict and backgroundDict, 
+    # This function will loop over all the limit pairs and allow to apply a function 'signalBackgroundComparisonOperation' to be applied to the two TH1s 
+    # this function is expected to return just a scaler, which is then Filled in the TH2 that serves as the output
+    #
+    # I make the different TH2s (signal, background, significance...) by providing different 'signalBackgroundComparisonOperation' function to make the desired plots
+    #
+    # Only the error on difference plots use a different function, as that one needs more than just signal and background information (it also needs information about the uncertainties thereof)
 
 
     signalOverviewDict = {}
@@ -407,57 +416,52 @@ if __name__ == '__main__':
     deltaSignificanceTH2Dict = {}
     errorDeltaSignificanceTH2Dict = {}
 
+    #### Plot just the number of signal events   
+    backgroundTitleString = "#background events in {} {} signal region".format(analysisType, targetVar)
+    # to get just the background events I provide a function that just returns the integral over the background hist, check 'makeResultsTH2' definition to see how it works
+    justTheBackgroundIntegral = lambda signalHist, backgroundHist : backgroundHist.Integral()
+    backgroundTH2 = makeResultsTH2( targetHistsBackground , targetHistsBackground, backgroundTitleString, justTheBackgroundIntegral )
+
     for DSID in dictOfSignalTargetHists:
 
         currentSignalSampleName = myDSIDHelper.physicsProcessSignalByDSID[ int(DSID) ]
 
         #### Plot just the number of signal events
 
-        signalTitleString = "#signal events in ZX m34 signal region: " + currentSignalSampleName
-        justTheSignalIntegral = lambda signalHist, backgroundHist : signalHist.Integral()
+        signalTitleString = "#signal events in {} {} signal region: {}".format(analysisType, targetVar, currentSignalSampleName)
+        justTheSignalIntegral = lambda signalHist, backgroundHist : signalHist.Integral() # analog to how I deal with the background, here's a function that only returns the signal integral
         signalOverviewDict[DSID] = makeResultsTH2( dictOfSignalTargetHists[DSID] , targetHistsBackground, signalTitleString, justTheSignalIntegral )
 
         #### Plot signal to background ratio
-        ratioTitleString = "#signal/#background ratio in ZX m34 signal region: "  + currentSignalSampleName
-        getRatio = lambda signalHist, backgroundHist : doArithmeticOnQualifiedHistIntegrals(signalHist, backgroundHist ,  arithmetic = lambda A, B : A/B)
+        ratioTitleString = "#signal/#background ratio in {} {} signal region: {}".format(analysisType, targetVar, currentSignalSampleName)
+        getRatio = lambda signalHist, backgroundHist : doArithmeticOnQualifiedHistIntegrals(signalHist, backgroundHist , integralInterval = integralRangeFunction(signalHist),   arithmetic = lambda A, B : A/B)
         ratioTH2Dict[DSID] = makeResultsTH2( dictOfSignalTargetHists[DSID] , targetHistsBackground, ratioTitleString, getRatio )
 
 
         #### Plot the expected significance
-        significanceTitleString = "signal significance in ZX m34 signal region: "  + currentSignalSampleName
-        getSignificance = lambda signalHist, backgroundHist : doArithmeticOnQualifiedHistIntegrals(signalHist, backgroundHist ,  arithmetic = lambda A, B : A/math.sqrt(A+B) )
+        significanceTitleString = "signal significance in {} {} signal region: {}".format(analysisType, targetVar, currentSignalSampleName)
+        getSignificance = lambda signalHist, backgroundHist : doArithmeticOnQualifiedHistIntegrals(signalHist, backgroundHist , integralInterval = integralRangeFunction(signalHist),  arithmetic = lambda A, B : A/math.sqrt(A+B) )
         significanceTH2Dict[DSID] = makeResultsTH2( dictOfSignalTargetHists[DSID] , targetHistsBackground, significanceTitleString, getSignificance )
 
 
         #### calculate the difference in significance to a specific reference one
-        deltaSignificanceTitleString = "#Deltasignificance in ZX m34 signal region: "  + currentSignalSampleName
-
-        #deltaSigTH2 = myTH2Template.Clone(deltaSignificanceTitleString)
-
+        deltaSignificanceTitleString = "#Deltasignificance in {} {} signal region: {}".format(analysisType, targetVar, currentSignalSampleName)
         refSignificance = getTH2BinContentByXYValue(significanceTH2Dict[DSID], min(m4lRangeLow), max(m4lRangeHigh) )
-        getDeltaSignificance = lambda signalHist, backgroundHist : doArithmeticOnQualifiedHistIntegrals(signalHist, backgroundHist ,  arithmetic = lambda A, B : A/math.sqrt(A+B) - refSignificance )
+        getDeltaSignificance = lambda signalHist, backgroundHist : doArithmeticOnQualifiedHistIntegrals(signalHist, backgroundHist , integralInterval = integralRangeFunction(signalHist),  arithmetic = lambda A, B : A/math.sqrt(A+B) - refSignificance )
         deltaSignificanceTH2Dict[DSID] = makeResultsTH2( dictOfSignalTargetHists[DSID] , targetHistsBackground, deltaSignificanceTitleString, getDeltaSignificance )
 
-        
 
         ### calculate the error on the significance difference
-        errorDeltaSignificanceTitleString = "error on #Deltasignificance in ZX m34 signal region: "  + currentSignalSampleName
-
-        errorDeltaSigTH2 = myTH2Template.Clone(errorDeltaSignificanceTitleString)
-
-        errorDeltaSignificanceTH2Dict[DSID] = calculateDeltaSigError( dictOfSignalTargetHists[DSID] , targetHistsBackground, dictOfSignalComplementaryHists[DSID] , complimentaryHistsBackground, errorDeltaSignificanceTitleString, None, integralReferenceDict = None )
+        errorDeltaSignificanceTitleString = "error on #Deltasignificance in {} {} signal region: {}".format(analysisType, targetVar, currentSignalSampleName)
+        errorDeltaSignificanceTH2Dict[DSID] = calculateDeltaSigError( dictOfSignalTargetHists[DSID] , targetHistsBackground, dictOfSignalComplementaryHists[DSID] , complimentaryHistsBackground, errorDeltaSignificanceTitleString, integralInterval = integralRangeFunction )
 
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
 
 
-
-
-
-
-
-
-
+    ######################################################
+    # Write out all the hists
+    ######################################################
 
     outputFile = ROOT.TFile("m4lStudyOut.ROOT","RECREATE")
 
@@ -476,11 +480,11 @@ if __name__ == '__main__':
         for TH1 in dictOfSignalTargetHists[DSID].values(): TH1.Write()
 
         lastPlot = (DSID == dictOfSignalTargetHists.keys()[-1])
-        postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( signalOverviewDict[DSID]), False, "TH2Canvas.pdf", tableOfContents = DSID +" "+signalOverviewDict[DSID].GetName() )
-        postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( ratioTH2Dict[DSID]), False, "TH2Canvas.pdf", tableOfContents = DSID +" "+ratioTH2Dict[DSID].GetName())
-        postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( significanceTH2Dict[DSID]), False , "TH2Canvas.pdf", tableOfContents = DSID +" "+significanceTH2Dict[DSID].GetName() )
-        postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( deltaSignificanceTH2Dict[DSID]), False , "TH2Canvas.pdf", tableOfContents = DSID +" "+deltaSignificanceTH2Dict[DSID].GetName() )
-        postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( errorDeltaSignificanceTH2Dict[DSID]), lastPlot , "TH2Canvas.pdf", tableOfContents = DSID +" "+errorDeltaSignificanceTH2Dict[DSID].GetName() )
+        postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( signalOverviewDict[DSID])           , False ,  "TH2Canvas.pdf", tableOfContents = DSID +" "+signalOverviewDict[DSID].GetName() )
+        postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( ratioTH2Dict[DSID])                 , False ,  "TH2Canvas.pdf", tableOfContents = DSID +" "+ratioTH2Dict[DSID].GetName())
+        postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( significanceTH2Dict[DSID])          , False ,  "TH2Canvas.pdf", tableOfContents = DSID +" "+significanceTH2Dict[DSID].GetName() )
+        postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( deltaSignificanceTH2Dict[DSID])     , False ,  "TH2Canvas.pdf", tableOfContents = DSID +" "+deltaSignificanceTH2Dict[DSID].GetName() )
+        postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( errorDeltaSignificanceTH2Dict[DSID]), lastPlot,"TH2Canvas.pdf", tableOfContents = DSID +" "+errorDeltaSignificanceTH2Dict[DSID].GetName() )
 
         currentDir = "SignalComplimentary "+DSID; outputFile.mkdir(currentDir); outputFile.cd(currentDir)
         for TH1 in dictOfSignalComplementaryHists[DSID].values(): TH1.Write()
@@ -489,15 +493,4 @@ if __name__ == '__main__':
 
     print( "All done!")
 
-
-    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-
-    #canvas = ROOT.TCanvas("test","test" ,1300/2,1300/2)
-    #backgroundTH2.SetMarkerSize(0.9)
-    #backgroundTH2.Draw("COLZ TEXT45"); canvas.Update() #https://root.cern/doc/master/classTHistPainter.html#HP01c
-
-
-
-
-    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
