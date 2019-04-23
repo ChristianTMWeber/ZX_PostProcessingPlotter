@@ -36,17 +36,6 @@ def defineTargetHistograms(lowerLimitList, upperLimitList, templateHist = ROOT.T
     return th1dDict
 
 
-def returnFilteredHist( myRDataFrame, targetVariable , myTH1DModel = None , weightVariable = None ):
-
-    if    myTH1DModel is not None and weightVariable is not None : RDFResultHisto=myRDataFrame.Histo1D(myTH1DModel, targetVariable, weightVariable)
-    elif  myTH1DModel is not None and weightVariable is     None : RDFResultHisto=myRDataFrame.Histo1D(myTH1DModel, targetVariable)
-    elif  myTH1DModel is     None and weightVariable is not None : RDFResultHisto=myRDataFrame.Histo1D(targetVariable, weightVariable)
-    else:                                                          RDFResultHisto=myRDataFrame.Histo1D(targetVariable)
-
-    return RDFResultHisto
-
-
-
 def defineSetOfM4lFilteredHists( RDF, lowerLimitList, upperLimitList, myTH1DModel = None , weightVariable = None, targetVariable = "m34", makeComplimentaryHists = False):
     # RDF is expected to be a OOT.RDataFrame
     # lowerLimitList and upperLimitList  don't really need to be lists, just iterables
@@ -54,7 +43,7 @@ def defineSetOfM4lFilteredHists( RDF, lowerLimitList, upperLimitList, myTH1DMode
     #                          and then for any pair of limits in (m4lBelow, m4lAbove), we will fill another histogram 
     #                          with the events that do not make it into the current set of limits, but would make it into the one with the widest set of possible limits
 
-    # subfinction to help me deal with the different cases of myTH1DModel and weightVariable being provided or not
+    # subfunction to help me deal with the different cases of myTH1DModel and weightVariable being provided or not
     def returnFilteredHist( myRDataFrame, targetVariable , myTH1DModel = None , weightVariable = None ):
 
         if    myTH1DModel is not None and weightVariable is not None : RDFResultHisto=myRDataFrame.Histo1D(myTH1DModel, targetVariable, weightVariable)
@@ -137,19 +126,24 @@ def fillTH2WithTargetHists( TH2Hist, histDict, ):
 
     return None
 
-def doArithmeticOnQualifiedHistIntegrals(hist1, hist2, arithmetic = None , desiredWidth = 0.99 ):
+def getBinNr( aHist, xValue) : 
+    return aHist.GetXaxis().FindBin(xValue)
+
+def doArithmeticOnQualifiedHistIntegrals(hist1, hist2, arithmetic = None , desiredWidth = 0.99 , integralInterval = None):
     # pass a function that takes two floats and returns one as 'arithmetic' parameters,
     # the two inputs weil will be the ratio of the integrals from histDict1[ givenKey ] and histDict2[ givenKey ] 
     # where the integral boulds are given by the smallest integral in histDict1[ givenKey ] that subtents 95% of the events in there
     # for example if want want to take the ratio choose
     if arithmetic is None: arithmetic = lambda A, B : A/B
 
-    xLow, xHigh = getSmallestInterval( hist1, desiredWidth = desiredWidth ) # get the smallest intervall that subtends a fraction 'desiredWidth' of all events
+    if integralInterval is None:
+        xLow, xHigh = getSmallestInterval( hist1, desiredWidth = desiredWidth ) # get the smallest intervall that subtends a fraction 'desiredWidth' of all events
+    else:  xLow, xHigh = integralInterval
 
     # let's practice lambda functions, and define one that gives me, for a given histogram 'aHist' and an 'xValue', the bin number for the hist of interest
     # the syntax is the following: 
     #  <name of the function>  =   lambda(as sign for python that we get an inline function here)   <parameters of the function>  :   <definition of the function?
-    getBinNr = lambda aHist, xValue : aHist.GetXaxis().FindBin(xValue)
+    #getBinNr = lambda aHist, xValue : aHist.GetXaxis().FindBin(xValue)
 
     integral1 = hist1.Integral( getBinNr(hist1, xLow),getBinNr(hist1, xHigh) )
     integral2 = hist2.Integral( getBinNr(hist2, xLow),getBinNr(hist2, xHigh) )
@@ -186,6 +180,56 @@ def makeResultsTH2( signalHistDict , backgroundHistDict, titleString, signalBack
         currentSignalTH2.Fill(m4lLowLimit, m4lUpperLimit, aNumber )
 
     return currentSignalTH2
+
+
+def calculateDeltaSigError( signalHistDict , backgroundHistDict, signalErrorHistDict , backgroundErrorHistDict, titleString, signalBackgroundComparisonOperation, integralReferenceDict = None ):
+
+    def getIntegralNotBasedOnBin(hist, lowLimit, highLimit):
+
+        lowBin  =  hist.GetXaxis().FindBin(lowLimit)
+        highBin =  hist.GetXaxis().FindBin(highLimit)
+
+        integralUncertainty = ROOT.Double()
+
+        integral = hist.IntegralAndError( lowBin , highBin, integralUncertainty)
+        return integral, integralUncertainty
+
+
+
+    currentSignalTH2 = myTH2Template.Clone( titleString )
+    currentSignalTH2.SetTitle(titleString)
+
+    for m4lLowLimit, m4lUpperLimit in signalHistDict:
+
+        signalHist = signalHistDict[(m4lLowLimit, m4lUpperLimit)]
+        backgroundHist = backgroundHistDict[(m4lLowLimit, m4lUpperLimit)]
+
+        signalErrorHist = signalErrorHistDict[(m4lLowLimit, m4lUpperLimit)]
+        backgroundErrorHist = backgroundErrorHistDict[(m4lLowLimit, m4lUpperLimit)]
+
+        xLow, xHigh = getSmallestInterval( signalHist , desiredWidth = 0.99)
+
+
+        signalIntegral, _     = getIntegralNotBasedOnBin(signalHist,          xLow, xHigh)
+        backgroundIntegral, _ = getIntegralNotBasedOnBin(backgroundHist,      xLow, xHigh)
+        _, signalError        = getIntegralNotBasedOnBin(signalErrorHist,     xLow, xHigh)
+        _, backgroundError    = getIntegralNotBasedOnBin(backgroundErrorHist, xLow, xHigh)
+
+        # 
+        errorSquared = lambda s,b, sError, bError : (-s / (2*(b+s)**(1.5)) + 1/( (b+s)**(0.5) ))**2 * sError**2 + ( s**2 / (4 * ((b+s)**3) )) * bError**2
+
+        error = errorSquared(signalIntegral, backgroundIntegral, signalError, backgroundError)**0.5
+
+
+        #aNumber = signalBackgroundComparisonOperation(signalHist , backgroundHist, integralInterval = getSmallestInterval( integralHist , desiredWidth = 0.99) )
+
+        currentSignalTH2.Fill(m4lLowLimit, m4lUpperLimit, error )
+
+        
+
+
+    return currentSignalTH2
+
 
 
 if __name__ == '__main__':
@@ -361,6 +405,7 @@ if __name__ == '__main__':
     ratioTH2Dict = {}  
     significanceTH2Dict = {}
     deltaSignificanceTH2Dict = {}
+    errorDeltaSignificanceTH2Dict = {}
 
     for DSID in dictOfSignalTargetHists:
 
@@ -385,15 +430,25 @@ if __name__ == '__main__':
 
 
         #### calculate the difference in significance to a specific reference one
-        deltaSignificanceTitleString = "\Delta significance in ZX m34 signal region: "  + currentSignalSampleName
+        deltaSignificanceTitleString = "#Deltasignificance in ZX m34 signal region: "  + currentSignalSampleName
 
-        deltaSigTH2 = myTH2Template.Clone(deltaSignificanceTitleString)
+        #deltaSigTH2 = myTH2Template.Clone(deltaSignificanceTitleString)
 
         refSignificance = getTH2BinContentByXYValue(significanceTH2Dict[DSID], min(m4lRangeLow), max(m4lRangeHigh) )
         getDeltaSignificance = lambda signalHist, backgroundHist : doArithmeticOnQualifiedHistIntegrals(signalHist, backgroundHist ,  arithmetic = lambda A, B : A/math.sqrt(A+B) - refSignificance )
         deltaSignificanceTH2Dict[DSID] = makeResultsTH2( dictOfSignalTargetHists[DSID] , targetHistsBackground, deltaSignificanceTitleString, getDeltaSignificance )
 
-        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+        
+
+        ### calculate the error on the significance difference
+        errorDeltaSignificanceTitleString = "error on #Deltasignificance in ZX m34 signal region: "  + currentSignalSampleName
+
+        errorDeltaSigTH2 = myTH2Template.Clone(errorDeltaSignificanceTitleString)
+
+        errorDeltaSignificanceTH2Dict[DSID] = calculateDeltaSigError( dictOfSignalTargetHists[DSID] , targetHistsBackground, dictOfSignalComplementaryHists[DSID] , complimentaryHistsBackground, errorDeltaSignificanceTitleString, None, integralReferenceDict = None )
+
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
 
 
 
@@ -411,12 +466,24 @@ if __name__ == '__main__':
     postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( backgroundTH2), False, "TH2Canvas.pdf", tableOfContents = backgroundTH2.GetName() )
 
 
+    currentDir = "BackgroundComplimentary"; outputFile.mkdir(currentDir); outputFile.cd(currentDir)
+    for TH1 in complimentaryHistsBackground.values(): TH1.Write()
+    
+
+
     for DSID in dictOfSignalTargetHists: 
         currentDir = "Signal "+DSID; outputFile.mkdir(currentDir); outputFile.cd(currentDir)
         for TH1 in dictOfSignalTargetHists[DSID].values(): TH1.Write()
+
+        lastPlot = (DSID == dictOfSignalTargetHists.keys()[-1])
         postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( signalOverviewDict[DSID]), False, "TH2Canvas.pdf", tableOfContents = DSID +" "+signalOverviewDict[DSID].GetName() )
         postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( ratioTH2Dict[DSID]), False, "TH2Canvas.pdf", tableOfContents = DSID +" "+ratioTH2Dict[DSID].GetName())
-        postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( significanceTH2Dict[DSID]), DSID== dictOfSignalTargetHists.keys()[-1] , "TH2Canvas.pdf", tableOfContents = DSID +" "+significanceTH2Dict[DSID].GetName() )
+        postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( significanceTH2Dict[DSID]), False , "TH2Canvas.pdf", tableOfContents = DSID +" "+significanceTH2Dict[DSID].GetName() )
+        postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( deltaSignificanceTH2Dict[DSID]), False , "TH2Canvas.pdf", tableOfContents = DSID +" "+deltaSignificanceTH2Dict[DSID].GetName() )
+        postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( errorDeltaSignificanceTH2Dict[DSID]), lastPlot , "TH2Canvas.pdf", tableOfContents = DSID +" "+errorDeltaSignificanceTH2Dict[DSID].GetName() )
+
+        currentDir = "SignalComplimentary "+DSID; outputFile.mkdir(currentDir); outputFile.cd(currentDir)
+        for TH1 in dictOfSignalComplementaryHists[DSID].values(): TH1.Write()
 
     outputFile.Close()
 
