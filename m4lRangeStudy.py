@@ -221,7 +221,10 @@ def calculateDeltaSigError( signalHistDict , backgroundHistDict, signalErrorHist
         _, backgroundError    = getIntegralNotBasedOnBin(backgroundErrorHist, xLow, xHigh)
 
         # 
-        errorSquared = lambda s,b, sError, bError : (-s / (2*(b+s)**(1.5)) + 1/( (b+s)**(0.5) ))**2 * sError**2 + ( s**2 / (4 * ((b+s)**3) )) * bError**2
+        #errorSquared = lambda s,b, sError, bError : (-s / (2*(b+s)**(1.5)) + 1/( (b+s)**(0.5) ))**2 * sError**2 + ( s**2 / (4 * ((b+s)**3) )) * bError**2
+        errorSquared = lambda s,b, sError, bError : ( 1./b) * sError**2 + (s**2/(4*b**3)) * bError**2
+
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
         error = errorSquared(signalIntegral, backgroundIntegral, signalError, backgroundError)**0.5
 
@@ -248,6 +251,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument("input", type=str, help="name or path to the input files")
+
+    parser.add_argument("-r", "--resume", type=bool, default=False, help="Instead of processing TTree from current input file, \
+                        treat it is output from previous run of this programm, \
+                        and load the different TH1s from there that we would otherwise populate from the TTree")
 
     parser.add_argument("-c", "--mcCampaign", nargs='*', type=str, choices=["mc16a","mc16d","mc16e","mc16ade"], required=True,
         help="name of the mc campaign, i.e. mc16a or mc16d, need to provide exactly 1 mc-campaign tag for each input file, \
@@ -301,7 +308,7 @@ if __name__ == '__main__':
     ######################################################
 
     # set of m4l ranges we want to consider for our study
-    m4lRangeLow = range(115,125,1); m4lRangeHigh = range(125,131,1)
+    m4lRangeLow = range(115,125,1); m4lRangeHigh = range(125,131,1) # use only ints for now!
     dX = float(m4lRangeLow[1] - m4lRangeLow[0])
     dY = float(m4lRangeHigh[1] - m4lRangeHigh[0])
     
@@ -312,12 +319,12 @@ if __name__ == '__main__':
 
     # target hists: a dict of TH1Ds mapping the tuple (m4lLow, m4lHigh) -> TH1D for that tuple, for each pair of (m4lLow, m4lHigh) that we consider 
     targetHistsBackground = defineTargetHistograms(m4lRangeLow, m4lRangeHigh, templateHist = targetHistTemplate)
-    dictOfSignalTargetHists = {} # will contain a mappint of DSID -> targetHistsSignal for all signal DSIDs
+    dictOfSignalTargetHists = collections.defaultdict(dict) # will contain a mappint of DSID -> targetHistsSignal for all signal DSIDs 
 
     # complimentary hists contain the m34 distribution of events for which  min(m4lRangeLow) < m4l < m4lLow or m4lHigh < m4l < max(m4lRangeHigh)
     # we will use them in the calculation of some errors eventually
     complimentaryHistsBackground = defineTargetHistograms(m4lRangeLow, m4lRangeHigh, templateHist = targetHistTemplate)
-    dictOfSignalComplementaryHists = {} # will contain a mappint of DSID -> targetHistsSignal for all signal DSIDs
+    dictOfSignalComplementaryHists = collections.defaultdict(dict) # will contain a mappint of DSID -> targetHistsSignal for all signal DSIDs
 
     # define this as a model for the RDataFrome histograms
     myTH1DModel = ROOT.RDF.TH1DModel(targetHistTemplate)
@@ -333,50 +340,77 @@ if __name__ == '__main__':
 
     postProcessedData = ROOT.TFile(args.input, "READ"); # open the file with the data from the ZdZdPostProcessing, that contains the relevant TTrees
 
-    ROOT.ROOT.EnableImplicitMT()
+    #ROOT.ROOT.EnableImplicitMT()
     startTime = time.time()
     # loop over all of the TObjects in the given ROOT file
     for path, myTObject  in postProcess.generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = None):  
         # set newOwnership to 'None' here and let root handle the ownership itself for now, 
         # otherwise we are getting a segmentation fault?!
 
-        if postProcess.irrelevantTObject(path, myTObject, requiredRootType=ROOT.TTree): continue # skip non-relevant histograms
-        
-        
 
-        # path happen to include also the rootfile name, e.g. 'testDir.root/345060/Nominal/t_ZXTree'
-        # we need to remove that part of the string, so select everything after the first "/"
-        tDirPath = re.search( "(?<=/).+", path ).group()
-        
+        if args.resume:
 
-        myDataFrame = ROOT.RDataFrame(tDirPath,args.input) # setup the RDataFrame that we will use to parse the TTree
+            if not isinstance(myTObject, ROOT.TH1): continue
+            if isinstance(myTObject, ROOT.TH2): continue
 
-        RDFrameVariables = myDataFrame.Define("m34","llll_m34 / 1000").Define("m4l","llll_m4l / 1000")  # define our variables
-        if analysisType == "ZdZd" : RDFrameVariables=RDFrameVariables.Define("mll_avg","(llll_m12 + llll_m34 ) / 2000")
 
-        # we want to have multiple m4l filtered histograms. Let's define them here
-        RDFHistDict, RDFHistDictComplimentary  = defineSetOfM4lFilteredHists( RDFrameVariables, m4lRangeLow, m4lRangeHigh , myTH1DModel = myTH1DModel,  weightVariable = 'weight', targetVariable = targetVar, makeComplimentaryHists = doDeltaSigError)
+            #                        find a digit and then at lest one more
+            m4lLimitsStrList = re.findall("\d\d+", myTObject.GetName() ) #output should be a list of two strings, each one convertible to an int
+            assert len(m4lLimitsStrList) == 2 # need a lower and an upper limit
+            m4lLimits = tuple( [int(x) for x in m4lLimitsStrList] )
 
-        # get the DSID to decide whether the given histogram is signal or background
-        DSID = postProcess.idDSID(path)
+            if "Background" in path: hasBackground = True
+            else:                    hasBackground = False; DSID = postProcess.idDSID(path)
 
-        if myDSIDHelper.isSignalSample( int(DSID) ):
+            if "Complimentary" in path: isComplimentary = True
+            else :                      isComplimentary = False
+
+
+            if     hasBackground and not isComplimentary:            targetHistsBackground[m4lLimits] = myTObject
+            elif   hasBackground and isComplimentary:     complimentaryHistsBackground[m4lLimits] = myTObject
+            # if it is not background, it is signal
+            elif not hasBackground and not isComplimentary:        dictOfSignalTargetHists[DSID][m4lLimits] = myTObject
+            elif not hasBackground and isComplimentary:     dictOfSignalComplementaryHists[DSID][m4lLimits] = myTObject
+
+        else:
+
+            if postProcess.irrelevantTObject(path, myTObject, requiredRootType=ROOT.TTree): continue # skip non-relevant histograms
             
-            if DSID not in dictOfSignalTargetHists:  # if the current sample is a signal one, make sure we have it in our dictOfSignalTargetHists 
-                dictOfSignalTargetHists[DSID] = defineTargetHistograms(m4lRangeLow, m4lRangeHigh, templateHist = targetHistTemplate)
-                dictOfSignalComplementaryHists[DSID] = defineTargetHistograms(m4lRangeLow, m4lRangeHigh, templateHist = targetHistTemplate)
+            
 
-            currentTarget = dictOfSignalTargetHists[DSID]
-            currentComplementaryTarget = dictOfSignalComplementaryHists[DSID]
+            # path happen to include also the rootfile name, e.g. 'testDir.root/345060/Nominal/t_ZXTree'
+            # we need to remove that part of the string, so select everything after the first "/"
+            tDirPath = re.search( "(?<=/).+", path ).group()
+            
 
-        else :
-            currentTarget = targetHistsBackground
-            currentComplementaryTarget = complimentaryHistsBackground 
+            myDataFrame = ROOT.RDataFrame(tDirPath,args.input) # setup the RDataFrame that we will use to parse the TTree
 
-        addToTargetHists(currentTarget             , RDFHistDict             , scale = myDSIDHelper.getMCScale(DSID) )
-        addToTargetHists(currentComplementaryTarget, RDFHistDictComplimentary, scale = myDSIDHelper.getMCScale(DSID) )
+            RDFrameVariables = myDataFrame.Define("m34","llll_m34 / 1000").Define("m4l","llll_m4l / 1000")  # define our variables
+            if analysisType == "ZdZd" : RDFrameVariables=RDFrameVariables.Define("mll_avg","(llll_m12 + llll_m34 ) / 2000")
 
-        print path + "\t Memory usage: %s kB \t Runtime: %10.1f s" % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/8, (time.time() - startTime ) )
+            # we want to have multiple m4l filtered histograms. Let's define them here
+            RDFHistDict, RDFHistDictComplimentary  = defineSetOfM4lFilteredHists( RDFrameVariables, m4lRangeLow, m4lRangeHigh , myTH1DModel = myTH1DModel,  weightVariable = 'weight', targetVariable = targetVar, makeComplimentaryHists = doDeltaSigError)
+
+            # get the DSID to decide whether the given histogram is signal or background
+            DSID = postProcess.idDSID(path)
+
+            if myDSIDHelper.isSignalSample( int(DSID) ):
+                
+                if DSID not in dictOfSignalTargetHists:  # if the current sample is a signal one, make sure we have it in our dictOfSignalTargetHists 
+                    dictOfSignalTargetHists[DSID] = defineTargetHistograms(m4lRangeLow, m4lRangeHigh, templateHist = targetHistTemplate)
+                    dictOfSignalComplementaryHists[DSID] = defineTargetHistograms(m4lRangeLow, m4lRangeHigh, templateHist = targetHistTemplate)
+
+                currentTarget = dictOfSignalTargetHists[DSID]
+                currentComplementaryTarget = dictOfSignalComplementaryHists[DSID]
+
+            else :
+                currentTarget = targetHistsBackground
+                currentComplementaryTarget = complimentaryHistsBackground 
+
+            addToTargetHists(currentTarget             , RDFHistDict             , scale = myDSIDHelper.getMCScale(DSID) )
+            addToTargetHists(currentComplementaryTarget, RDFHistDictComplimentary, scale = myDSIDHelper.getMCScale(DSID) )
+
+            print path + "\t Memory usage: %s kB \t Runtime: %10.1f s" % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/8, (time.time() - startTime ) )
 
 
         # targetHistsBackground.values()[0].Integral()
@@ -423,6 +457,7 @@ if __name__ == '__main__':
     backgroundTH2 = makeResultsTH2( targetHistsBackground , targetHistsBackground, backgroundTitleString, justTheBackgroundIntegral )
 
     for DSID in dictOfSignalTargetHists:
+        print DSID + "\t Memory usage: %s kB \t Runtime: %10.1f s" % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/8, (time.time() - startTime ) )
 
         currentSignalSampleName = myDSIDHelper.physicsProcessSignalByDSID[ int(DSID) ]
 
@@ -440,14 +475,14 @@ if __name__ == '__main__':
 
         #### Plot the expected significance
         significanceTitleString = "signal significance in {} {} signal region: {}".format(analysisType, targetVar, currentSignalSampleName)
-        getSignificance = lambda signalHist, backgroundHist : doArithmeticOnQualifiedHistIntegrals(signalHist, backgroundHist , integralInterval = integralRangeFunction(signalHist),  arithmetic = lambda A, B : A/math.sqrt(A+B) )
+        getSignificance = lambda signalHist, backgroundHist : doArithmeticOnQualifiedHistIntegrals(signalHist, backgroundHist , integralInterval = integralRangeFunction(signalHist),  arithmetic = lambda A, B : A/math.sqrt(B) )
         significanceTH2Dict[DSID] = makeResultsTH2( dictOfSignalTargetHists[DSID] , targetHistsBackground, significanceTitleString, getSignificance )
 
 
         #### calculate the difference in significance to a specific reference one
         deltaSignificanceTitleString = "#Deltasignificance in {} {} signal region: {}".format(analysisType, targetVar, currentSignalSampleName)
         refSignificance = getTH2BinContentByXYValue(significanceTH2Dict[DSID], min(m4lRangeLow), max(m4lRangeHigh) )
-        getDeltaSignificance = lambda signalHist, backgroundHist : doArithmeticOnQualifiedHistIntegrals(signalHist, backgroundHist , integralInterval = integralRangeFunction(signalHist),  arithmetic = lambda A, B : A/math.sqrt(A+B) - refSignificance )
+        getDeltaSignificance = lambda signalHist, backgroundHist : doArithmeticOnQualifiedHistIntegrals(signalHist, backgroundHist , integralInterval = integralRangeFunction(signalHist),  arithmetic = lambda A, B : A/math.sqrt(B) - refSignificance )
         deltaSignificanceTH2Dict[DSID] = makeResultsTH2( dictOfSignalTargetHists[DSID] , targetHistsBackground, deltaSignificanceTitleString, getDeltaSignificance )
 
 
@@ -474,12 +509,13 @@ if __name__ == '__main__':
     for TH1 in complimentaryHistsBackground.values(): TH1.Write()
     
 
-
-    for DSID in dictOfSignalTargetHists: 
+    DSIDlist =  dictOfSignalTargetHists.keys(); 
+    DSIDlist.sort()
+    for DSID in DSIDlist: #dictOfSignalTargetHists: 
         currentDir = "Signal "+DSID; outputFile.mkdir(currentDir); outputFile.cd(currentDir)
         for TH1 in dictOfSignalTargetHists[DSID].values(): TH1.Write()
 
-        lastPlot = (DSID == dictOfSignalTargetHists.keys()[-1])
+        lastPlot = (DSID == DSIDlist[-1])
         postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( signalOverviewDict[DSID])           , False ,  "TH2Canvas.pdf", tableOfContents = DSID +" "+signalOverviewDict[DSID].GetName() )
         postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( ratioTH2Dict[DSID])                 , False ,  "TH2Canvas.pdf", tableOfContents = DSID +" "+ratioTH2Dict[DSID].GetName())
         postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( significanceTH2Dict[DSID])          , False ,  "TH2Canvas.pdf", tableOfContents = DSID +" "+significanceTH2Dict[DSID].GetName() )
@@ -490,6 +526,27 @@ if __name__ == '__main__':
         for TH1 in dictOfSignalComplementaryHists[DSID].values(): TH1.Write()
 
     outputFile.Close()
+
+    # make some overview plots to put them into my powerpoints
+
+    outputDir = "m4lStudy_"+analysisType+"/"
+    if not os.path.exists(outputDir): os.makedirs(outputDir)
+
+    for DSID in DSIDlist: #dictOfSignalTargetHists: 
+        overviewCanvas = ROOT.TCanvas(DSID,DSID,1920,1920/3);
+        overviewCanvas.Divide(3,1)
+        overviewCanvas.cd(1)
+        significanceTH2Dict[DSID].Draw("COLZ TEXT45"); #https://root.cern/doc/master/classTHistPainter.html#HP01
+        overviewCanvas.cd(2)
+        deltaSignificanceTH2Dict[DSID].Draw("COLZ TEXT45"); #https://root.cern/doc/master/classTHistPainter.html#HP01
+        overviewCanvas.cd(3)
+        errorDeltaSignificanceTH2Dict[DSID].Draw("COLZ TEXT45"); #https://root.cern/doc/master/classTHistPainter.html#HP01
+
+        overviewCanvas.Update()
+
+        overviewCanvas.Print(outputDir+"overviewDSID_"+DSID+".png")
+    
+
 
     print( "All done!")
 
