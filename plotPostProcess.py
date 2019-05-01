@@ -261,7 +261,7 @@ def generateTDirContents(TDir):
     TDirKeys = TDir.GetListOfKeys() # output is a TList
 
     for TKey in TDirKeys: 
-        yield TDir.Get(TKey.GetName()) # this is how I access the element that belongs to the current TKey
+        yield TKey.ReadObj() # this is how I access the element that belongs to the current TKey
 
 
 def generateTDirPathAndContentsRecursive(TDir, baseString = "" , newOwnership = None):
