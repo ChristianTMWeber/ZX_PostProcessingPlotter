@@ -267,6 +267,8 @@ if __name__ == '__main__':
         help="Selects the analysis that we follow. This especially changes what our target kinematic variable is\
         (m34 for ZX and (m12+m34)/2 for ZdZd), as well as a few other minor changes (plot titles, etc.)" )
 
+    parser.add_argument("--skipZJets", type=bool, default=True , help="If true, we will skip the Z+Jet mc samples, which we know to be problematic" )
+
     args = parser.parse_args()
 
     analysisType = args.analysisType 
@@ -372,11 +374,13 @@ if __name__ == '__main__':
             elif not hasBackground and not isComplimentary:        dictOfSignalTargetHists[DSID][m4lLimits] = myTObject
             elif not hasBackground and isComplimentary:     dictOfSignalComplementaryHists[DSID][m4lLimits] = myTObject
 
-        else:
+        else: # args.resume == False, i.e. fill new from TTree
 
             if postProcess.irrelevantTObject(path, myTObject, requiredRootType=ROOT.TTree): continue # skip non-relevant histograms
             
+            DSID = postProcess.idDSID(path) # get the DSID to decide whether the given histogram is signal or background eventually
             
+            if args.skipZJets and  "Z+Jets" in myDSIDHelper.physicsSubProcessByDSID[ int(DSID) ] : print( "skipping DSID " + DSID + " " + myDSIDHelper.physicsSubProcessByDSID[ int(DSID) ]); continue
 
             # path happen to include also the rootfile name, e.g. 'testDir.root/345060/Nominal/t_ZXTree'
             # we need to remove that part of the string, so select everything after the first "/"
@@ -391,8 +395,6 @@ if __name__ == '__main__':
             # we want to have multiple m4l filtered histograms. Let's define them here
             RDFHistDict, RDFHistDictComplimentary  = defineSetOfM4lFilteredHists( RDFrameVariables, m4lRangeLow, m4lRangeHigh , myTH1DModel = myTH1DModel,  weightVariable = 'weight', targetVariable = targetVar, makeComplimentaryHists = doDeltaSigError)
 
-            # get the DSID to decide whether the given histogram is signal or background
-            DSID = postProcess.idDSID(path)
 
             if myDSIDHelper.isSignalSample( int(DSID) ):
                 
