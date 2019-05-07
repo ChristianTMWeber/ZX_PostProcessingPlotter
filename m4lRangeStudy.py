@@ -158,13 +158,13 @@ def doArithmeticOnQualifiedHistIntegrals(hist1, hist2, arithmetic = None , desir
 
 
 
-def writeTH2AndGetCanvas( TH2 ):
+def writeTH2AndGetCanvas( TH2 , drawOption = "COLZ TEXT45"):
 
     TH2.Write()
 
     tmpCanvas = ROOT.TCanvas( TH2.GetName() , TH2.GetTitle() ,1300/2,1300/2)
     TH2.SetMarkerSize(0.9)
-    TH2.Draw("COLZ TEXT45"); #https://root.cern/doc/master/classTHistPainter.html#HP01
+    TH2.Draw(drawOption); #https://root.cern/doc/master/classTHistPainter.html#HP01
     tmpCanvas.Update()
 
     return tmpCanvas
@@ -331,10 +331,22 @@ if __name__ == '__main__':
     # define this as a model for the RDataFrome histograms
     myTH1DModel = ROOT.RDF.TH1DModel(targetHistTemplate)
 
+    # template for showing the number of events as a function of lower and upper limits on m4l
     myTH2Template = ROOT.TH2D( "templateHist2D", "templateHist2D", len(m4lRangeLow), min(m4lRangeLow)-dX/2, max(m4lRangeLow)+dX/2, len(m4lRangeHigh) , min(m4lRangeHigh)-dY/2, max(m4lRangeHigh)+dY/2  )
     myTH2Template.GetXaxis().SetTitle("lower limit on m4l")
     myTH2Template.GetYaxis().SetTitle("upper limit on m4l")
     myTH2Template.SetStats( False) # remove stats box
+
+    #                       TH2D (const char *name, const char *title, Int_t nbinsx, Double_t xlow, Double_t xup, Int_t nbinsy, Double_t ylow, Double_t yup)
+    m34VSm4lTemplate = ROOT.TH2D( "m34VSm4lTemplate", "m34VSm4lTemplate", 80, 0, 80, 150, 115, 130)
+    m34VSm4lTemplate.GetXaxis().SetTitle(targetVar+" [GeV]")
+    m34VSm4lTemplate.GetYaxis().SetTitle("m4l [GeV]")
+    m34VSm4lTemplate.SetStats( False) # remove stats box
+    #                  TH2DModel (const char *name, const char *title, int nbinsx, double xlow, double xup, int nbinsy, double ylow, double yup)                    
+    m34VSm4lTH2DModel = ROOT.RDF.TH2DModel( m34VSm4lTemplate )
+
+    m34VSm4lDict = {"Background": m34VSm4lTemplate.Clone("Background")}
+    m34VSm4lDict["Background"].SetTitle("Background")
 
     ######################################################
     # Do TTree selection an filtering via RDataFrame
@@ -395,8 +407,12 @@ if __name__ == '__main__':
             # we want to have multiple m4l filtered histograms. Let's define them here
             RDFHistDict, RDFHistDictComplimentary  = defineSetOfM4lFilteredHists( RDFrameVariables, m4lRangeLow, m4lRangeHigh , myTH1DModel = myTH1DModel,  weightVariable = 'weight', targetVariable = targetVar, makeComplimentaryHists = doDeltaSigError)
 
+            # add 
+            m34VSm4lHisto = RDFrameVariables.Histo2D(m34VSm4lTH2DModel,"m34","m4l" ,'weight')
 
-            if myDSIDHelper.isSignalSample( int(DSID) ):
+
+            # for our 1D histograms, select where to store them
+            if myDSIDHelper.isSignalSample( int(DSID) ): # for the signal hists we store them in a tree like dict: dictOfSignalTargetHists[DSID][(m4l_LowLimit, m4l_highLimit)] = TH1D
                 
                 if DSID not in dictOfSignalTargetHists:  # if the current sample is a signal one, make sure we have it in our dictOfSignalTargetHists 
                     dictOfSignalTargetHists[DSID] = defineTargetHistograms(m4lRangeLow, m4lRangeHigh, templateHist = targetHistTemplate)
@@ -405,12 +421,24 @@ if __name__ == '__main__':
                 currentTarget = dictOfSignalTargetHists[DSID]
                 currentComplementaryTarget = dictOfSignalComplementaryHists[DSID]
 
-            else :
+            else : # background case is more simple 
                 currentTarget = targetHistsBackground
                 currentComplementaryTarget = complimentaryHistsBackground 
 
             addToTargetHists(currentTarget             , RDFHistDict             , scale = myDSIDHelper.getMCScale(DSID) )
             addToTargetHists(currentComplementaryTarget, RDFHistDictComplimentary, scale = myDSIDHelper.getMCScale(DSID) )
+
+
+            # store things here for out 2D histos
+            m34VSm4lHistoPtr = m34VSm4lHisto.GetPtr() # we need to get the pointer here for python, as m34VSm4lHisto is actually a ROOT.ROOT::RDF::RResultPtr<TH2D>
+            if myDSIDHelper.isSignalSample( int(DSID) ): # for the signal hists we store them in a tree like dict: dictOfSignalTargetHists[DSID][(m4l_LowLimit, m4l_highLimit)] = TH1D
+                if DSID not in m34VSm4lDict: 
+                    m34VSm4lDict[DSID] = m34VSm4lTemplate.Clone(DSID)# add an entry for the current DSID if it isn't in there already
+                    m34VSm4lDict[DSID].SetTitle( DSID + ": " + myDSIDHelper.physicsProcessSignalByDSID[ int(DSID) ] )
+                m34VSm4lDict[DSID].Add( m34VSm4lHistoPtr, myDSIDHelper.getMCScale(DSID) )
+            else: m34VSm4lDict["Background"].Add( m34VSm4lHistoPtr, myDSIDHelper.getMCScale(DSID) )
+
+
 
             print path + "\t Memory usage: %s kB \t Runtime: %10.1f s" % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/8, (time.time() - startTime ) )
 
@@ -517,15 +545,25 @@ if __name__ == '__main__':
         currentDir = "Signal "+DSID; outputFile.mkdir(currentDir); outputFile.cd(currentDir)
         for TH1 in dictOfSignalTargetHists[DSID].values(): TH1.Write()
 
-        lastPlot = (DSID == DSIDlist[-1])
+        #lastPlot = (DSID == DSIDlist[-1]) #                                                       last plot? 
         postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( signalOverviewDict[DSID])           , False ,  "TH2Canvas.pdf", tableOfContents = DSID +" "+signalOverviewDict[DSID].GetName() )
         postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( ratioTH2Dict[DSID])                 , False ,  "TH2Canvas.pdf", tableOfContents = DSID +" "+ratioTH2Dict[DSID].GetName())
         postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( significanceTH2Dict[DSID])          , False ,  "TH2Canvas.pdf", tableOfContents = DSID +" "+significanceTH2Dict[DSID].GetName() )
         postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( deltaSignificanceTH2Dict[DSID])     , False ,  "TH2Canvas.pdf", tableOfContents = DSID +" "+deltaSignificanceTH2Dict[DSID].GetName() )
-        postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( errorDeltaSignificanceTH2Dict[DSID]), lastPlot,"TH2Canvas.pdf", tableOfContents = DSID +" "+errorDeltaSignificanceTH2Dict[DSID].GetName() )
+        postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( errorDeltaSignificanceTH2Dict[DSID]), False,"TH2Canvas.pdf", tableOfContents = DSID +" "+errorDeltaSignificanceTH2Dict[DSID].GetName() )
 
         currentDir = "SignalComplimentary "+DSID; outputFile.mkdir(currentDir); outputFile.cd(currentDir)
         for TH1 in dictOfSignalComplementaryHists[DSID].values(): TH1.Write()
+
+    # draw and save the m34 vs m4l plots
+    currentDir = targetVar+"VSm4l"; outputFile.mkdir(currentDir); outputFile.cd(currentDir)
+    TH2Counter = 0
+    m34VSm4lDictContents = m34VSm4lDict.keys(); m34VSm4lDictContents.sort()
+    for TH2Key in m34VSm4lDictContents:
+        TH2Counter += 1
+        TH2 = m34VSm4lDict[TH2Key]
+        postProcess.printRootCanvasPDF(  writeTH2AndGetCanvas( TH2, drawOption = "COLZ"), TH2Counter == len(m34VSm4lDict),"TH2Canvas.pdf", tableOfContents = targetVar + " vs m4l " +  TH2.GetTitle() )
+
 
     outputFile.Close()
 
