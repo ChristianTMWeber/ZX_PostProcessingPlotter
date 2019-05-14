@@ -274,24 +274,56 @@ def addStripToMask(signal, background, xStart,  mask, previousX = None):
 
     return maskImproved
 
+def constructOptimalSignificanceMask(signal, background):
+
+    mask = np.zeros(signal.shape)
+
+    xStart , _ = getMaximumLocation( signal )
+
+    print(DSID + "  " + str(xStart))
+
+
+    xPointLeft = xStart-1
+    xPointRight = xStart+1
+    addStripToMask(signal, background, xStart,  mask) # note that mask here is implicitly changed
+
+    
+    while xPointLeft is not None or xPointRight is not None:
+
+        if xPointRight is not None:
+
+            moreSignificance = addStripToMask(signal, background, xPointRight,  mask, previousX = xPointRight-1) # note that mask here is implicitly changed
+            if moreSignificance: xPointRight = xPointRight+1
+            else:                xPointRight = None
+
+        if xPointLeft is not None:
+            moreSignificance = addStripToMask(signal, background, xPointLeft,  mask, previousX = xPointLeft+1) # note that mask here is implicitly changed
+            if moreSignificance: xPointLeft = xPointLeft-1
+            else:                xPointLeft = None
+
+
+    return mask
+
 
 
 if __name__ == '__main__':
+    # I am referring in this code often to 'masks'
+    # These are arrays, TH1s or TH2s that are only filled with 1 and 0 and they serve to select subsets from other arrays etc
+    # the idea here is that I can do the selection by doing an element wise multiplication betwen the mask and the array etc of interest
 
-    myTFile = ROOT.TFile("m4lStudyOutZX.ROOT","OPEN")
-    myTDir = myTFile.Get("m34VSm4l")
+    myTFile = ROOT.TFile("m4lStudyOutZX.ROOT","OPEN") # this is the .root file that we want
+    myTDir = myTFile.Get("m34VSm4l")    # and this the the TDir that our hists are in, and as of now it should only be containings hists.
 
     histDict = {} # store my hists in here
-
+    # Grab and save all the hists in our TDir
     for path, myTObject  in postProcess.generateTDirPathAndContentsRecursive(myTDir, newOwnership = None):  histDict[myTObject.GetName()] = myTObject
 
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-
+    # let's set up a bunch of dicts to store tings
     signalTH2s = [ histDict[x] for x in histDict if x != "Background"]
-    maskDict = {}
-    maskDict1D = {}
-    boundingBoxDict = {}
-    optimizedBoxDict = {}
+    maskDict = {} ;    maskDict1D = {};     
+
+
+    # Loop over all the (Signal) histogrms
 
     for DSID in histDict:
         if DSID == 'Background': continue
@@ -303,34 +335,8 @@ if __name__ == '__main__':
         signal = convertTH2toNumpyArray( histDict[DSID] )
         background = convertTH2toNumpyArray( histDict['Background'] )
 
-        mask = np.zeros(signal.shape)
+        mask = constructOptimalSignificanceMask(signal, background)
 
-        # get x starting point, pick the point with the largest individual significance as such
-        significanceArray = significanceDef(signal, background) 
-        significanceArray[np.isnan(significanceArray)] = 0      
-        xStart , _ = getMaximumLocation( signal )
-
-        print(DSID + "  " + str(xStart))
-
-
-        xPointLeft = xStart-1
-        xPointRight = xStart+1
-        addStripToMask(signal, background, xStart,  mask) # note that mask here is implicitly changed
-
-        
-
-        while xPointLeft is not None or xPointRight is not None:
-
-            if xPointRight is not None:
-
-                moreSignificance = addStripToMask(signal, background, xPointRight,  mask, previousX = xPointRight-1) # note that mask here is implicitly changed
-                if moreSignificance: xPointRight = xPointRight+1
-                else:                xPointRight = None
-
-            if xPointLeft is not None:
-                moreSignificance = addStripToMask(signal, background, xPointLeft,  mask, previousX = xPointLeft+1) # note that mask here is implicitly changed
-                if moreSignificance: xPointLeft = xPointLeft-1
-                else:                xPointLeft = None
 
         maskDict[DSID] = mask
         maskDict1D[DSID] = np.sign( mask.sum(axis=1) )
@@ -346,14 +352,18 @@ if __name__ == '__main__':
     maskHist.Multiply(aggregateSignalTH2s)
     maskHist.Draw("COLZ")
 
-    xNonZeroLocation = np.nonzero(aggregateMask.sum(axis=1))[0] #get the location of rows that are non zero by adding along them and seeing which are non-zero
-    yvaluesDown = aggregateMask.argmax(axis=1)[xNonZeroLocation]
-    yValuesUp = aggregateMask.shape[1]-np.flip(aggregateMask, axis=1).argmax(axis=1)[xNonZeroLocation]
 
 
-    xNonZeroLocationTH2Coordinats = np.array([ getXYFromNumpyArrayIndex( x , 1, aggregateSignalTH2s)[0] for x in xNonZeroLocation ])
-    yValuesUpTH2Coordinats = np.array([ getXYFromNumpyArrayIndex( 1 , y, aggregateSignalTH2s)[1] for y in yValuesUp ])
-    yvaluesDownTH2Coordinats = np.array([ getXYFromNumpyArrayIndex( 1 , y, aggregateSignalTH2s)[1] for y in yvaluesDown ])
+    # this here serves to make some plots of the masks
+
+    #xNonZeroLocation = np.nonzero(aggregateMask.sum(axis=1))[0] #get the location of rows that are non zero by adding along them and seeing which are non-zero
+    #yvaluesDown = aggregateMask.argmax(axis=1)[xNonZeroLocation]
+    #yValuesUp = aggregateMask.shape[1]-np.flip(aggregateMask, axis=1).argmax(axis=1)[xNonZeroLocation]
+
+
+    #xNonZeroLocationTH2Coordinats = np.array([ getXYFromNumpyArrayIndex( x , 1, aggregateSignalTH2s)[0] for x in xNonZeroLocation ])
+    #yValuesUpTH2Coordinats = np.array([ getXYFromNumpyArrayIndex( 1 , y, aggregateSignalTH2s)[1] for y in yValuesUp ])
+    #yvaluesDownTH2Coordinats = np.array([ getXYFromNumpyArrayIndex( 1 , y, aggregateSignalTH2s)[1] for y in yvaluesDown ])
 
 
     # plot lower limits and fit
@@ -415,53 +425,6 @@ if __name__ == '__main__':
 
         #histDict[DSID].Draw("COLZ")
         #drawArray(significanceArray)
-
-
-#        mask = getMaxSignificanceMask(signal,background) # assuming signal
-#        maskDict[DSID] = mask
-#
-#        boundingMask = drawRectangularBoundingBox(mask) 
-#        boundingBoxDict[DSID] = boundingMask
-#
-#
-#        boundingBoxParams = np.array( getBoundingBoxParameters(mask) )
-#
-#        xMax, yMax = mask.shape
-#
-#        xLow, xHigh, yLow, yHigh = getBoundingBoxParameters(mask)
-#
-#        xMiddle = (xLow+xHigh)/2
-#        yMiddle = (yLow+yHigh)/2
-#
-#        xLowSlice  = slice(0      , xMiddle, 1 )
-#        xHighSlice = slice(xMiddle, xHigh  , 1 )
-#        yLowSlice  = slice(0      , yMiddle, 1 )
-#        yHighSlice = slice(yMiddle, yMax   , 1 )
-#
-#        #xLowSlice  = slice(xMiddle-3      , xMiddle-1, 1 )
-#        #xHighSlice = slice(xMiddle+1, xMiddle+2  , 1 )
-#        #yLowSlice  = slice(yMiddle-2 , yMiddle-1, 1 )
-#        #yHighSlice = slice(yMiddle+2, yMiddle+4   , 1 )
-#
-#        sliceSet = (xLowSlice, xHighSlice, yLowSlice, yHighSlice)
-#
-#        #getSignificanceFromBox(boundingBoxParams, signal, background)
-#
-#        curretnSignificance = lambda x: -getSignificanceFromBox(x, signal, background)
-#
-#        optimalParameter = brute(curretnSignificance, sliceSet )
-#
-#
-#
-#        optimizationMask = getRectangle( boundingMask , optimalParameter[0], optimalParameter[1], optimalParameter[2], optimalParameter[3] )
-#
-#        optimizedBoxDict[DSID] = optimizationMask
-
-
-        
-
-
-
 
 
 
