@@ -10,6 +10,11 @@ import os
 import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
 import resource # print 'Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 
+# import sys and os.path to be able to import plotPostProcess from the parent directory
+import sys 
+from os import path
+sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) ) # need to append the parent directory here explicitly to be able to import plotPostProcess
+
 import plotPostProcess as postProcess
 from functions.histTools import getSmallestInterval # my own tools for ROOT histograms 
 import math # for simple math
