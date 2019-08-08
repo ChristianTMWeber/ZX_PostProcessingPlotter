@@ -350,7 +350,6 @@ def constructOptimalSignificanceMask(signal, background):
 
 
 def makeSignificanceTH1Ds(signalsAndBackground, masksTH1, maskTH2, newTH1Name = "massPointSignificance"):
-
     backgroundTH2 = histDict['Background'].Clone("localBackground")
 
     significaneTH1s  = {}
@@ -379,9 +378,8 @@ def makeSignificanceTH1Ds(signalsAndBackground, masksTH1, maskTH2, newTH1Name = 
         backgroundTH2.Multiply(maskTH2)
         signalTH2.Multiply(maskTH2)
 
-        backgroundTH1 = backgroundTH2.ProjectionX()
-        signalTH1 = signalTH2.ProjectionX()
-
+        backgroundTH1 = backgroundTH2.ProjectionX("Background_ProjectionX", 1, backgroundTH2.GetNbinsY() )
+        signalTH1 = signalTH2.ProjectionX(DSID+"_ProjectionX", 1, signalTH2.GetNbinsY())
 
 
         backgroundTH1.Multiply(masksTH1[DSID])
@@ -403,7 +401,111 @@ def makeSignificanceTH1Ds(signalsAndBackground, masksTH1, maskTH2, newTH1Name = 
 
     return significaneTH1s, significaneFloats, massPointSignificanceTH1
 
+def makeOverviewPlot(cutParameters, outputTFile):
 
+    histList = [] # save hists here and output them, such that python deletes them as out of scope
+
+    linearLegendEntry = "x0=%2.0f, y0=%3.0f, s1=%1.2f, s2=%1.2f, yMax=%3.0f" %(cutParameters["xOffset"], cutParameters["yOffset"],  cutParameters["slope1"], cutParameters["slope2"], cutParameters["yMax"] )
+
+    overviewCanvas = ROOT.TCanvas(linearLegendEntry, linearLegendEntry,1920/2,1080/2);
+    overviewCanvas.Divide(2,3)
+
+    overviewCanvas.cd(1)
+    histDict["Background"].Draw("COLZ")
+    histList.append(histDict["Background"])
+
+    overviewCanvas.cd(2)
+
+    aggregateSignalTH2s = aggregateMasks( signalTH2s )
+    aggregateSignalTH2s.Draw("COLZ")
+    histList.append(aggregateSignalTH2s)
+
+    overviewCanvas.cd(3)
+    aggregateMask = aggregateMasks( maskDict.values() )
+
+    aggregateMaskTH2 = aggregateSignalTH2s.Clone("aggregateMask")
+    fillTHWithNumpyArray(aggregateMaskTH2,aggregateMask)
+
+    signalTimesMask = aggregateMaskTH2.Clone("SignalTimesMask")
+
+
+    signalTimesMask.Multiply(aggregateSignalTH2s)
+    signalTimesMask.Draw("COLZ")
+    histList.append(signalTimesMask)
+
+    overviewCanvas.cd(4)
+
+    m4lParameterMask = makeM4lTH2MaskFromFunction( lambda x,y : withinM4lLimits(x,y, cutParameters) , aggregateSignalTH2s )
+    signalTimesParameterMaskTH2 = m4lParameterMask.Clone("signalTimesParameterMask")
+    signalTimesParameterMaskTH2.Multiply(aggregateSignalTH2s)
+    signalTimesParameterMaskTH2.Draw("COLZ")
+    histList.append(signalTimesParameterMaskTH2)
+
+    overviewCanvas.cd(5)
+
+    # default mask, doesn't further limit the m4l selection
+    
+    defaultM4lSelectionTH1 = aggregateSignalTH2s.Clone("defaultM4lSelection") ; fillTHWithNumpyArray(defaultM4lSelectionTH1,np.ones( aggregateMask.shape ))
+    
+
+    significaneTH1sRef, significaneFloatsRef, massPointSignificanceTH1Ref = makeSignificanceTH1Ds(histDict, maskDictTH1D, defaultM4lSelectionTH1, newTH1Name = "massPointSignificanceRef")
+    significaneTH1sMax, significaneFloatsMax, massPointSignificanceTH1Max = makeSignificanceTH1Ds(histDict, maskDictTH1D, aggregateMaskTH2, newTH1Name = "massPointSignificanceMax")
+
+
+    significaneTH1s, significaneFloats, massPointSignificanceTH1 = makeSignificanceTH1Ds(histDict, maskDictTH1D, m4lParameterMask)
+
+    #significaneFloatsRef["343234"]
+    #significaneFloatsMax["343234"]
+    #significaneFloats["343234"]
+
+    massPointSignificanceTH1Ref.SetLineColor(1)
+    massPointSignificanceTH1Max.SetLineColor(2)
+    massPointSignificanceTH1.SetLineColor(3)
+
+    massPointSignificanceTH1Ref.SetLineStyle(1)
+    massPointSignificanceTH1Max.SetLineStyle(2)
+    massPointSignificanceTH1.SetLineStyle(3)
+
+    massPointSignificanceTH1Ref.SetLineWidth(2)
+    massPointSignificanceTH1Max.SetLineWidth(2)
+    massPointSignificanceTH1.SetLineWidth(2)
+
+
+
+    massPointSignificanceTH1Max.Draw()
+    massPointSignificanceTH1Ref.Draw("SAME")
+    massPointSignificanceTH1.Draw("SAME")
+
+    histList.append(massPointSignificanceTH1Max); histList.append(massPointSignificanceTH1Ref); histList.append(massPointSignificanceTH1); 
+
+    legend = ROOT.TLegend(0.1,0.6,0.5,0.9)
+    legend.SetFillColor(ROOT.kWhite)
+    legend.SetLineColor(ROOT.kWhite)
+    legend.SetNColumns(1);
+    legend.SetFillStyle(0);  # make legend background transparent
+    legend.SetBorderSize(0); # and remove its border without a border
+
+    legend.AddEntry(massPointSignificanceTH1Ref , "Reference" , "l");
+    legend.AddEntry(massPointSignificanceTH1Max , "Max" , "l");
+    linearLegendEntry = "Linear: x0=%2.0f, y0=%3.0f, s1=%1.2f, s2=%1.2f, yMax=%3.0f" %(cutParameters["xOffset"], cutParameters["yOffset"],  cutParameters["slope1"], cutParameters["slope2"], cutParameters["yMax"] )
+    legend.AddEntry(massPointSignificanceTH1 , linearLegendEntry , "l");
+    legend.Draw()
+    histList.append(legend)
+
+    # convertTHtoNumpyArray(massPointSignificanceTH1Ref)
+    # convertTHtoNumpyArray(massPointSignificanceTH1Max)
+    # convertTHtoNumpyArray(massPointSignificanceTH1)
+
+    significaneTH1sAggregateRefs = aggregateMasks( significaneTH1sRef )
+    significaneTH1sAggregate = aggregateMasks( significaneTH1s )
+
+
+    #myDSIDHelper.physicsSubProcessByDSID[ int(DSID) ] 
+
+    overviewCanvas.Update()
+    overviewCanvas.Write()
+
+    return overviewCanvas, histList
 
 if __name__ == '__main__':
     # I am referring in this code often to 'masks'
@@ -454,109 +556,44 @@ if __name__ == '__main__':
 
     canvasOutFile = ROOT.TFile("CanvasOut.root", "RECREATE")
 
-    overviewCanvas = ROOT.TCanvas("significance","significance",1920/2,1080/2);
-    overviewCanvas.Divide(2,3)
+    params = {"slope1"  : -4.5/15. ,"slope2"  : 5./25 ,"xOffset" : 30. ,"yOffset" : 115. , "yMax" : 129.}
+    parameterList = [
+    {"slope1"  : -0./15. ,"slope2"  : 0./25 ,"xOffset" : 30. ,"yOffset" : 115. , "yMax" : 130.},
 
-    overviewCanvas.cd(1)
-    histDict["Background"].Draw("COLZ")
+    {"slope1"  : -4.5/15.       ,"slope2"  : 4./25 ,"xOffset" : 30. ,"yOffset" : 115. , "yMax" : 130.},
+    {"slope1"  : -4.5/15. * 1.2 ,"slope2"  : 4./25 ,"xOffset" : 30. ,"yOffset" : 115. , "yMax" : 130.},
+    {"slope1"  : -4.5/15. * 0.8 ,"slope2"  : 4./25 ,"xOffset" : 30. ,"yOffset" : 115. , "yMax" : 130.},
 
-    overviewCanvas.cd(2)
+    {"slope1"  : -4.5/15.       ,"slope2"  : 4./25 ,"xOffset" : 30. ,"yOffset" : 115. , "yMax" : 128.},
+    {"slope1"  : -4.5/15. * 1.2 ,"slope2"  : 4./25 ,"xOffset" : 30. ,"yOffset" : 115. , "yMax" : 128.},
+    {"slope1"  : -4.5/15. * 0.8 ,"slope2"  : 4./25 ,"xOffset" : 30. ,"yOffset" : 115. , "yMax" : 128.},
 
-    aggregateSignalTH2s = aggregateMasks( signalTH2s )
-    aggregateSignalTH2s.Draw("COLZ")
+    {"slope1"  : -4.5/15.       ,"slope2"  : 4./25     ,"xOffset" : 30. ,"yOffset" : 115. , "yMax" : 130.},
+    {"slope1"  : -4.5/15. * 1.2 ,"slope2"  : 4./25 *1.3,"xOffset" : 30. ,"yOffset" : 115. , "yMax" : 130.},
+    {"slope1"  : -4.5/15. * 0.8 ,"slope2"  : 4./25 *0.8,"xOffset" : 30. ,"yOffset" : 115. , "yMax" : 130.},
 
-    overviewCanvas.cd(3)
-    aggregateMask = aggregateMasks( maskDict.values() )
-
-    aggregateMaskTH2 = aggregateSignalTH2s.Clone("aggregateMask")
-    fillTHWithNumpyArray(aggregateMaskTH2,aggregateMask)
-
-    signalTimesMask = aggregateMaskTH2.Clone("SignalTimesMask")
-
-
-    signalTimesMask.Multiply(aggregateSignalTH2s)
-    signalTimesMask.Draw("COLZ")
-
-
-    overviewCanvas.cd(4)
-
-    params = {"slope1"  : - 4.5/15. ,"slope2"  : 4./25 * 1.1 ,"xOffset" : 30. ,"yOffset" : 116. , "yMax" : 130.}
-
-    m4lParameterMask = makeM4lTH2MaskFromFunction( lambda x,y : withinM4lLimits(x,y, params) , aggregateSignalTH2s )
-    signalTimesParameterMaskTH2 = m4lParameterMask.Clone("signalTimesParameterMask")
-    signalTimesParameterMaskTH2.Multiply(aggregateSignalTH2s)
-    signalTimesParameterMaskTH2.Draw("COLZ")
-
-
-    overviewCanvas.cd(5)
-
-
-    # default mask, doesn't further limit the m4l selection
-    
-    defaultM4lSelectionTH1 = aggregateSignalTH2s.Clone("defaultM4lSelection") ; fillTHWithNumpyArray(defaultM4lSelectionTH1,np.ones( aggregateMask.shape ))
-    
-
-    significaneTH1sRef, significaneFloatsRef, massPointSignificanceTH1Ref = makeSignificanceTH1Ds(histDict, maskDictTH1D, defaultM4lSelectionTH1, newTH1Name = "massPointSignificanceRef")
-    significaneTH1sMax, significaneFloatsMax, massPointSignificanceTH1Max = makeSignificanceTH1Ds(histDict, maskDictTH1D, aggregateMaskTH2, newTH1Name = "massPointSignificanceMax")
-
-
-    significaneTH1s, significaneFloats, massPointSignificanceTH1 = makeSignificanceTH1Ds(histDict, maskDictTH1D, m4lParameterMask)
-
-
-    massPointSignificanceTH1Ref.SetLineColor(1)
-    massPointSignificanceTH1Max.SetLineColor(2)
-    massPointSignificanceTH1.SetLineColor(3)
-
-    massPointSignificanceTH1Ref.SetLineStyle(1)
-    massPointSignificanceTH1Max.SetLineStyle(2)
-    massPointSignificanceTH1.SetLineStyle(3)
-
-    massPointSignificanceTH1Ref.SetLineWidth(2)
-    massPointSignificanceTH1Max.SetLineWidth(2)
-    massPointSignificanceTH1.SetLineWidth(2)
+    {"slope1"  : -4.5/15.       ,"slope2"  : 4./25     ,"xOffset" : 30. ,"yOffset" : 116. , "yMax" : 130.},
+    {"slope1"  : -4.5/15. * 1.2 ,"slope2"  : 4./25 *1.3,"xOffset" : 30. ,"yOffset" : 116. , "yMax" : 130.},
+    {"slope1"  : -4.5/15. * 0.8 ,"slope2"  : 4./25 *0.8,"xOffset" : 30. ,"yOffset" : 116. , "yMax" : 130.}
 
 
 
-    massPointSignificanceTH1Max.Draw()
-    massPointSignificanceTH1Ref.Draw("SAME")
-    massPointSignificanceTH1.Draw("SAME")
 
-    legend = ROOT.TLegend(0.1,0.6,0.5,0.9)
-    legend.SetFillColor(ROOT.kWhite)
-    legend.SetLineColor(ROOT.kWhite)
-    legend.SetNColumns(1);
-    legend.SetFillStyle(0);  # make legend background transparent
-    legend.SetBorderSize(0); # and remove its border without a border
+    #{"slope1"  : -4.0/15. ,"slope2"  : 4./25 ,"xOffset" : 30. ,"yOffset" : 115. , "yMax" : 130.},
+    #{"slope1"  : -5.0/15. ,"slope2"  : 4./25 ,"xOffset" : 30. ,"yOffset" : 115. , "yMax" : 130.},
+    #{"slope1"  : -10.0/15. ,"slope2"  : 4./25 ,"xOffset" : 30. ,"yOffset" : 115. , "yMax" : 130.},
+    #{"slope1"  : -2./15. ,"slope2"  : 4./25 ,"xOffset" : 30. ,"yOffset" : 115. , "yMax" : 130.}
+  
+    ]
 
-    legend.AddEntry(massPointSignificanceTH1Ref , "Reference" , "l");
-    legend.AddEntry(massPointSignificanceTH1Max , "Max" , "l");
-    linearLegendEntry = "Linear: x0=%2.0f, y0=%3.0f, s1=%1.1f, s2=%1.1f, yMax=%3.0f" %(params["xOffset"], params["yOffset"],  params["slope1"], params["slope2"], params["yMax"] )
-    legend.AddEntry(massPointSignificanceTH1 , linearLegendEntry , "l");
-    legend.Draw()
+    canvasOutFile = ROOT.TFile("CanvasOut.root", "RECREATE")
+    for parameter in parameterList: overviewCanvas, histList = makeOverviewPlot(parameter, canvasOutFile)
+    canvasOutFile.Close()
 
-
-    # convertTHtoNumpyArray(massPointSignificanceTH1Ref)
-    # convertTHtoNumpyArray(massPointSignificanceTH1Max)
-    # convertTHtoNumpyArray(massPointSignificanceTH1)
-
-    significaneTH1sAggregateRefs = aggregateMasks( significaneTH1sRef )
-    significaneTH1sAggregate = aggregateMasks( significaneTH1s )
-
-
-    #myDSIDHelper.physicsSubProcessByDSID[ int(DSID) ] 
-
-    overviewCanvas.Update()
-
-
-
-    
-    #aggregateMasks( significaneTH1s.values() )
-
-    overviewCanvas.Write()
 
     import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
-    canvasOutFile.Close()
+    
 
 
     aggregateMask = aggregateMasks( maskDict.values() )
@@ -608,7 +645,7 @@ if __name__ == '__main__':
     # these parameters define the m34 depenend m4l cut
 
 
-    m34Spectrum = histOut.ProjectionX()
+    m34Spectrum = histOut.ProjectionX() # be carefull about the under and overflow here, avoid this with .ProjectionX(DSID+"_ProjectionX", 1, signalTH2.GetNbinsY()).Integral()
 
     import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 

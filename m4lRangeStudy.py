@@ -134,7 +134,7 @@ def getHistXRange(hist): # for a given TH1, get the range on the x-Axis
     return hist.GetBinLowEdge(1), hist.GetBinLowEdge(nBins) + hist.GetBinWidth(nBins)
 
 
-def doArithmeticOnQualifiedHistIntegrals(hist1, hist2, arithmetic = None , desiredWidth = 0.99 , integralInterval = None):
+def doArithmeticOnQualifiedHistIntegrals(hist1, hist2, arithmetic = None , desiredWidth = 0.8 , integralInterval = None):
     # pass a function that takes two floats and returns one as 'arithmetic' parameters,
     # the two inputs weil will be the ratio of the integrals from histDict1[ givenKey ] and histDict2[ givenKey ] 
     # where the integral boulds are given by the smallest integral in histDict1[ givenKey ] that subtents 95% of the events in there
@@ -275,7 +275,7 @@ if __name__ == '__main__':
 
     if analysisType == "ZX":
         targetVar = "m34"
-        integralRangeFunction = lambda hist1: getSmallestInterval( hist1, desiredWidth = 0.99 ) # get the smallest intervall that subtends a fraction 'desiredWidth' of all events
+        integralRangeFunction = lambda hist1: getSmallestInterval( hist1, desiredWidth = 0.8 ) # get the smallest intervall that subtends a fraction 'desiredWidth' of all events
     elif analysisType == "ZdZd":
         targetVar = "mll_avg"
         integralRangeFunction = lambda hist1: getHistXRange(hist1) # for ZdZd we want to integrate over the whole mll_avg range

@@ -85,7 +85,7 @@ class DSIDHelper:
 
 
     # campaigns integrated luminosity,  complete + partial
-    lumiMap = { "mc16a" : 36.21496, "mc16d" : 44.3074, "mc16e": 59.9372, "mc16ade": 140.45956, "units" : "fb-1"}
+    lumiMap = { "mc16a" : 36.21496, "mc16d" : 44.3074, "mc16e": 59.9372, "mc16ade": 139., "units" : "fb-1"}
     #taken by Justin from: https://twiki.cern.ch/twiki/bin/view/Atlas/LuminosityForPhysics#2018_13_TeV_proton_proton_placeh
     #2015: 3.21956 fb^-1 +- 2.1% (final uncertainty) (3.9 fb^-1 recorded)
     #2016: 32.9954 fb^-1 +- 2.2% (final uncertainty) (35.6 fb^-1 recorded)
@@ -638,7 +638,7 @@ if __name__ == '__main__':
         # 15GeV , 20GeV , 25GeV , 30GeV , 35GeV , 40GeV , 45GeV , 50GeV , 55GeV
         # 343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242
 
-        if int(DSID) in [ 343234, 343235, 343236,343237, 343238, 343239, 343240, 343241, 343242]: continue # , , 343234, 343235, 343236,343237, 343238, 343239, 343240, 343241, 343242
+        #if int(DSID) in [ 343234, 343235, 343236,343237, 343238, 343239, 343240, 343241, 343242]: continue # skip ZZd samples, , 343234, 343235, 343236,343237, 343238, 343239, 343240, 343241, 343242
         if int(DSID) in [302073, 302074, 302075, 302076, 302077, 302078, 302079, 302080, 302081, 302082, 
                          302083, 302084, 302085, 302086, 302087, 302088, 302089, 302090, 309475, 309476, 
                          309477, 309478, 309479, 309480, 309481, 309482, 309483, 309484, 309485, 309709]: continue # non ZZd signal sample DSIDS, i.e. ZdZd signal sample DSIDs
@@ -764,7 +764,7 @@ if __name__ == '__main__':
 
             backgroundTHStack.GetYaxis().SetTitle("Events / " + str(backgroundMergedTH1.GetBinWidth(1) )+" GeV" )
             backgroundTHStack.GetYaxis().SetTitleSize(0.05)
-            backgroundTHStack.GetYaxis().SetTitleOffset(1.2)
+            backgroundTHStack.GetYaxis().SetTitleOffset(1.0)
             backgroundTHStack.GetYaxis().CenterTitle()
             
             
@@ -832,11 +832,12 @@ if __name__ == '__main__':
 
                 ratioHist.GetYaxis().SetTitle("Data / MC")
                 ratioHist.GetYaxis().SetTitleSize(0.13)
-                ratioHist.GetYaxis().SetTitleOffset(0.25)
+                ratioHist.GetYaxis().SetTitleOffset(0.4)
                 ratioHist.GetYaxis().CenterTitle()
 
                 ratioHist.GetXaxis().SetLabelSize(0.12)
                 ratioHist.GetXaxis().SetTitleSize(0.12)
+                ratioHist.GetXaxis().SetTitleOffset(1.0)
                 ratioHist.Draw()
             else: backgroundTHStack.GetXaxis().SetTitle( sortedSamples.values()[0].GetXaxis().GetTitle()  )
 
