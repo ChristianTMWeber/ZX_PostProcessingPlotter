@@ -1,6 +1,12 @@
 import ROOT
 import numpy as np
+
+# import sys and os.path to be able to import plotPostProcess from the parent directory
+import sys 
+from os import path
+sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) ) # need to append the parent directory here explicitly to be able to import plotPostProcess
 import plotPostProcess as postProcess
+
 import matplotlib.pyplot as plt # to plot the np.array
 from scipy.optimize import brute  # for the fittin'
 import re
