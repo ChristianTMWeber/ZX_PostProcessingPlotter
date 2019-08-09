@@ -107,6 +107,8 @@ class DSIDHelper:
 
     sumOfEventWeightsDict = {}
 
+    mappingOfChoice = None
+
     def __init__(self):
 
         
@@ -120,6 +122,15 @@ class DSIDHelper:
         self.analysisMappingByDSID = self.makeReverseDict( self.analysisMapping)
         self.physicsProcessSignalByDSID = self.makeReverseDict( self.physicsProcessSignal)
 
+    def setMappingOfChoice(self, mapping ):
+
+
+        if   mapping == "physicsProcess" :    self.mappingOfChoice = self.physicsProcessByDSID
+        elif mapping == "physicsSubProcess" : self.mappingOfChoice = self.physicsSubProcessByDSID
+        elif mapping == "analysisMapping" :   self.mappingOfChoice = self.analysisMappingByDSID
+        else:                                 self.mappingOfChoice = mapping
+
+        return None
 
     def isSignalSample(self , KeyOrDSID ):
 
@@ -186,6 +197,8 @@ class DSIDHelper:
         if mcTag is None: mcTag = self.mcTag
 
         DSID = int(DSID)
+
+        if DSID == 0 : return 1. # zero indicates data, and will not be scaled
 
         prod = self.metaDataDict[DSID]["crossSection"] * self.metaDataDict[DSID]["kFactor"] * self.metaDataDict[DSID]["genFiltEff"]
 
@@ -264,6 +277,17 @@ class DSIDHelper:
 
         return completeKeyList
 
+    def idDSID(self, path):
+        # look for the following patter:  after a / , loog for 6 digits preceeded by any number of character that are not /
+        # return the non / strings and the 6 digits
+        DSIDRegExpression = re.search("(?<=/)[^/]*\d{6}", path)
+
+        # if we found such a pattern, select the six digits, or return 0
+        if DSIDRegExpression: DSID = re.search("\d{6}", DSIDRegExpression.group() ).group() # if we found a regular expression
+        else:                 DSID ="0" 
+
+        return DSID
+
 # end  class DSIDHelper
 
 
@@ -294,21 +318,14 @@ def generateTDirPathAndContentsRecursive(TDir, baseString = "" , newOwnership = 
         else :
             yield baseString + TObject.GetName() , TObject
 
+def getSubTDirList( currentTDir) : # provides a list of subdirectories in the current directory
+    listOfSubdirectories = [TObject.GetName() for TObject in generateTDirContents(currentTDir) if isinstance(TObject, ROOT.TDirectoryFile)]
+    return listOfSubdirectories
 
-def idDSID(path):
-    # look for the following patter:  after a / , loog for 6 digits preceeded by any number of character that are not /
-    # return the non / strings and the 6 digits
-    DSIDRegExpression = re.search("(?<=/)[^/]*\d{6}", path)
 
-    # if we found such a pattern, select the six digits, or return 0
-    if DSIDRegExpression: DSID = re.search("\d{6}", DSIDRegExpression.group() ).group() # if we found a regular expression
-    else:                 DSID ="0" 
+def idPlotTitle(path, DSIDHelper , DSID=None ):
 
-    return DSID
-
-def idPlotTitle(path, DSID=None ):
-
-    if DSID is None: DSID = idDSID(path)
+    if DSID is None: DSID = DSIDHelper.idDSID(path)
 
     pathDSIDCleaned = path.replace("_"+DSID+"_","_")
 
@@ -646,7 +663,7 @@ if __name__ == '__main__':
         ROOT.SetOwnership(baseHist, False)  # if we pass irrelevantTObject the histogram is relevant, so we change the ownership here to False in the attempt to prevent deletion
 
         # discern DSID and plotTitle to use them when sorting into a tree structure
-        DSID = idDSID(path)
+        DSID = myDSIDHelper.idDSID(path)
 
         # 15GeV , 20GeV , 25GeV , 30GeV , 35GeV , 40GeV , 45GeV , 50GeV , 55GeV
         # 343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242
@@ -655,7 +672,7 @@ if __name__ == '__main__':
         if int(DSID) in [302073, 302074, 302075, 302076, 302077, 302078, 302079, 302080, 302081, 302082, 
                          302083, 302084, 302085, 302086, 302087, 302088, 302089, 302090, 309475, 309476, 
                          309477, 309478, 309479, 309480, 309481, 309482, 309483, 309484, 309485, 309709]: continue # non ZZd signal sample DSIDS, i.e. ZdZd signal sample DSIDs
-        plotTitle = idPlotTitle(path, DSID=DSID)
+        plotTitle = idPlotTitle(path, myDSIDHelper, DSID=DSID)
 
         # build my tree structure here to house the relevant histograms, pre-sorted for plotting
         masterHistDict = fillMasterHistDict2( baseHist, plotTitle, args.mcCampaign[0], DSID, myDSIDHelper )
