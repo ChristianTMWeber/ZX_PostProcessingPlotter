@@ -25,7 +25,7 @@ from functions.compareVersions import compareVersions # to compare root versions
 
 class DSIDHelper:
 
-
+    # define a groupings of DSIDS, e.g. if we wanna group DSIDs by 'physicsProcess', then one of those groups is called "H->ZZ*->4l" and contains the DSIDs 341964, 341947, etc...
     physicsProcess={"H->ZZ*->4l" : [341964, 341947, 345060, 341488, 345046, 345047, 345048, 345066, 344973, 344974],
                       "ZZ*->4l" :    [364250, 364251, 364252, 361603, 342556, 343232, 343212, 343213, 345708, 345709],
                       "Reducible (Z+Jets, WZ, ttbar)"  : [364114, 364115, 364116, 364117, 364118, 364119, 364120, 364121, 364122, 
@@ -79,6 +79,17 @@ class DSIDHelper:
                                           364135, 364136, 364137, 364138, 364139, 364140, 364141]
                      }
 
+    analysisMapping =   {   "H4l"    : [341964, 341947, 345060, 341488, 345046, 345047, 345048, 345066, 344973, 344974],
+                            "ZZ"     : [364250, 364251, 364252, 361603, 342556, 343232, 343212, 343213, 345708, 345709],
+                            "const"  : [364114, 364115, 364116, 364117, 364118, 364119, 364120, 364121, 364122, 
+                                                                364123, 364124, 364125, 364126, 364127, 364100, 364101, 364102, 364103, 
+                                                                364104, 364105, 364106, 364107, 364108, 364109, 364110, 364111, 364112, 
+                                                                364113, 364128, 364129, 364130, 364131, 364132, 364133, 364134, 364135, 
+                                                                364136, 364137, 364138, 364139, 364140, 364141, 361601, 410472,
+                                                                364248, 364247, 364245, 364243, 364364,
+                                                                410142]
+                }
+
     ######################################################
     # Define some default or hardcoded values
     ######################################################
@@ -106,7 +117,9 @@ class DSIDHelper:
         # make the reverse dicts so that we can look up things by DSID
         self.physicsProcessByDSID    = self.makeReverseDict( self.physicsProcess);
         self.physicsSubProcessByDSID = self.makeReverseDict( self.physicsSubProcess);
+        self.analysisMappingByDSID = self.makeReverseDict( self.analysisMapping)
         self.physicsProcessSignalByDSID = self.makeReverseDict( self.physicsProcessSignal)
+
 
     def isSignalSample(self , KeyOrDSID ):
 
@@ -554,7 +567,7 @@ if __name__ == '__main__':
         help="location of the metadata file for the given mc campaign. If not provided, we will use a default location" )
 
     parser.add_argument( "--DSID_Binning", type=str, help = "set how the different DSIDS are combined, ",
-        choices=["physicsProcess","physicsSubProcess","DSID"] , default="physicsProcess" )
+        choices=["physicsProcess","physicsSubProcess","DSID","analysisMapping"] , default="physicsProcess" )
 
     parser.add_argument( "--holdAtPlot", type=bool, default=False , 
         help = "Debugging option. If True sets a debugger tracer and \
@@ -713,6 +726,7 @@ if __name__ == '__main__':
 
             if   args.DSID_Binning == "physicsProcess" :    DSIDMappingDict = myDSIDHelper.physicsProcessByDSID
             elif args.DSID_Binning == "physicsSubProcess" : DSIDMappingDict = myDSIDHelper.physicsSubProcessByDSID
+            elif args.DSID_Binning == "analysisMapping" : DSIDMappingDict = myDSIDHelper.analysisMappingByDSID
             elif args.DSID_Binning == "DSID" : # if we choose to do the DSID_Binning by DSID, we build here a a mapping DSID -> str(DSID)
                 DSIDMappingDict = {}
                 for aTuple in backgroundSamples: DSIDMappingDict[aTuple[0]] = str( aTuple[0] )  #DSID, histogram = aTuple
