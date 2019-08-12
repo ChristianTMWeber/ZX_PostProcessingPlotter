@@ -8,6 +8,8 @@
 #
 #############################
 
+
+
 import ROOT # to do all the ROOT stuff
 #import numpy as np # good ol' numpy
 import warnings # to warn about things that might not have gone right
@@ -22,6 +24,7 @@ import collections # so we can use collections.defaultdict to more easily constr
 import resource # print 'Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 
 from functions.compareVersions import compareVersions # to compare root versions
+import functions.rootDictAndTDirTools as rootDictAndTDirTools
 
 class DSIDHelper:
 
@@ -290,37 +293,6 @@ class DSIDHelper:
 
 # end  class DSIDHelper
 
-
-def generateTDirContents(TDir):
-    # this is a python generator 
-    # this one allows me to loop over all of the contents in a given ROOT TDir with a for loop
-
-    TDirKeys = TDir.GetListOfKeys() # output is a TList
-
-    for TKey in TDirKeys: 
-        yield TKey.ReadObj() # this is how I access the element that belongs to the current TKey
-
-
-def generateTDirPathAndContentsRecursive(TDir, baseString = "" , newOwnership = None):
-    # for a given TDirectory (remember that a TFile is also a TDirectory) get all non-directory objects
-    # redturns a tuple ('rootFolderPath', TObject) and is a generator
-
-    baseString += TDir.GetName() +"/"
-
-    for TObject in generateTDirContents(TDir):
-        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-        if newOwnership is not None: ROOT.SetOwnership(TObject, newOwnership) # do this to prevent an std::bad_alloc error, setting it to to 'True' gives permission to delete it, https://root.cern.ch/root/htmldoc/guides/users-guide/ObjectOwnership.html
-        if isinstance(TObject, ROOT.TDirectoryFile ):
-
-            for recursiveTObject in generateTDirPathAndContentsRecursive(TObject, baseString = baseString, newOwnership = newOwnership):
-                yield recursiveTObject
-
-        else :
-            yield baseString + TObject.GetName() , TObject
-
-def getSubTDirList( currentTDir) : # provides a list of subdirectories in the current directory
-    listOfSubdirectories = [TObject.GetName() for TObject in generateTDirContents(currentTDir) if isinstance(TObject, ROOT.TDirectoryFile)]
-    return listOfSubdirectories
 
 
 def idPlotTitle(path, DSIDHelper , DSID=None ):
@@ -656,7 +628,7 @@ if __name__ == '__main__':
     histCounter = 0 # count how many relevant hists we have
 
     # loop over all of the TObjects in the given ROOT file                         # newOwnership set to none for newer root versions, set to true for older ones
-    for path, baseHist  in generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = ownershipSetpoint): 
+    for path, baseHist  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = ownershipSetpoint): 
 
         if irrelevantTObject(path, baseHist): continue # skip non-relevant histograms
 

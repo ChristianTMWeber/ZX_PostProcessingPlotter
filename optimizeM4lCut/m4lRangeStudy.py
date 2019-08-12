@@ -13,10 +13,12 @@ import resource # print 'Memory usage: %s (kb)' % resource.getrusage(resource.RU
 # import sys and os.path to be able to import plotPostProcess from the parent directory
 import sys 
 from os import path
-sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) ) # need to append the parent directory here explicitly to be able to import plotPostProcess
+sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) ) # need to append the parent directory here explicitly to be able to import plotPostProcess, functions. etc
 
 import plotPostProcess as postProcess
 from functions.histTools import getSmallestInterval # my own tools for ROOT histograms 
+import functions.rootDictAndTDirTools as rootDictAndTDirTools
+
 import math # for simple math
 import time # for measuring execution time
 
@@ -265,7 +267,7 @@ if __name__ == '__main__':
         help="name of the mc campaign, i.e. mc16a or mc16d, need to provide exactly 1 mc-campaign tag for each input file, \
         make sure that sequence of mc-campaign tags matches the sequence of 'input' strings")
 
-    parser.add_argument("-d", "--metaData", type=str, default="metadata/md_bkg_datasets_mc16e_All.txt" ,
+    parser.add_argument("-d", "--metaData", type=str, default="../metadata/md_bkg_datasets_mc16e_All.txt" ,
         help="location of the metadata file for the given mc campaign. If not provided, we will use a default location" )
 
     parser.add_argument("-a", "--analysisType", type=str, choices=["ZX","ZdZd"], default="ZX" ,
@@ -362,7 +364,7 @@ if __name__ == '__main__':
     #ROOT.ROOT.EnableImplicitMT()
     startTime = time.time()
     # loop over all of the TObjects in the given ROOT file
-    for path, myTObject  in postProcess.generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = None):  
+    for path, myTObject  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = None):  
         # set newOwnership to 'None' here and let root handle the ownership itself for now, 
         # otherwise we are getting a segmentation fault?!
 
@@ -379,7 +381,7 @@ if __name__ == '__main__':
             m4lLimits = tuple( [int(x) for x in m4lLimitsStrList] )
 
             if "Background" in path: hasBackground = True
-            else:                    hasBackground = False; DSID = postProcess.idDSID(path)
+            else:                    hasBackground = False; DSID = myDSIDHelper.idDSID(path)
 
             if "Complimentary" in path: isComplimentary = True
             else :                      isComplimentary = False
@@ -395,7 +397,7 @@ if __name__ == '__main__':
 
             if postProcess.irrelevantTObject(path, myTObject, requiredRootType=ROOT.TTree): continue # skip non-relevant histograms
             
-            DSID = postProcess.idDSID(path) # get the DSID to decide whether the given histogram is signal or background eventually
+            DSID = myDSIDHelper.idDSID(path) # get the DSID to decide whether the given histogram is signal or background eventually
             
             if args.skipZJets and  "Z+Jets" in myDSIDHelper.physicsSubProcessByDSID[ int(DSID) ] : print( "skipping DSID " + DSID + " " + myDSIDHelper.physicsSubProcessByDSID[ int(DSID) ]); continue
 

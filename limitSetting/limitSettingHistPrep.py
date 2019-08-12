@@ -18,6 +18,7 @@ from os import path
 sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) ) # need to append the parent directory here explicitly to be able to import plotPostProcess
 import plotPostProcess as postProcess
 
+import functions.rootDictAndTDirTools as rootDictAndTDirTools
 from functions.compareVersions import compareVersions # to compare root versions
 
 
@@ -68,44 +69,6 @@ def fillHistDict( path, currentTH1 , mcTag, aDSIDHelper, channelMap = {"signalRe
     # masterHistDict['signalRegion']['ZZ']['EG_RESOLUTION_ALL1down'].keys()
 
     return masterHistDict
-
-def writeDictTreeToRootFile( aDict, targetFilename = "dictTree.root" ):
-    # use this function with the 'convertDictTree' one to map a tree like nested dict structure to
-    # a tree like nested TDir one
-
-        outoutROOTFile = ROOT.TFile( targetFilename, "RECREATE")
-        convertDictTree( aDict, outoutROOTFile )
-        outoutROOTFile.Close()
-
-        print( "Nested dict written to: " +  targetFilename)
-
-        return None
-
-def convertDictTree( aDict, TDir ):
-    # let's say I have a nested dict structure that resemebles a tree like structue 
-    # with ROOT TH1s or other TObjects at the end
-    # this function creates a structure of TDirs that maintains that hirarchy 
-    # and since a TFile is also a TDir, we can save that structure to disk
-
-    # recursively call this function, creating and switching TDirs that are names as the keys of dict
-    if isinstance( aDict, dict): 
-
-        existingSubdirectories = postProcess.getSubTDirList(TDir) # get list of existing TDirs to check against
-        for key in aDict: 
-
-            if key not in existingSubdirectories: TDir.mkdir(key) # create a TDirectory if it is not already in existence
-            subTDir = TDir.Get(key)
-            convertDictTree( aDict[key], subTDir ) # call this function again, but not with the current subdirectory as the new directory etc.
-
-    elif isinstance( aDict, list ):
-
-        for element in aDict: convertDictTree( element, TDir ) # don't switch the TDir if we ended up with a list
-
-    elif isinstance( aDict, ROOT.TObject ): # if ended up with a TObject, we write it to the TFile
-        TDir.cd()
-        aDict.Write()
-
-    return None
 
 
 
@@ -175,7 +138,7 @@ if __name__ == '__main__':
     nRelevantHistsProcessed = 0
 
 
-    for path, myTObject  in postProcess.generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = None):  
+    for path, myTObject  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = None):  
         # set newOwnership to 'None' here and let root handle the ownership itself for now, 
         # otherwise we are getting a segmentation fault?!
 
@@ -187,7 +150,7 @@ if __name__ == '__main__':
 
         if nRelevantHistsProcessed %100 == 0:  print( path, myTObject)
 
-    writeDictTreeToRootFile( masterHistDict, targetFilename = "testoutput.root" )
+    rootDictAndTDirTools.writeDictTreeToRootFile( masterHistDict, targetFilename = "testoutput.root" )
 
 
 

@@ -6,6 +6,8 @@ import sys
 from os import path
 sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) ) # need to append the parent directory here explicitly to be able to import plotPostProcess
 import plotPostProcess as postProcess
+import functions.rootDictAndTDirTools as rootDictAndTDirTools
+
 
 import matplotlib.pyplot as plt # to plot the np.array
 from scipy.optimize import brute  # for the fittin'
@@ -526,7 +528,7 @@ if __name__ == '__main__':
 
     histDict = {} # store my hists in here
     # Grab and save all the hists in our TDir
-    for path, myTObject  in postProcess.generateTDirPathAndContentsRecursive(myTDir, newOwnership = None):  histDict[myTObject.GetName()] = myTObject
+    for path, myTObject  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive(myTDir, newOwnership = None):  histDict[myTObject.GetName()] = myTObject
 
     # let's set up a bunch of dicts to store tings
     signalTH2s = [ histDict[x] for x in histDict if x != "Background"]
