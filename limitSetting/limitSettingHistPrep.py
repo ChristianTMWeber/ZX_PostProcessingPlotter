@@ -70,6 +70,25 @@ def fillHistDict( path, currentTH1 , mcTag, aDSIDHelper, channelMap = {"signalRe
 
     return masterHistDict
 
+def addMockData(masterHistDict  ):
+
+    eventType = "Nominal"
+
+    for channel in masterHistDict.keys():
+        for flavor in masterHistDict[channel]["H4l"]["Nominal"].keys():
+
+            H4l = masterHistDict[channel]["H4l"][eventType][flavor]
+            ZZ =  masterHistDict[channel]["ZZ"][eventType][flavor]
+            const = masterHistDict[channel]["const"][eventType][flavor]
+
+            mockData = H4l.Clone()
+
+            for hist in [H4l, ZZ, const]: mockData.Add(hist)
+
+            masterHistDict[channel]["mockData"][eventType][flavor] = mockData
+
+
+    return None
 
 
 if __name__ == '__main__':
@@ -149,6 +168,12 @@ if __name__ == '__main__':
         nRelevantHistsProcessed += 1
 
         if nRelevantHistsProcessed %100 == 0:  print( path, myTObject)
+
+
+
+
+    addMockData(masterHistDict)
+
 
     rootDictAndTDirTools.writeDictTreeToRootFile( masterHistDict, targetFilename = "testoutput.root" )
 
