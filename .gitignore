@@ -3,3 +3,6 @@
 *.txt
 *.pyc
 *.root
+*.xml
+*.eps
+*.table
