@@ -4,6 +4,12 @@ import ROOT
 # Functions to traverse TDirs and select TObjects
 ##################################################
 
+def TDirToList(TDir): # return the contents of a TDir as a list
+    outputList = []
+    for TKey in TDir.GetListOfKeys(): outputList.append( TKey.ReadObj() ) # this is how I access the element that belongs to the current TKey
+    return outputList
+
+
 def generateTDirContents(TDir):
     # this is a python generator 
     # this one allows me to loop over all of the contents in a given ROOT TDir with a for loop
