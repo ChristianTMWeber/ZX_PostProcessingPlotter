@@ -117,8 +117,9 @@ class DSIDHelper:
 
         
         # add the signal into the physics(Sub)Process
-        self.physicsProcess.update(self.physicsProcessSignal)
-        self.physicsSubProcess.update(self.physicsProcessSignal)
+        self.physicsProcess.update( self.physicsProcessSignal )
+        self.physicsSubProcess.update( self.physicsProcessSignal )
+        self.analysisMapping.update( self.physicsProcessSignal )
 
         # make the reverse dicts so that we can look up things by DSID
         self.physicsProcessByDSID    = self.makeReverseDict( self.physicsProcess);
@@ -290,9 +291,10 @@ class DSIDHelper:
         return completeKeyList
 
     def idDSID(self, path):
-        # look for the following patter:  after a / , loog for 6 digits preceeded by any number of character that are not /
-        # return the non / strings and the 6 digits
-        DSIDRegExpression = re.search("(?<=/)[^/]*\d{6}", path)
+        ## look for the following patter:  after a / , look for 6 digits preceeded by any number of character that are not /
+        ## return the non / strings and the 6 digits
+        #DSIDRegExpression = re.search("(?<=/)[^/]*\d{6}", path)
+        DSIDRegExpression = re.search("/\d{6}/", path)
 
         # if we found such a pattern, select the six digits, or return 0
         if DSIDRegExpression: DSID = re.search("\d{6}", DSIDRegExpression.group() ).group() # if we found a regular expression
