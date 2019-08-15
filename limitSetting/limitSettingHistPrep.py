@@ -10,6 +10,7 @@ import ROOT # to do all the ROOT stuff
 import argparse # to parse command line options
 import warnings # to warn about things that might not have gone right
 import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
+import re
 
 
 # import sys and os.path to be able to import plotPostProcess from the parent directory
@@ -43,7 +44,9 @@ def skipTObject(path, baseHist, requiredRootType = ROOT.TH1, selectChannels = ["
 def fillHistDict( path, currentTH1 , mcTag, aDSIDHelper, channelMap = {"signalRegion" : "ZXSR"}, DSID = None, 
     masterHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) ):
 
-    
+    # prune the path by looking for the DSID part and than taking the DSID part and everything after
+    # We exect the folder structure to be somethign like <stuff>/DSID/systematicVariation/TH1, so we prune the <stuff> away
+    path =   re.search("/(\d|\d{6})/.*", path).group()      # select 1 or 6 digits within backslashes, and all following (non-linebreak) characters
 
     channel = [x for x in channelMapping.keys() if channelMapping[x] in currentTH1.GetName() ][0]
     systematicVariation = path.split("/")[2]
@@ -180,14 +183,3 @@ if __name__ == '__main__':
 
 
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-
-
-
-
-
-
-
-
-
-    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-
