@@ -162,7 +162,7 @@ class DSIDHelper:
             
 
             if fillStyleSetting is None : 
-                if myDSIDHelper.isSignalSample( process ): fillStyle = 3345 # make signal shaded 
+                if self.isSignalSample( process ): fillStyle = 3345 # make signal shaded 
                 else:                                      fillStyle = 1001 # 1001 - Solid Fill: https://root.cern.ch/doc/v608/classTAttFill.html
 
             else: fillStyle = fillStyleSetting
