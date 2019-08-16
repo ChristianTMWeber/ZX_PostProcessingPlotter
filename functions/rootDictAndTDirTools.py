@@ -9,6 +9,7 @@ def TDirToList(TDir): # return the contents of a TDir as a list
     for TKey in TDir.GetListOfKeys(): outputList.append( TKey.ReadObj() ) # this is how I access the element that belongs to the current TKey
     return outputList
 
+def getTDirContentNames(TDir): return [tObj.GetName() for tObj in TDirToList(TDir)] 
 
 def generateTDirContents(TDir):
     # this is a python generator 
@@ -40,6 +41,28 @@ def generateTDirPathAndContentsRecursive(TDir, baseString = "" , newOwnership = 
 def getSubTDirList( currentTDir) : # provides a list of subdirectories in the current TDirectory
     listOfSubdirectories = [TObject.GetName() for TObject in generateTDirContents(currentTDir) if isinstance(TObject, ROOT.TDirectoryFile)]
     return listOfSubdirectories
+
+
+def buildDictTreeFromTDir(TDir, newOwnership = None):
+    outputDict = {}
+    #def expandDict(aDict, keyList):
+    #    addToEndOfDict(aDict, keyList, None)
+    #    return None
+
+    def addToEndOfDict(aDict, keyList, thingToInsert):
+        if len(keyList) > 1:
+            if keyList[0] not in aDict: aDict[keyList[0]] = {}
+            addToEndOfDict(aDict[keyList[0]], keyList[1:], thingToInsert )
+        else: 
+            aDict[keyList[0]]=thingToInsert
+        return None
+    # def addToEndOfDict(aDict, keyList, thingToInsert):
+
+    for path, TObject in generateTDirPathAndContentsRecursive(TDir, baseString = "" , newOwnership = newOwnership):
+        truncatedPath = path.split("/")[1:-1] # split into dir names and remove the first entry, i.e. the name of the TDir/Tfile, and the last one, i.e. the TObject name
+        addToEndOfDict(outputDict, truncatedPath, TObject )         
+
+    return outputDict
 
 
 ###################################################################
