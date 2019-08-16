@@ -6,10 +6,115 @@
 
 
 import ROOT
+import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
+import re
+
+# import sys and os.path to be able to import things from the parent directory
+import sys 
+from os import path
+sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) ) # need to append the parent directory here explicitly to be able to import plotPostProcess
+import functions.rootDictAndTDirTools as TDirTools
+import plotPostProcess as postProcess
+
+
+def drawNominalHists(inputFileName, myDrawDSIDHelper = postProcess.DSIDHelper() ):
+
+    def setupTLegend():
+        # set up a TLegend, still need to add the different entries
+        TLegend = ROOT.TLegend(0.15,0.65,0.45,0.87)
+        TLegend.SetFillColor(ROOT.kWhite)
+        TLegend.SetLineColor(ROOT.kWhite)
+        TLegend.SetNColumns(2);
+        TLegend.SetFillStyle(0);  # make legend background transparent
+        TLegend.SetBorderSize(0); # and remove its border without a border
+        return TLegend
+
+
+    inputTFile = ROOT.TFile(inputFileName, "OPEN")
+
+    histDict = {"H4l" : None, "ZZ" : None, "const" : None}
+
+    flavor = "All"
+
+    nominalHistStack = ROOT.THStack("nominalStack","nominalStack")
+
+    legend = setupTLegend()
+
+    for key in histDict:
+        histPath = " ZXSR/"+key+"/Nominal/"+flavor
+        
+        histTDir = inputTFile.Get(histPath)
+
+        histList = TDirTools.TDirToList(histTDir)
+
+        assert len(histList) == 1
+
+        currentTH1 = histList[0].Clone(key)
+
+        nominalHistStack.Add(currentTH1)
+
+        histDict[key] = currentTH1
+        legend.AddEntry(currentTH1 , key , "f");
+
+        #TDirTools.generateTDirContents(inputTFile.Get(histPath))
+
+    myDrawDSIDHelper.colorizeHistsInDict(histDict) # sets fill color to solid and pics consistent color scheme
+    
+    canvas = ROOT.TCanvas("overviewCanvas","overviewCanvas",1300/2,1300/2);
+    nominalHistStack.Draw("Hist")
+    #nominalHistStack.Draw("same E2 ")   # "E2" Draw error bars with rectangles:  https://root.cern.ch/doc/v608/classTHistPainter.html
+    legend.Draw(); # do legend things
+    canvas.Update()
+
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    return None
+
+
+def prepHistoSys(eventDict, flavor = "All"):
+
+    #### Get all the systematics by name ####
+    systematicNames = set()
+
+    for key in eventDict:
+        if key == "Nominal": continue # nominal is not a systematic
+        aSystematic = re.search("(?:(?!(1down|1up)).)*", key).group()  # systematics ends with 1up or 1down, find the string parts beforehand
+        systematicNames.add(aSystematic)
+
+    #### build 'HystoSys' objects for each systematic ####
+    allTheHistoSys = []
+
+    for systematicsName in systematicNames:
+        aHistoSys = ROOT.RooStats.HistFactory.HistoSys( systematicsName.strip("_") ) # use strip here to remove trailing underscores
+
+        downVariation = eventDict[systematicsName + "1down"][flavor]
+        upVariation   = eventDict[systematicsName + "1up"][flavor]
+
+        aHistoSys.SetHistoHigh( downVariation )
+        aHistoSys.SetHistoLow( upVariation )
+
+        allTheHistoSys.append(aHistoSys)
+
+    return allTheHistoSys
+
 
 if __name__ == '__main__':
 
-    InputFile = "testoutput.root"
+    inputFileName = "preppedHists_mc16a.root"
+
+    inputTFile = ROOT.TFile(inputFileName,"OPEN")
+    
+
+    
+
+
+    masterDict = TDirTools.buildDictTreeFromTDir(inputTFile)
+
+    prepHistoSys(masterDict['ZXSR']["H4l"])
+
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here # signalRegion/H4l
+
+    #drawNominalHists(inputFileName)
 
     ### Create the measurement object
     ### This is the top node of the structure
