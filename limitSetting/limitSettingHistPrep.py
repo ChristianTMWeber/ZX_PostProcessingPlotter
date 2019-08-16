@@ -41,14 +41,19 @@ def skipTObject(path, baseHist, requiredRootType = ROOT.TH1, selectChannels = ["
     return False
 
 
-def fillHistDict( path, currentTH1 , mcTag, aDSIDHelper, channelMap = {"signalRegion" : "ZXSR"}, DSID = None, 
+def fillHistDict( path, currentTH1 , mcTag, aDSIDHelper, channelMap = { "ZXSR" : "signalRegion"}, DSID = None, 
     masterHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) ):
+
+    # channel map = {"substring in path" : "what we want to replace it with in the output"}
 
     # prune the path by looking for the DSID part and than taking the DSID part and everything after
     # We exect the folder structure to be somethign like <stuff>/DSID/systematicVariation/TH1, so we prune the <stuff> away
     path =   re.search("/(\d|\d{6})/.*", path).group()      # select 1 or 6 digits within backslashes, and all following (non-linebreak) characters
 
-    channel = [x for x in channelMapping.keys() if channelMapping[x] in currentTH1.GetName() ][0]
+    # channel options are the 'keys' in the channelMap dict
+    channels = [channelMapping[x] for x in channelMapping.keys() if x in currentTH1.GetName() ]
+    assert len(channels)==1
+    channel = channels[0]
     systematicVariation = path.split("/")[2]
 
     # determine event type via DSID
@@ -64,6 +69,8 @@ def fillHistDict( path, currentTH1 , mcTag, aDSIDHelper, channelMap = {"signalRe
 
 
     if flavor not in masterHistDict[channel][eventType][systematicVariation]:
+        newName = "_".join([channel, eventType , systematicVariation, flavor ])
+        currentTH1.SetName(newName)
         masterHistDict[channel][eventType][systematicVariation][flavor] = currentTH1
     else: masterHistDict[channel][eventType][systematicVariation][flavor].Add(currentTH1)
 
@@ -113,7 +120,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    channelMapping = { "signalRegion" : "ZXSR", "ZZControlRegion" : "ZXVR1"}
+    channelMapping = { "ZXSR" : "ZXSR" , "ZXVR1" : "ZZCR"}
 
     ######################################################
     # do some checks to make sure the command line options have been provided correctly
@@ -164,7 +171,7 @@ if __name__ == '__main__':
         # set newOwnership to 'None' here and let root handle the ownership itself for now, 
         # otherwise we are getting a segmentation fault?!
 
-        if skipTObject(path, myTObject, selectChannels = channelMapping.values() ): continue # skip non-relevant histograms
+        if skipTObject(path, myTObject, selectChannels = channelMapping.keys() ): continue # skip non-relevant histograms
 
         masterHistDict = fillHistDict(path, myTObject , args.mcCampaign[0], myDSIDHelper, channelMap = channelMapping ) 
 
