@@ -41,7 +41,7 @@ def drawNominalHists(inputFileName, myDrawDSIDHelper = postProcess.DSIDHelper() 
     legend = setupTLegend()
 
     for key in histDict:
-        histPath = " ZXSR/"+key+"/Nominal/"+flavor
+        histPath = "ZXSR/"+key+"/Nominal/"+flavor
         
         histTDir = inputTFile.Get(histPath)
 
@@ -95,7 +95,58 @@ def prepHistoSys(eventDict, flavor = "All"):
 
         allTheHistoSys.append(aHistoSys)
 
+    #import pdb; pdb.set_trace() # import the debugger and
+
+    allTheHistoSys.sort( key = lambda x:x.GetName()) # i.e. we are
+
     return allTheHistoSys
+
+
+def prepHistoSys2(histFactorySample, inputTFile, region = "ZXSR", eventType = "H4l", flavor = "All"):
+
+    systematicsDict = collections.defaultdict(lambda: collections.defaultdict(dict))
+
+    for path, myTObject  in TDirTools.generateTDirPathAndContentsRecursive(inputTFile, newOwnership = None):  
+
+        if not all([x in path for x in [region,eventType,flavor] ]): continue 
+        if "Nominal" in path: continue # nominal is not a systematic
+
+        regexMatch = re.search("(?:(?!(1down|1up)).)*", path).group() # systematics ends with 1up or 1down, find the string parts beforehand
+
+        systematicsName = regexMatch.split("/")[-1]
+
+        variationType = re.search("(?<="+systematicsName+")(.*?)(?=\/)", path).group() # find smallest stringt between the systematics name and a '/', should be the up or down variation signifier
+
+        assert variationType == '1down' or variationType == "1up"
+
+        
+        
+        fileName = re.search("(.*?).root", path).group() # find 
+        
+
+        tDirPath = re.search("(?<=.root/)(.*)\/", path).group() # find 
+
+        objectName = re.search("[^\/]+$", path).group() # find everything after last '/' 
+
+        
+        systematicsDict[systematicsName][variationType]['histoName'] = objectName
+        systematicsDict[systematicsName][variationType]['fileName'] = fileName
+        systematicsDict[systematicsName][variationType]['tDirPath'] = tDirPath
+
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+
+    for systematicsName in systematicsDict.keys()[0:1]:
+
+        upSys = systematicsDict[systematicsName]["1up"]
+        downSys = systematicsDict[systematicsName]["1down"]
+
+        # AddHistoSys ( Name,        HistoNameLow         , HistoFileLow       ,  HistoPathLow       ,  HistoNameHigh      , HistoFileHigh    ,  HistoPathHigh)
+        histFactorySample.AddHistoSys(systematicsName, downSys['histoName'] , downSys['fileName'],  downSys['tDirPath'],  upSys['histoName'] , upSys['fileName'],  upSys['tDirPath'])
+
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    return None
 
 
 if __name__ == '__main__':
@@ -103,16 +154,9 @@ if __name__ == '__main__':
     inputFileName = "preppedHists_mc16a.root"
 
     inputTFile = ROOT.TFile(inputFileName,"OPEN")
-    
+    masterDict = TDirTools.buildDictTreeFromTDir(inputTFile) # we'll use this dict for the systematics histograms etc.
 
     
-
-
-    masterDict = TDirTools.buildDictTreeFromTDir(inputTFile)
-
-    prepHistoSys(masterDict['ZXSR']["H4l"])
-
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here # signalRegion/H4l
 
     #drawNominalHists(inputFileName)
 
@@ -162,7 +206,7 @@ if __name__ == '__main__':
     ### path to that ROOT file and the name of the data
     ### histogram in that root file
     ### The arguments are: SetData(HistogramName, HistogramFile)
-    chan.SetData("signalRegion/mockData/Nominal/All/h_ZXSR_All_HWindow_m34", InputFile)
+    chan.SetData("ZXSR/mockData/Nominal/All/ZXSR_H4l_Nominal_All", inputFileName)
     #chan.SetStatErrorConfig(0.05, "Poisson") # this seems to be not part of the C++ exsample
 
 
@@ -175,7 +219,7 @@ if __name__ == '__main__':
     ### use to model the data.
     ### Here, they just consist of a signal process
     ### and a single background process.
-    signal = ROOT.RooStats.HistFactory.Sample("signal", "signalRegion/H4l/Nominal/All/h_ZXSR_All_HWindow_m34", InputFile)
+    signal = ROOT.RooStats.HistFactory.Sample("signal", "ZXSR/ZZd, m_{Zd} = 35GeV/Nominal/All/ZXSR_ZZd, m_{Zd} = 35GeV_Nominal_All", inputFileName)
     ### Having created this sample, we configure it
     ### First, we add the cross-section scaling
     ### parameter that we call SigXsecOverSM
@@ -187,18 +231,30 @@ if __name__ == '__main__':
 
     # Background 1
     ### We do a similar thing for our background
-    background1 = ROOT.RooStats.HistFactory.Sample("background1", "signalRegion/ZZ/Nominal/All/h_ZXSR_All_HWindow_m34", InputFile)
-    #background1.ActivateStatError()#ActivateStatError("background1_statUncert", InputFile)
-    #background1.AddOverallSys("syst2", 0.95, 1.05 )
-    #background1.AddNormFactor("background1Norm", 1, 0, 3) # let's add this to fit the normalization of the background
-    chan.AddSample(background1)
+    backgroundZZ = ROOT.RooStats.HistFactory.Sample("backgroundZZ", "ZXSR/ZZ/Nominal/All/ZXSR_ZZ_Nominal_All", inputFileName)
+    #backgroundZZ.ActivateStatError()#ActivateStatError("backgroundZZ_statUncert", inputFileName)
+    #backgroundZZ.AddOverallSys("syst2", 0.95, 1.05 )
+    backgroundZZ.AddNormFactor("ZZNorm", 1, 0, 3) # let's add this to fit the normalization of the background
+    chan.AddSample(backgroundZZ)
+
 
     # Background 2
     ### And we create a second background for good measure
-    # background2 = ROOT.RooStats.HistFactory.Sample("background2", "rooHistGaussData1TH1__indepVariable", InputFile)
-    # background2.ActivateStatError()
-    # background2.AddOverallSys("syst3", 0.95, 1.05 )
-    # chan.AddSample(background2)
+    backgroundH4l = ROOT.RooStats.HistFactory.Sample("backgroundH4l", "ZXSR/H4l/Nominal/All/ZXSR_H4l_Nominal_All", inputFileName)
+    # backgroundH4l.ActivateStatError()
+    # backgroundH4l.AddOverallSys("syst3", 0.95, 1.05 )
+    backgroundH4l.AddNormFactor("H4lNorm", 1, 0, 3) # let's add this to fit the normalization of the background
+
+    #histoSysList = prepHistoSys(masterDict['ZXSR']["H4l"])
+    #backgroundH4l.AddHistoSys(histoSysList[0])
+
+
+    prepHistoSys2(backgroundH4l, inputTFile, region = "ZXSR", eventType = "H4l", flavor = "All")
+
+    # let's see what happens when we add systematcs
+
+    #backgroundH4l.AddOverallSys( "background_uncertainty",  -1., 1. )
+    chan.AddSample(backgroundH4l)
 
 
     # Done with this channel
@@ -225,6 +281,7 @@ if __name__ == '__main__':
 
     meas.PrintXML("tutorialBuildingHistFactoryModel", meas.GetOutputFilePrefix());
 
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here #  ZXSR/H4l
     # Now, do the measurement
 
     ### Finally, run the measurement.
