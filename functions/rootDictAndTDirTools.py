@@ -109,6 +109,20 @@ def convertDictTree( aDict, TDir ):
 
     return None
 
+###################################################################
+# Other functions to make root objects more accessible
+###################################################################
+
+def rooArgSetToList( aRooArgSet ): # turn a RooArgSet into a python list
+    outputList = []
+    iter = aRooArgSet.createIterator()
+    tObj = iter.Next();             
+    while tObj: 
+        outputList.append(tObj)
+        tObj = iter.Next(); 
+    return outputList
+
+
 
 
 if __name__ == '__main__':
