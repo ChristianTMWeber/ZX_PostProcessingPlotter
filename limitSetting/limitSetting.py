@@ -170,66 +170,36 @@ if __name__ == '__main__':
     ### We do some minor configuration as well
     meas = ROOT.RooStats.HistFactory.Measurement("ZXMeasurement", "ZXMeasurement")
 
-    ### Set the prefix that will appear before
-    ### all output for this measurement
-    ### We Set ExportOnly to false, meaning
-    ### we will fit the measurement and make 
-    ### plots in addition to saving the workspace
+    ### Set the prefix that will appear before all output for this measurement We Set ExportOnly to false, meaning we will fit the measurement and make  plots in addition to saving the workspace
     meas.SetOutputFilePrefix("./testHistfactoryOutput/")
     meas.SetExportOnly(False)
 
-    ### Set the name of the parameter of interest
-    ### Note that this parameter hasn't yet been
-    ### created, we are anticipating it
+    ### Set the name of the parameter of interest Note that this parameter hasn't yet been created, we are anticipating it
     meas.SetPOI("SigXsecOverSM")
 
     meas.AddConstantParam("Lumi")           # this is not part of the C++ exsample
     meas.AddConstantParam("alpha_syst1")    # this is not part of the C++ exsample
 
-    ### Set the luminosity
-    ### There are a few conventions for this.
-    ### Here, we assume that all histograms have
-    ### already been scaled by luminosity
-    ### We also set a 10% uncertainty
+    ### Set the luminosity There are a few conventions for this. Here, we assume that all histograms have already been scaled by luminosity We also set a 10% uncertainty
     meas.SetLumi(1.0)
     meas.SetLumiRelErr(0.10)
 
 
     # Create a channel
 
-    ### Okay, now that we've configured the measurement,
-    ### we'll start building the tree.
-    ### We begin by creating the first channel
+    ### Okay, now that we've configured the measurement, we'll start building the tree. We begin by creating the first channel
     chan = ROOT.RooStats.HistFactory.Channel("signalRegion")
 
-    ### First, we set the 'data' for this channel
-    ### The data is a histogram represeting the 
-    ### measured distribution.  It can have 1 or many bins.
-    ### In this example, we assume that the data histogram
-    ### is already made and saved in a ROOT file.  
-    ### So, to 'set the data', we give this channel the
-    ### path to that ROOT file and the name of the data
-    ### histogram in that root file
-    ### The arguments are: SetData(HistogramName, HistogramFile)
+    ### First, we set the 'data' for this channel The data is a histogram represeting the measured distribution.  It can have 1 or many bins. In this example, we assume that the data histogram is already made and saved in a ROOT file.   So, to 'set the data', we give this channel the path to that ROOT file and the name of the data histogram in that root file The arguments are: SetData(HistogramName, HistogramFile)
     chan.SetData("ZXSR/mockData/Nominal/All/ZXSR_H4l_Nominal_All", inputFileName)
     #chan.SetStatErrorConfig(0.05, "Poisson") # this seems to be not part of the C++ exsample
 
 
     # Now, create some samples
 
-    # Create the signal sample
-    ### Now that we have a channel and have attached
-    ### data to it, we will start creating our Samples
-    ### These describe the various processes that we
-    ### use to model the data.
-    ### Here, they just consist of a signal process
-    ### and a single background process.
+    # Create the signal sample Now that we have a channel and have attached data to it, we will start creating our Samples These describe the various processes that we use to model the data. Here, they just consist of a signal process and a single background process.
     signal = ROOT.RooStats.HistFactory.Sample("signal", "ZXSR/ZZd, m_{Zd} = 35GeV/Nominal/All/ZXSR_ZZd, m_{Zd} = 35GeV_Nominal_All", inputFileName)
-    ### Having created this sample, we configure it
-    ### First, we add the cross-section scaling
-    ### parameter that we call SigXsecOverSM
-    ### Then, we add a systematic with a 5% uncertainty
-    ### Finally, we add it to our channel
+    ### Having created this sample, we configure it First, we add the cross-section scaling parameter that we call SigXsecOverSM Then, we add a systematic with a 5% uncertainty Finally, we add it to our channel
     #signal.AddOverallSys("syst1",  0.1, 1.9) # review what does this exactly do
     signal.AddNormFactor("SigXsecOverSM", 1, 0, 3)
     chan.AddSample(signal)
@@ -264,21 +234,15 @@ if __name__ == '__main__':
 
     # Done with this channel
     # Add it to the measurement:
-    ### Now that we have fully configured our channel,
-    ### we add it to the main measurement
+    ### Now that we have fully configured our channel, we add it to the main measurement
     meas.AddChannel(chan)
 
     # Collect the histograms from their files,
     # print some output,
-    ### At this point, we have only given our channel
-    ### and measurement the input histograms as strings
-    ### We must now have the measurement open the files,
-    ### collect the histograms, copy and store them.
-    ### This step involves I/O 
+    ### At this point, we have only given our channel and measurement the input histograms as strings We must now have the measurement open the files, collect the histograms, copy and store them. This step involves I/O 
     meas.CollectHistograms()
 
-    ### Print to the screen a text representation of the model
-    ### just for minor debugging
+    ### Print to the screen a text representation of the model just for minor debugging
     meas.PrintTree();
 
     # One can print XML code to an output directory:
@@ -289,9 +253,7 @@ if __name__ == '__main__':
     import pdb; pdb.set_trace() # import the debugger and instruct it to stop here #  ZXSR/H4l
     # Now, do the measurement
 
-    ### Finally, run the measurement.
-    ### This is the same thing that happens when
-    ### one runs 'hist2workspace' on an xml files
+    ### Finally, run the measurement. This is the same thing that happens when one runs 'hist2workspace' on an xml files
     ROOT.RooStats.HistFactory.MakeModelAndMeasurementFast(meas);
 
     #pass
