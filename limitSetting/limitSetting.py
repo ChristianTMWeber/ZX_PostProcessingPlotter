@@ -102,49 +102,54 @@ def prepHistoSys(eventDict, flavor = "All"):
     return allTheHistoSys
 
 
-def prepHistoSys2(histFactorySample, inputTFile, region = "ZXSR", eventType = "H4l", flavor = "All"):
+def addSystematicsToSample(histFactorySample, inputFileOrName, region = "ZXSR", eventType = "H4l", flavor = "All", finishAfterNSystematics = -1 ):
 
+    # let's allow inputFileOrName to be the name of a root file, or or an opened root file, i.e. a ROOT.TFile object
+    if   isinstance(inputFileOrName, str):         inputTFile = ROOT.TFile(inputFileOrName,"OPEN")
+    elif isinstance(inputFileOrName, ROOT.TFile):  inputTFile = inputFileOrName
+    else:  warnings.warn("addSystematicsToSample is not properly configured. No systematics Added"); return None
+
+    # let's store information about the systematics here in the following way
+    # systematicsDict[ name of systematis][up or down variation][  ] = <aString>
     systematicsDict = collections.defaultdict(lambda: collections.defaultdict(dict))
 
+    # let's parste all the contents of the root file and select the relevant information
     for path, myTObject  in TDirTools.generateTDirPathAndContentsRecursive(inputTFile, newOwnership = None):  
 
-        if not all([x in path for x in [region,eventType,flavor] ]): continue 
+        if not all([x in path for x in [region,eventType,flavor] ]): continue # ignore the regions, etc. that we are not concerned with are right now
         if "Nominal" in path: continue # nominal is not a systematic
 
-        regexMatch = re.search("(?:(?!(1down|1up)).)*", path).group() # systematics ends with 1up or 1down, find the string parts beforehand
+        # determine the systematics name
+        filenameUpToSystematic = re.search("(?:(?!(1down|1up)).)*", path).group() # systematics ends with 1up or 1down, find the string parts beforehand
+        systematicsName = filenameUpToSystematic.split("/")[-1] # we split at the slash to get the systematics name (and we do it this way because regex is hard :-/ )
 
-        systematicsName = regexMatch.split("/")[-1]
-
+        # find out if this the up or down variation of the given systematic
         variationType = re.search("(?<="+systematicsName+")(.*?)(?=\/)", path).group() # find smallest stringt between the systematics name and a '/', should be the up or down variation signifier
-
         assert variationType == '1down' or variationType == "1up"
 
-        
-        
-        fileName = re.search("(.*?).root", path).group() # find 
-        
+        # discern the fineName, the path to the histogram within the TFile, and the name of the histogram
+        fileName = re.search("(.*?).root", path).group() # grab everything up to and including the word '.root' (in a lazy way due to the '?') 
+        tDirPath = re.search("(?<=.root/)(.*)\/", path).group() # find everyting between '.root' and the last slash
+        histName = re.search("[^\/]+$", path).group() # find everything after last slash 
 
-        tDirPath = re.search("(?<=.root/)(.*)\/", path).group() # find 
-
-        objectName = re.search("[^\/]+$", path).group() # find everything after last '/' 
-
-        
-        systematicsDict[systematicsName][variationType]['histoName'] = objectName
+        # store the information we just discerned        
+        systematicsDict[systematicsName][variationType]['histName'] = histName
         systematicsDict[systematicsName][variationType]['fileName'] = fileName
         systematicsDict[systematicsName][variationType]['tDirPath'] = tDirPath
 
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    if isinstance(inputFileOrName, str): inputTFile.Close() # close the file if we had opened it
 
+    # add the histograms to the histFactory sample
+    sysCounter = 0 # but remember how many systematics we added, so that we can limit that number
+    for systematicsName in systematicsDict:
+        if finishAfterNSystematics == sysCounter : return None
+        sysCounter += 1
 
-    for systematicsName in systematicsDict.keys()[0:1]:
-
+        # get the proper parts of the dict tree, and add the systematics
         upSys = systematicsDict[systematicsName]["1up"]
         downSys = systematicsDict[systematicsName]["1down"]
-
-        # AddHistoSys ( Name,        HistoNameLow         , HistoFileLow       ,  HistoPathLow       ,  HistoNameHigh      , HistoFileHigh    ,  HistoPathHigh)
-        histFactorySample.AddHistoSys(systematicsName, downSys['histoName'] , downSys['fileName'],  downSys['tDirPath'],  upSys['histoName'] , upSys['fileName'],  upSys['tDirPath'])
-
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+        # AddHistoSys (                 Name         , HistoNameLow         , HistoFileLow       ,  HistoPathLow       ,  HistoNameHigh      , HistoFileHigh    ,  HistoPathHigh)
+        histFactorySample.AddHistoSys(systematicsName, downSys['histName'] , downSys['fileName'],  downSys['tDirPath'],  upSys['histName'] , upSys['fileName'],  upSys['tDirPath'])
 
     return None
 
@@ -249,7 +254,7 @@ if __name__ == '__main__':
     #backgroundH4l.AddHistoSys(histoSysList[0])
 
 
-    prepHistoSys2(backgroundH4l, inputTFile, region = "ZXSR", eventType = "H4l", flavor = "All")
+    addSystematicsToSample(backgroundH4l, inputTFile, region = "ZXSR", eventType = "H4l", flavor = "All", finishAfterNSystematics = 2)
 
     # let's see what happens when we add systematcs
 
