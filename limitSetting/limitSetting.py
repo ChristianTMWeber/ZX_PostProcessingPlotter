@@ -17,11 +17,12 @@ import functions.rootDictAndTDirTools as TDirTools
 import plotPostProcess as postProcess
 
 
-def drawNominalHists(inputFileName, myDrawDSIDHelper = postProcess.DSIDHelper() ):
+def drawNominalHists(inputFileName, drawDict, myDrawDSIDHelper = postProcess.DSIDHelper() ):
 
     def setupTLegend():
         # set up a TLegend, still need to add the different entries
-        TLegend = ROOT.TLegend(0.15,0.65,0.45,0.87)
+        xOffset = 0.6; yOffset = 0.66
+        TLegend = ROOT.TLegend(xOffset, yOffset ,xOffset + 0.3,yOffset+0.25)
         TLegend.SetFillColor(ROOT.kWhite)
         TLegend.SetLineColor(ROOT.kWhite)
         TLegend.SetNColumns(2);
@@ -29,40 +30,54 @@ def drawNominalHists(inputFileName, myDrawDSIDHelper = postProcess.DSIDHelper() 
         TLegend.SetBorderSize(0); # and remove its border without a border
         return TLegend
 
+    def scaleByRooRealVar(hist, aRooRealVar):
+        factor = aRooRealVar.getVal()
+        error  = aRooRealVar.getError()
 
-    inputTFile = ROOT.TFile(inputFileName, "OPEN")
-
-    histDict = {"H4l" : None, "ZZ" : None, "const" : None}
-
-    flavor = "All"
+        hist.Scale(factor)
+        for x in xrange(1,hist.GetNbinsX()+1): 
+            oldBinError = hist.GetBinError(x)
+            newBinError = oldBinError*(factor + error) / factor  # hist.Scale( ) scalesthe bin contents as well as the error. So we have to do it this way
+            hist.SetBinError(x, newBinError )
+        return None
 
     nominalHistStack = ROOT.THStack("nominalStack","nominalStack")
 
+    if isinstance(drawDict,list): drawDict = { x: None for x in drawDict }
+
     legend = setupTLegend()
 
-    for key in histDict:
-        histPath = "ZXSR/"+key+"/Nominal/"+flavor
-        
-        histTDir = inputTFile.Get(histPath)
+    histDict={}
 
-        histList = TDirTools.TDirToList(histTDir)
+    for histPath in drawDict:
 
-        assert len(histList) == 1
+        histogram = inputTFile.Get(histPath)
+        currentTH1 = histogram.Clone()
+        eventType = histPath.split("/")[1]
 
-        currentTH1 = histList[0].Clone(key)
+        if  ("Data" or"data") in histPath : 
+            dataHist = currentTH1
+            dataHist.SetLineWidth(1)
+            dataHist.SetLineColor(1)
+        else:
+            if drawDict[histPath] is not None: scaleByRooRealVar(currentTH1, drawDict[histPath])
+            #currentTH1.SetBinError(12,1)
+            #currentTH1.GetBinError(12)   
+            nominalHistStack.Add(currentTH1)
+            histDict[eventType] = currentTH1
 
-        nominalHistStack.Add(currentTH1)
-
-        histDict[key] = currentTH1
-        legend.AddEntry(currentTH1 , key , "f");
+        legend.AddEntry(currentTH1 , eventType , "f");
 
         #TDirTools.generateTDirContents(inputTFile.Get(histPath))
-
+   
     myDrawDSIDHelper.colorizeHistsInDict(histDict) # sets fill color to solid and pics consistent color scheme
     
     canvas = ROOT.TCanvas("overviewCanvas","overviewCanvas",1300/2,1300/2);
-    nominalHistStack.Draw("Hist")
-    #nominalHistStack.Draw("same E2 ")   # "E2" Draw error bars with rectangles:  https://root.cern.ch/doc/v608/classTHistPainter.html
+
+    dataHist.Draw("E1")
+    nominalHistStack.Draw("Hist same")
+    nominalHistStack.Draw("same E0 ")   # "E2" Draw error bars with rectangles:  https://root.cern.ch/doc/v608/classTHistPainter.html
+    dataHist.Draw("same E1")
     legend.Draw(); # do legend things
     canvas.Update()
 
@@ -159,11 +174,12 @@ if __name__ == '__main__':
     inputFileName = "preppedHists_mc16a.root"
 
     inputTFile = ROOT.TFile(inputFileName,"OPEN")
-    masterDict = TDirTools.buildDictTreeFromTDir(inputTFile) # we'll use this dict for the systematics histograms etc.
+    masterDict = TDirTools.buildDictTreeFromTDir(inputTFile) # use this dict for an overview of what hists / channels / systematics / flavors are available
 
-    
-
-    #drawNominalHists(inputFileName)
+    dataTDirLocation    = "ZXSR/mockData/Nominal/All/ZXSR_H4l_Nominal_All"
+    signalTDirLocation  = "ZXSR/ZZd, m_{Zd} = 35GeV/Nominal/All/ZXSR_ZZd, m_{Zd} = 35GeV_Nominal_All"
+    ZZTDirLocation      = "ZXSR/ZZ/Nominal/All/ZXSR_ZZ_Nominal_All"
+    H4lTDirLocation     = "ZXSR/H4l/Nominal/All/ZXSR_H4l_Nominal_All"
 
     ### Create the measurement object
     ### This is the top node of the structure
@@ -185,50 +201,43 @@ if __name__ == '__main__':
     meas.SetLumiRelErr(0.10)
 
 
+
+
     # Create a channel
 
     ### Okay, now that we've configured the measurement, we'll start building the tree. We begin by creating the first channel
     chan = ROOT.RooStats.HistFactory.Channel("signalRegion")
 
     ### First, we set the 'data' for this channel The data is a histogram represeting the measured distribution.  It can have 1 or many bins. In this example, we assume that the data histogram is already made and saved in a ROOT file.   So, to 'set the data', we give this channel the path to that ROOT file and the name of the data histogram in that root file The arguments are: SetData(HistogramName, HistogramFile)
-    chan.SetData("ZXSR/mockData/Nominal/All/ZXSR_H4l_Nominal_All", inputFileName)
+    chan.SetData(dataTDirLocation, inputFileName)
     #chan.SetStatErrorConfig(0.05, "Poisson") # this seems to be not part of the C++ exsample
 
 
     # Now, create some samples
 
     # Create the signal sample Now that we have a channel and have attached data to it, we will start creating our Samples These describe the various processes that we use to model the data. Here, they just consist of a signal process and a single background process.
-    signal = ROOT.RooStats.HistFactory.Sample("signal", "ZXSR/ZZd, m_{Zd} = 35GeV/Nominal/All/ZXSR_ZZd, m_{Zd} = 35GeV_Nominal_All", inputFileName)
+    signal = ROOT.RooStats.HistFactory.Sample("signal", signalTDirLocation, inputFileName)
     ### Having created this sample, we configure it First, we add the cross-section scaling parameter that we call SigXsecOverSM Then, we add a systematic with a 5% uncertainty Finally, we add it to our channel
     #signal.AddOverallSys("syst1",  0.1, 1.9) # review what does this exactly do
     signal.AddNormFactor("SigXsecOverSM", 1, 0, 3)
     chan.AddSample(signal)
 
-    # Background 1
+    # ZZ background
     ### We do a similar thing for our background
-    backgroundZZ = ROOT.RooStats.HistFactory.Sample("backgroundZZ", "ZXSR/ZZ/Nominal/All/ZXSR_ZZ_Nominal_All", inputFileName)
+    backgroundZZ = ROOT.RooStats.HistFactory.Sample("backgroundZZ", ZZTDirLocation, inputFileName)
     #backgroundZZ.ActivateStatError()#ActivateStatError("backgroundZZ_statUncert", inputFileName)
     #backgroundZZ.AddOverallSys("syst2", 0.95, 1.05 )
     backgroundZZ.AddNormFactor("ZZNorm", 1, 0, 3) # let's add this to fit the normalization of the background
     chan.AddSample(backgroundZZ)
 
 
-    # Background 2
+    # H4l Background
     ### And we create a second background for good measure
-    backgroundH4l = ROOT.RooStats.HistFactory.Sample("backgroundH4l", "ZXSR/H4l/Nominal/All/ZXSR_H4l_Nominal_All", inputFileName)
+    backgroundH4l = ROOT.RooStats.HistFactory.Sample("backgroundH4l",H4lTDirLocation , inputFileName)
     # backgroundH4l.ActivateStatError()
     # backgroundH4l.AddOverallSys("syst3", 0.95, 1.05 )
     backgroundH4l.AddNormFactor("H4lNorm", 1, 0, 3) # let's add this to fit the normalization of the background
-
-    #histoSysList = prepHistoSys(masterDict['ZXSR']["H4l"])
-    #backgroundH4l.AddHistoSys(histoSysList[0])
-
-
-    addSystematicsToSample(backgroundH4l, inputTFile, region = "ZXSR", eventType = "H4l", flavor = "All", finishAfterNSystematics = 2)
-
-    # let's see what happens when we add systematcs
-
-    #backgroundH4l.AddOverallSys( "background_uncertainty",  -1., 1. )
+    addSystematicsToSample(backgroundH4l, inputTFile, region = "ZXSR", eventType = "H4l", flavor = "All", finishAfterNSystematics = 0)
     chan.AddSample(backgroundH4l)
 
 
@@ -279,6 +288,22 @@ if __name__ == '__main__':
     pl.SetConfidenceLevel(0.95); 
 
     pl.GetInterval()
+
+    allWorkspaceVariables = TDirTools.rooArgSetToList( workspace.allVars() )
+    workspaceVarDict = {x.GetName() : x for x in allWorkspaceVariables}
+
+    #drawList = [dataTDirLocation, signalTDirLocation, ZZTDirLocation, H4lTDirLocation]
+
+    drawDict = { dataTDirLocation   : None,
+                 ZZTDirLocation     : workspaceVarDict["ZZNorm"],
+                 H4lTDirLocation    : workspaceVarDict["H4lNorm"],
+                 signalTDirLocation : workspaceVarDict["SigXsecOverSM"]  }
+
+    
+    drawNominalHists(inputFileName, drawDict )
+
+
+    #for x in allWorkspaceVariables:  workspaceVarDict[x.GetName()] = x
 
     import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
