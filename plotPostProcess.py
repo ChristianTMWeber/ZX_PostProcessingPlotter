@@ -25,6 +25,7 @@ import resource # print 'Memory usage: %s (kb)' % resource.getrusage(resource.RU
 
 from functions.compareVersions import compareVersions # to compare root versions
 import functions.rootDictAndTDirTools as rootDictAndTDirTools
+import functions.histHelper as histHelper # to help me with histograms
 
 class DSIDHelper:
 
@@ -405,42 +406,9 @@ def printRootCanvasPDF(myRootCanvas, isLastCanvas, fileName, tableOfContents = N
 def getBinContentsPlusError(myTH1):  
     return [ myTH1.GetBinContent(n)+myTH1.GetBinError(n) for n in range(1, myTH1.GetNbinsX() +1) ]
 
-def mergeTHStackHists(myTHStack):
-    # Take a THStack and merge all the histograms comprising it into a single new one
-    # requires that all the thists hace identical binning
-
-    ROOT.SetOwnership(backgroundTHStack, False) # We need to set this, to aoid a segmentation fault: https://root-forum.cern.ch/t/crash-on-exit-with-thstack-draw-and-gethists/11221
-    constituentHists =  myTHStack.GetHists() 
-
-    mergedHist  = constituentHists[0].Clone( constituentHists.GetName() + "_merged")
-
-    for hist in constituentHists:
-        if hist != constituentHists[0]: mergedHist.Add(hist)
-
-    return mergedHist
-
-def getFirstAndLastNonEmptyBinInHist(hist, offset = 0, adjustXAxisRange = False):
-
-    if isinstance(hist,ROOT.THStack):  hist = mergeTHStackHists(hist)
-
-    nBins = hist.GetNbinsX()
-
-    first =0 ;last=0
-
-    for n in xrange(1,nBins+1): 
-        if hist.GetBinContent(n) != 0: 
-            first = n ; break
-    for n in xrange(nBins+1,1,-1):
-        if hist.GetBinContent(n) != 0: 
-            last = n ; break
-
-    #if adjustXAxisRange:
-
-    if first is not 0: first -= offset
-    if last  is not 0: last  += offset
 
 
-    return (first, last)
+
 
 
 #To get the y value corresponding to bin k, h->GetBinContent(k);
@@ -757,7 +725,7 @@ if __name__ == '__main__':
             backgroundTHStack.Draw("Hist")
 
 
-            backgroundMergedTH1 = mergeTHStackHists(backgroundTHStack) # get a merged background to draw uncertainty bars on the total backgroun
+            backgroundMergedTH1 = histHelper.mergeTHStackHists(backgroundTHStack) # get a merged background to draw uncertainty bars on the total backgroun
 
             backgroundMergedTH1.Draw("same E2 ")   # "E2" Draw error bars with rectangles:  https://root.cern.ch/doc/v608/classTHistPainter.html
             backgroundMergedTH1.SetMarkerStyle(0 ) # SetMarkerStyle(0 ) remove marker from combined backgroun
@@ -800,7 +768,7 @@ if __name__ == '__main__':
             backgroundTHStack.SetMaximum( max(largestYValue) * 1.3 )
 
             #rescale X-axis
-            axRangeLow, axRangeHigh = getFirstAndLastNonEmptyBinInHist(backgroundTHStack, offset = 1)
+            axRangeLow, axRangeHigh = histHelper.getFirstAndLastNonEmptyBinInHist(backgroundTHStack, offset = 1)
             backgroundTHStack.GetXaxis().SetRange(axRangeLow,axRangeHigh)
 
             #statsOffset = (0.6,0.55), statsWidths = (0.3,0.32)
