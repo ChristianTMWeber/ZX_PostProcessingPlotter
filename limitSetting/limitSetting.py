@@ -15,17 +15,19 @@ from os import path
 sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) ) # need to append the parent directory here explicitly to be able to import plotPostProcess
 import functions.rootDictAndTDirTools as TDirTools
 import plotPostProcess as postProcess
+import functions.histHelper as histHelper
 
 
 def drawNominalHists(inputFileName, drawDict, myDrawDSIDHelper = postProcess.DSIDHelper() ):
 
     def setupTLegend():
         # set up a TLegend, still need to add the different entries
-        xOffset = 0.6; yOffset = 0.66
-        TLegend = ROOT.TLegend(xOffset, yOffset ,xOffset + 0.3,yOffset+0.25)
+        xOffset = 0.5; yOffset = 0.4
+        xWidth  = 0.4; ywidth = 0.5
+        TLegend = ROOT.TLegend(xOffset, yOffset ,xOffset + xWidth, yOffset+ ywidth)
         TLegend.SetFillColor(ROOT.kWhite)
         TLegend.SetLineColor(ROOT.kWhite)
-        TLegend.SetNColumns(2);
+        TLegend.SetNColumns(1);
         TLegend.SetFillStyle(0);  # make legend background transparent
         TLegend.SetBorderSize(0); # and remove its border without a border
         return TLegend
@@ -55,31 +57,80 @@ def drawNominalHists(inputFileName, drawDict, myDrawDSIDHelper = postProcess.DSI
         currentTH1 = histogram.Clone()
         eventType = histPath.split("/")[1]
 
+        scaleString = ""
+
         if  ("Data" or"data") in histPath : 
             dataHist = currentTH1
             dataHist.SetLineWidth(1)
             dataHist.SetLineColor(1)
         else:
-            if drawDict[histPath] is not None: scaleByRooRealVar(currentTH1, drawDict[histPath])
+            if drawDict[histPath] is not None: 
+                fittedRooReal = drawDict[histPath]
+                scaleByRooRealVar(currentTH1, fittedRooReal)
+                scaleString = ", scale = %.2f #pm %.2f" %( fittedRooReal.getVal(), fittedRooReal.getError() )
+
             #currentTH1.SetBinError(12,1)
             #currentTH1.GetBinError(12)   
             nominalHistStack.Add(currentTH1)
             histDict[eventType] = currentTH1
 
-        legend.AddEntry(currentTH1 , eventType , "f");
+        legend.AddEntry(currentTH1 , eventType + scaleString  , "f");
 
         #TDirTools.generateTDirContents(inputTFile.Get(histPath))
    
     myDrawDSIDHelper.colorizeHistsInDict(histDict) # sets fill color to solid and pics consistent color scheme
     
+    # prepare the canvas and histpad for the histograms, we'll have another for the ratio TPad
     canvas = ROOT.TCanvas("overviewCanvas","overviewCanvas",1300/2,1300/2);
 
+    histPadYStart = 3./13
+    histPad = ROOT.TPad("histPad", "histPad", 0, histPadYStart, 1, 1);
+    #histPad.SetBottomMargin(0.06); # Seperation between upper and lower plots
+    histPad.Draw();              # Draw the upper pad: pad1
+    histPad.cd();                # pad1 becomes the current pad
+
+    # draw the 'regular' histograms
     dataHist.Draw("E1")
     nominalHistStack.Draw("Hist same")
     nominalHistStack.Draw("same E0 ")   # "E2" Draw error bars with rectangles:  https://root.cern.ch/doc/v608/classTHistPainter.html
     dataHist.Draw("same E1")
     legend.Draw(); # do legend things
+
+    canvas.cd()
+    
+
+    # setup and draw the ratio pad
+    ratioPad = ROOT.TPad("ratioPad", "ratioPad", 0, 0, 1, histPadYStart);
+    ROOT.SetOwnership(ratioPad, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
+    #ratioPad.SetTopMargin(0.)
+    ratioPad.SetBottomMargin(0.3)
+    ratioPad.SetGridy(); #ratioPad.SetGridx(); 
+    ratioPad.Draw();              # Draw the upper pad: pad1
+    ratioPad.cd();                # pad1 becomes the current pad
+
+    ratioHist = dataHist.Clone( dataHist.GetName()+"_Clone" )
+    backgroundMergedTH1 = histHelper.mergeTHStackHists(nominalHistStack) # get a merged background to draw uncertainty bars on the total backgroun
+    ratioHist.Divide(backgroundMergedTH1)
+    #ratioHist.GetXaxis().SetRange(axRangeLow, axRangeHigh)
+    ratioHist.SetStats( False) # remove stats box
+    
+    ratioHist.SetTitle("")
+    
+    ratioHist.GetYaxis().SetNdivisions( 506, True)  # XYY x minor divisions YY major ones, optimizing around these values = TRUE
+    ratioHist.GetYaxis().SetLabelSize(0.1)
+
+    ratioHist.GetYaxis().SetTitle("Data / MC")
+    ratioHist.GetYaxis().SetTitleSize(0.13)
+    ratioHist.GetYaxis().SetTitleOffset(0.4)
+    ratioHist.GetYaxis().CenterTitle()
+
+    ratioHist.GetXaxis().SetLabelSize(0.12)
+    ratioHist.GetXaxis().SetTitleSize(0.12)
+    ratioHist.GetXaxis().SetTitleOffset(1.0)
+    ratioHist.Draw()
+
     canvas.Update()
+
 
     import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
@@ -259,7 +310,7 @@ if __name__ == '__main__':
 
     meas.PrintXML("tutorialBuildingHistFactoryModel", meas.GetOutputFilePrefix());
 
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here #  ZXSR/H4l
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here #  ZXSR/H4l
     # Now, do the measurement
 
     ### Finally, run the measurement. This is the same thing that happens when one runs 'hist2workspace' on an xml files
