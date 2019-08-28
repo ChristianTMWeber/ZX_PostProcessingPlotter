@@ -4,9 +4,9 @@
 # and saving them in a structure that is conducive for the limit setting with HistFactory
 
 #   Run as:
-#   python limitSettingHistPrep.py ../post_20190813_144634_ZX_Run1516_Background_DataBckgSignal.root -c mc16a
+#   python limitSettingHistPrep.py ../post_20190813_144634_ZX_Run1516_Background_DataBckgSignal.root -c mc16a --interpolateSamples 
 #   Or for development work as:
-#   python limitSettingHistPrep.py ../post_20190813_144634_ZX_Run1516_Background_DataBckgSignal.root -c mc16a -q True --interpolateSamples False
+#   python limitSettingHistPrep.py ../post_20190813_144634_ZX_Run1516_Background_DataBckgSignal.root -c mc16a --quick 
 
 # run for now as : 
 #   python limitSettingHistPrep.py post_20190530_165131_ZX_Run2_Background_Syst.root -c mc16ade
@@ -195,11 +195,14 @@ if __name__ == '__main__':
     parser.add_argument( "--DSID_Binning", type=str, help = "set how the different DSIDS are combined, ",
         choices=["physicsProcess","physicsSubProcess","DSID","analysisMapping"] , default="analysisMapping" )
 
-    parser.add_argument("-q", "--quick", type=bool, default=False , 
-        help = "Debugging option. Skips the filling of parsing of the input file after ~1500 relevant items" ) 
+    parser.add_argument("--quick", default=False , action='store_true',
+        help = "Debugging option. Skips the filling of parsing of the input file after ~2000 relevant items" ) 
 
-    parser.add_argument("--interpolateSamples", type=bool, default=True , 
+    parser.add_argument("--interpolateSamples", default=False, action='store_true' ,       # this is the more proper way to affect default booleans
         help = "if True we will interpolate between available signal samples in 1GeV steps" ) 
+
+    parser.add_argument("--outputSignalOverview", default=False, action='store_true' ,       # this is the more proper way to affect default booleans
+        help = "output overview of signal samples" ) 
 
     args = parser.parse_args()
 
@@ -281,53 +284,46 @@ if __name__ == '__main__':
     ##############################################################################
     rootDictAndTDirTools.writeDictTreeToRootFile( masterHistDict, targetFilename = "testoutput.root" )
 
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     ##############################################################################
     # create an overview of the signal samples (regular and interpolated)
     ##############################################################################
 
-    signalOverviewTH2 = prepareSignalSampleOverviewTH2(masterHistDict, channel = "ZXSR")
-    signalOverviewTH2Interpolated = signalOverviewTH2.Clone( signalOverviewTH2.GetName()+"Interpolated" )
+    if args.outputSignalOverview:
+        signalOverviewTH2 = prepareSignalSampleOverviewTH2(masterHistDict, channel = "ZXSR")
+        signalOverviewTH2Interpolated = signalOverviewTH2.Clone( signalOverviewTH2.GetName()+"Interpolated" )
 
-    masspoints = getMasspointDict(masterHistDict , channel = "ZXSR" ) # This will be used later in plotting the signal samples
+        masspoints = getMasspointDict(masterHistDict , channel = "ZXSR" ) # This will be used later in plotting the signal samples
 
-    # sort things into the two overviewTH2s
-    for mass in masspoints:
-        hist = masterHistDict["ZXSR"][ masspoints[mass] ]['Nominal']['All']
-        if mass in masspointDictBeforeInterpolation: histHelper.fillTH2SliceWithTH1(signalOverviewTH2,             hist, mass )
-        else:                                        histHelper.fillTH2SliceWithTH1(signalOverviewTH2Interpolated, hist, mass )
-
-
-
-
-    signalOverviewTH2.SetLineColor(ROOT.kBlack)
-    signalOverviewTH2.SetFillColor(ROOT.kBlue)
-    signalOverviewTH2Interpolated.SetLineColor(ROOT.kBlack)
-    signalOverviewTH2Interpolated.SetFillColor(ROOT.kRed)
-
-    signalSampleStack = ROOT.THStack("signalSamples","signalSamples")
-    signalSampleStack.Add(signalOverviewTH2)
-    signalSampleStack.Add(signalOverviewTH2Interpolated)
-    canvasSignalOverview3 = ROOT.TCanvas( "signalOverview3", "signalOverview3" ,1300/2,1300/2)
-    signalSampleStack.Draw("LEGO1")
-    # the following works only after calling signalSampleStack.Draw() once
-    signalSampleStack.GetXaxis().SetRange(signalOverviewTH2.GetXaxis().FindBin(15),signalOverviewTH2.GetXaxis().FindBin(61))
-    signalSampleStack.Draw("LEGO1")
-    canvasSignalOverview3.Update()
-   
-    massesSorted = masspoints.keys();   massesSorted.sort()
-
-    signalTH1List = []
-    for mass in massesSorted: signalTH1List.append(masterHistDict["ZXSR"][ masspoints[mass] ]['Nominal']['All'])
-
-
-
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+        # sort things into the two overviewTH2s
+        for mass in masspoints:
+            hist = masterHistDict["ZXSR"][ masspoints[mass] ]['Nominal']['All']
+            if mass in masspointDictBeforeInterpolation: histHelper.fillTH2SliceWithTH1(signalOverviewTH2,             hist, mass )
+            else:                                        histHelper.fillTH2SliceWithTH1(signalOverviewTH2Interpolated, hist, mass )
 
 
 
 
+        signalOverviewTH2.SetLineColor(ROOT.kBlack)
+        signalOverviewTH2.SetFillColor(ROOT.kBlue)
+        signalOverviewTH2Interpolated.SetLineColor(ROOT.kBlack)
+        signalOverviewTH2Interpolated.SetFillColor(ROOT.kRed)
 
+        signalSampleStack = ROOT.THStack("signalSamples","signalSamples")
+        signalSampleStack.Add(signalOverviewTH2)
+        signalSampleStack.Add(signalOverviewTH2Interpolated)
+        canvasSignalOverview3 = ROOT.TCanvas( "signalOverview3", "signalOverview3" ,1300/2,1300/2)
+        signalSampleStack.Draw("LEGO1")
+        # the following works only after calling signalSampleStack.Draw() once
+        signalSampleStack.GetXaxis().SetRange(signalOverviewTH2.GetXaxis().FindBin(15),signalOverviewTH2.GetXaxis().FindBin(61))
+        signalSampleStack.Draw("LEGO1")
+        canvasSignalOverview3.Update()
+       
+        massesSorted = masspoints.keys();   massesSorted.sort()
+
+        signalTH1List = []
+        for mass in massesSorted: signalTH1List.append(masterHistDict["ZXSR"][ masspoints[mass] ]['Nominal']['All'])
 
 
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+
