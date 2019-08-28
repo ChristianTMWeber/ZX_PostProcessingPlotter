@@ -40,12 +40,24 @@ def getFirstAndLastNonEmptyBinInHist(hist, offset = 0, adjustXAxisRange = False)
 
     return (first, last)
 
-def binNrByXValue(hist, xVal):  # tells me the bin number for the given x-axis value. Usefull for filling histograms, which have to be filled by bin numbr: hist.SetBinContent( binNumber, binContent)
-    return hist.GetXaxis().FindBin(xVal)
+def binNrByXValue(hist, xVal, yVal=None):  # tells me the bin number for the given x-axis value. Usefull for filling histograms, which have to be filled by bin numbr: hist.SetBinContent( binNumber, binContent)
+    if yVAl is None: return hist.GetXaxis().FindBin(xVal)
+    else:            return hist.GetXaxis().FindBin(xVal), hist.GetYaxis().FindBin(yVal)
 
-def fillBin(hist, xVal, yVal, yError = None):
+def fillBin(hist, xVal, binVal, binError = None):
     binNr = hist.GetXaxis().FindBin(xVal)
-    hist.SetBinContent(binNr, yVal )
-    if yError is not None: hist.SetBinError(binNr, yError )
+    hist.SetBinContent(binNr, binVal )
+    if binError is not None: hist.SetBinError(binNr, binError )
     return None
 
+def fillTH2SliceWithTH1( TH2, TH1, sliceAtYVal ):
+
+    assert TH2.GetNbinsX() == TH1.GetNbinsX()
+
+    yBinNumer = TH2.GetYaxis().FindBin(sliceAtYVal)
+
+    for xBinNr in xrange(0, TH2.GetNbinsX() +1 ):
+        TH2.SetBinContent(xBinNr, yBinNumer, TH1.GetBinContent(xBinNr) )
+        TH2.SetBinError(xBinNr, yBinNumer, TH1.GetBinError(xBinNr) )
+
+    return TH2

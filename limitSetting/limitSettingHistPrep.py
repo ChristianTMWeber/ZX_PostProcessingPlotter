@@ -3,6 +3,11 @@
 # This program is for selecting the relevant ones, doing the necessary scaling and aggreating 
 # and saving them in a structure that is conducive for the limit setting with HistFactory
 
+#   Run as:
+#   python limitSettingHistPrep.py ../post_20190813_144634_ZX_Run1516_Background_DataBckgSignal.root -c mc16a
+#   Or for development work as:
+#   python limitSettingHistPrep.py ../post_20190813_144634_ZX_Run1516_Background_DataBckgSignal.root -c mc16a -q True
+
 # run for now as : 
 #   python limitSettingHistPrep.py post_20190530_165131_ZX_Run2_Background_Syst.root -c mc16ade
 
@@ -21,7 +26,9 @@ import plotPostProcess as postProcess
 
 import functions.rootDictAndTDirTools as rootDictAndTDirTools
 from functions.compareVersions import compareVersions # to compare root versions
+import functions.histHelper as histHelper # to help me fill some histograms
 
+import RooIntegralMorphWrapper as integralMorphWrapper
 
 def skipTObject(path, baseHist, requiredRootType = ROOT.TH1, selectChannels = ["ZXSR", "ZXVR1"], 
                 selectKinematic = "m34", selectCuts = ["HWindow", "LowMassSidebands"]  ):
@@ -100,6 +107,76 @@ def addMockData(masterHistDict  ):
 
     return None
 
+def getMasspointDict(masterHistDict , channel = None ):
+    # returns a dict of the available masspoints: masspointDict[ int ] = <name of event type with that mass>
+    # e.g.: masspointDict[20] = 'ZZd, m_{Zd} = 20GeV'
+    if channel is None: channel = masterHistDict.keys()[0]
+    
+    masspointDict = {}
+    for eventType in masterHistDict['ZXSR'].keys(): 
+        reObject = re.search("\d{2}", eventType)
+        if reObject: # True if we found something
+            # do some checks that the 'All' and 'Nominal' are in the dict, and that the TH1 in the dict is actually in there
+            # these are mostly settings for development
+            #if masterHistDict[channel][eventType]['Nominal']['All'] is not None:
+            #    print(masterHistDict[channel][eventType]['Nominal']['All'])
+                #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+            masspointDict[ int(reObject.group()) ] = eventType
+    return masspointDict
+
+def prepareSignalSampleOverviewTH2(masterHistDict, channel = None):
+    if channel is None: channel = masterHistDict.keys()[0]
+
+    masspoints = getMasspointDict(masterHistDict , channel = channel )
+
+    hist = masterHistDict[channel][masspoints.values()[0]]['Nominal']['All']
+    nBinsX = hist.GetNbinsX()
+    lowLimitX  = hist.GetBinLowEdge(1)
+    highLimitX = hist.GetBinLowEdge(nBinsX+2)
+
+    lowLimitY = min(masspoints.keys())
+    highLimitY = max(masspoints.keys())
+    nBinsY = max(masspoints.keys()) - min(masspoints.keys())
+
+    signalOverviewTH2 = ROOT.TH2D("signalOverviewTH2", "signalOverviewTH2", nBinsX, lowLimitX, highLimitX, nBinsY , lowLimitY, highLimitY )
+
+
+    return signalOverviewTH2
+
+def addInterpolatedSignalSamples(masterHistDict, channels = None):
+
+    if channels is None: channels = masterHistDict.keys()
+    elif not isinstance(channels, list):  channels = [channels]
+
+    for channel in channels:
+        masspointDict = getMasspointDict(masterHistDict , channel = channel )
+        sortedMasses = masspointDict.keys(); 
+        sortedMasses.sort()
+
+        # build pairs of masspoints to interpolate in between
+        massPairs = []
+        for n in xrange(0, len(sortedMasses)-1): massPairs.append( (sortedMasses[n],sortedMasses[n+1]) )
+        
+
+        # don't forget to loop over all flavors:
+        flavors = masterHistDict[channel][masspointDict.values()[0]]["Nominal"].keys()
+        for flavor in flavors:
+            for lowMass, highMass in massPairs:
+                # remember: masspointDict[ mass ] gives the event type name  
+                lowHist  = masterHistDict[channel][ masspointDict[lowMass]  ]["Nominal"][flavor]
+                highHist = masterHistDict[channel][ masspointDict[highMass] ]["Nominal"][flavor]
+
+                # we want to interpolate between lowHist and highHist in 1GeV steps
+                for newMass in xrange(lowMass+1,highMass,1):
+                    # do the actual interpolation
+                    newSignalHist = integralMorphWrapper.getInterpolatedHistogram(lowHist, highHist,  paramA = lowMass , paramB = highMass, interpolateAt = newMass, morphErrorsToo = True)
+                    # determine new names and eventType
+                    newEventType = re.sub('\d{2}', str(newMass), masspointDict[lowMass]) # make the new eventType string, by replacing the mass number in a given old one
+                    newTH1Name   = re.sub('\d{2}', str(newMass), lowHist.GetName())
+                    newSignalHist.SetName(newTH1Name)
+                    # add the new histogram to the sample
+                    masterHistDict[channel][ newEventType ]["Nominal"][flavor] = newSignalHist
+    return None
 
 if __name__ == '__main__':
 
@@ -117,6 +194,9 @@ if __name__ == '__main__':
 
     parser.add_argument( "--DSID_Binning", type=str, help = "set how the different DSIDS are combined, ",
         choices=["physicsProcess","physicsSubProcess","DSID","analysisMapping"] , default="analysisMapping" )
+
+    parser.add_argument("-q", "--quick", type=bool, default=False , 
+        help = "Debugging option. Skips the filling of parsing of the input file after ~1500 relevant items" ) 
 
     args = parser.parse_args()
 
@@ -178,6 +258,42 @@ if __name__ == '__main__':
         nRelevantHistsProcessed += 1
 
         if nRelevantHistsProcessed %100 == 0:  print( path, myTObject)
+        if args.quick and (nRelevantHistsProcessed == 2000): break
+
+    masspointsBeforeInterpolation = getMasspointDict(masterHistDict , channel = "ZXSR" )
+
+
+    addInterpolatedSignalSamples(masterHistDict, channels = "ZXSR")
+
+    masspoints = getMasspointDict(masterHistDict , channel = "ZXSR" )
+
+
+    signalOverviewTH2 = prepareSignalSampleOverviewTH2(masterHistDict, channel = "ZXSR")
+
+    signalOverviewTH2Interpolated = signalOverviewTH2.Clone( signalOverviewTH2.GetName()+"Interpolated" )
+
+    # sort things into the two overviewTH2s
+    for mass in masspoints:
+        hist = masterHistDict["ZXSR"][ masspoints[mass] ]['Nominal']['All']
+        if mass in masspointsBeforeInterpolation: histHelper.fillTH2SliceWithTH1(signalOverviewTH2,             hist, mass )
+        else:                                     histHelper.fillTH2SliceWithTH1(signalOverviewTH2Interpolated, hist, mass )
+
+    canvasSignalOverview1 = ROOT.TCanvas( "signalOverview1", "signalOverview1" ,1300/2,1300/2)
+    signalOverviewTH2.Draw("LEGO")
+    canvasSignalOverview1.Update()
+
+    canvasSignalOverview2 = ROOT.TCanvas( "signalOverview2", "signalOverview2" ,1300/2,1300/2)
+    signalOverviewTH2Interpolated.Draw("LEGO")
+    canvasSignalOverview2.Update()
+
+    canvasSignalOverview3 = ROOT.TCanvas( "signalOverview3", "signalOverview3" ,1300/2,1300/2)
+    signalOverviewTH2All = signalOverviewTH2.Clone(signalOverviewTH2.GetName()+"All")
+    signalOverviewTH2All.Add(signalOverviewTH2Interpolated)
+    signalOverviewTH2All.Draw("BOX")
+    canvasSignalOverview3.Update()
+        
+
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
 
 
