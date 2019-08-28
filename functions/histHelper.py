@@ -41,7 +41,7 @@ def getFirstAndLastNonEmptyBinInHist(hist, offset = 0, adjustXAxisRange = False)
     return (first, last)
 
 def binNrByXValue(hist, xVal, yVal=None):  # tells me the bin number for the given x-axis value. Usefull for filling histograms, which have to be filled by bin numbr: hist.SetBinContent( binNumber, binContent)
-    if yVAl is None: return hist.GetXaxis().FindBin(xVal)
+    if yVal is None: return hist.GetXaxis().FindBin(xVal)
     else:            return hist.GetXaxis().FindBin(xVal), hist.GetYaxis().FindBin(yVal)
 
 def fillBin(hist, xVal, binVal, binError = None):
