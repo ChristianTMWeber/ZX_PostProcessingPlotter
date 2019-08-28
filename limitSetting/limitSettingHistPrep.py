@@ -135,8 +135,8 @@ def prepareSignalSampleOverviewTH2(masterHistDict, channel = None):
     highLimitX = hist.GetBinLowEdge(nBinsX+2)
 
     lowLimitY = min(masspoints.keys())
-    highLimitY = max(masspoints.keys())
-    nBinsY = max(masspoints.keys()) - min(masspoints.keys())
+    highLimitY = max(masspoints.keys())+1
+    nBinsY = highLimitY - lowLimitY
 
     signalOverviewTH2 = ROOT.TH2D("signalOverviewTH2", "signalOverviewTH2", nBinsX, lowLimitX, highLimitX, nBinsY , lowLimitY, highLimitY )
 
@@ -260,48 +260,70 @@ if __name__ == '__main__':
         if nRelevantHistsProcessed %100 == 0:  print( path, myTObject)
         if args.quick and (nRelevantHistsProcessed == 2000): break
 
-    masspointsBeforeInterpolation = getMasspointDict(masterHistDict , channel = "ZXSR" )
 
+    ######################################################
+    # Interpolate signal samples in 1GeV steps and add them to the master hist dict
+    ######################################################
 
+    masspointDictBeforeInterpolation = getMasspointDict(masterHistDict , channel = "ZXSR" ) # This will be used later in plotting the signal samples
     addInterpolatedSignalSamples(masterHistDict, channels = "ZXSR")
 
-    masspoints = getMasspointDict(masterHistDict , channel = "ZXSR" )
+    ##############################################################################
+    # add 'mockdata' hists, i.e. hist constructed from background samples
+    ##############################################################################
+    addMockData(masterHistDict)
 
+    ##############################################################################
+    # write the histograms in the masterHistDict to file for the limit setting
+    ##############################################################################
+    rootDictAndTDirTools.writeDictTreeToRootFile( masterHistDict, targetFilename = "testoutput.root" )
+
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    ##############################################################################
+    # create an overview of the signal samples (regular and interpolated)
+    ##############################################################################
 
     signalOverviewTH2 = prepareSignalSampleOverviewTH2(masterHistDict, channel = "ZXSR")
-
     signalOverviewTH2Interpolated = signalOverviewTH2.Clone( signalOverviewTH2.GetName()+"Interpolated" )
+
+    masspoints = getMasspointDict(masterHistDict , channel = "ZXSR" ) # This will be used later in plotting the signal samples
 
     # sort things into the two overviewTH2s
     for mass in masspoints:
         hist = masterHistDict["ZXSR"][ masspoints[mass] ]['Nominal']['All']
-        if mass in masspointsBeforeInterpolation: histHelper.fillTH2SliceWithTH1(signalOverviewTH2,             hist, mass )
-        else:                                     histHelper.fillTH2SliceWithTH1(signalOverviewTH2Interpolated, hist, mass )
+        if mass in masspointDictBeforeInterpolation: histHelper.fillTH2SliceWithTH1(signalOverviewTH2,             hist, mass )
+        else:                                        histHelper.fillTH2SliceWithTH1(signalOverviewTH2Interpolated, hist, mass )
 
-    canvasSignalOverview1 = ROOT.TCanvas( "signalOverview1", "signalOverview1" ,1300/2,1300/2)
-    signalOverviewTH2.Draw("LEGO")
-    canvasSignalOverview1.Update()
 
-    canvasSignalOverview2 = ROOT.TCanvas( "signalOverview2", "signalOverview2" ,1300/2,1300/2)
-    signalOverviewTH2Interpolated.Draw("LEGO")
-    canvasSignalOverview2.Update()
 
+
+    signalOverviewTH2.SetLineColor(ROOT.kBlack)
+    signalOverviewTH2.SetFillColor(ROOT.kBlue)
+    signalOverviewTH2Interpolated.SetLineColor(ROOT.kBlack)
+    signalOverviewTH2Interpolated.SetFillColor(ROOT.kRed)
+
+    signalSampleStack = ROOT.THStack("signalSamples","signalSamples")
+    signalSampleStack.Add(signalOverviewTH2)
+    signalSampleStack.Add(signalOverviewTH2Interpolated)
     canvasSignalOverview3 = ROOT.TCanvas( "signalOverview3", "signalOverview3" ,1300/2,1300/2)
-    signalOverviewTH2All = signalOverviewTH2.Clone(signalOverviewTH2.GetName()+"All")
-    signalOverviewTH2All.Add(signalOverviewTH2Interpolated)
-    signalOverviewTH2All.Draw("BOX")
+    signalSampleStack.Draw("LEGO1")
+    # the following works only after calling signalSampleStack.Draw() once
+    signalSampleStack.GetXaxis().SetRange(signalOverviewTH2.GetXaxis().FindBin(15),signalOverviewTH2.GetXaxis().FindBin(61))
+    signalSampleStack.Draw("LEGO1")
     canvasSignalOverview3.Update()
-        
+   
+    massesSorted = masspoints.keys();   massesSorted.sort()
+
+    signalTH1List = []
+    for mass in massesSorted: signalTH1List.append(masterHistDict["ZXSR"][ masspoints[mass] ]['Nominal']['All'])
+
+
 
     import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
 
 
 
-    addMockData(masterHistDict)
-
-
-    rootDictAndTDirTools.writeDictTreeToRootFile( masterHistDict, targetFilename = "testoutput.root" )
 
 
 
