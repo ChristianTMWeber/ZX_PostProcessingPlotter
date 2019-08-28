@@ -6,7 +6,7 @@
 #   Run as:
 #   python limitSettingHistPrep.py ../post_20190813_144634_ZX_Run1516_Background_DataBckgSignal.root -c mc16a
 #   Or for development work as:
-#   python limitSettingHistPrep.py ../post_20190813_144634_ZX_Run1516_Background_DataBckgSignal.root -c mc16a -q True
+#   python limitSettingHistPrep.py ../post_20190813_144634_ZX_Run1516_Background_DataBckgSignal.root -c mc16a -q True --interpolateSamples False
 
 # run for now as : 
 #   python limitSettingHistPrep.py post_20190530_165131_ZX_Run2_Background_Syst.root -c mc16ade
@@ -198,6 +198,9 @@ if __name__ == '__main__':
     parser.add_argument("-q", "--quick", type=bool, default=False , 
         help = "Debugging option. Skips the filling of parsing of the input file after ~1500 relevant items" ) 
 
+    parser.add_argument("--interpolateSamples", type=bool, default=True , 
+        help = "if True we will interpolate between available signal samples in 1GeV steps" ) 
+
     args = parser.parse_args()
 
     channelMapping = { "ZXSR" : "ZXSR" , "ZXVR1" : "ZZCR"}
@@ -266,7 +269,7 @@ if __name__ == '__main__':
     ######################################################
 
     masspointDictBeforeInterpolation = getMasspointDict(masterHistDict , channel = "ZXSR" ) # This will be used later in plotting the signal samples
-    addInterpolatedSignalSamples(masterHistDict, channels = "ZXSR")
+    if args.interpolateSamples: addInterpolatedSignalSamples(masterHistDict, channels = "ZXSR")
 
     ##############################################################################
     # add 'mockdata' hists, i.e. hist constructed from background samples
