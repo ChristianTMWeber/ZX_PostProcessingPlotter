@@ -250,7 +250,7 @@ if __name__ == '__main__':
         
         signalSampleExact = difflib.get_close_matches( signalSample  , masterDict[region].keys())[0]
 
-        dataTDirLocation    = getFullTDirPath(masterDict, region, "mockData" , "Nominal",  flavor)
+        dataTDirLocation    = getFullTDirPath(masterDict, region, "expectedData" , "Nominal",  flavor)
         signalTDirLocation  = region+"/ZZd, m_{Zd} = 35GeV/Nominal/"+flavor+"/ZXSR_ZZd, m_{Zd} = 35GeV_Nominal_All"
         ZZTDirLocation      = getFullTDirPath(masterDict, region, "ZZ" , "Nominal",  flavor)
         H4lTDirLocation     = getFullTDirPath(masterDict, region, "H4l" , "Nominal",  flavor)

@@ -87,23 +87,27 @@ def fillHistDict( path, currentTH1 , mcTag, aDSIDHelper, channelMap = { "ZXSR" :
 
     return masterHistDict
 
-def addMockData(masterHistDict  ):
+def addExpectedData(masterHistDict  ):
 
     eventType = "Nominal"
 
     for channel in masterHistDict.keys():
-        for flavor in masterHistDict[channel]["H4l"]["Nominal"].keys():
+        for flavor in masterHistDict[channel]["H4l"][eventType].keys():
 
             H4l = masterHistDict[channel]["H4l"][eventType][flavor]
             ZZ =  masterHistDict[channel]["ZZ"][eventType][flavor]
             const = masterHistDict[channel]["const"][eventType][flavor]
 
-            mockData = H4l.Clone()
+            # create the 'expectedData' histogram
+            expectedData = H4l.Clone()
+            for hist in [ZZ, const]: expectedData.Add(hist)
+            newHistName   = re.sub('H4l', 'expectedData', expectedData.GetName())
+            expectedData.SetName(newHistName)
 
-            for hist in [H4l, ZZ, const]: mockData.Add(hist)
+            # set the bin error for each bin each to the square-root of the content to approximate poisson erros
+            for n in xrange(0,hist.GetNbinsX()+2): expectedData.SetBinError(n, abs(expectedData.GetBinContent(n))**0.5 )
 
-            masterHistDict[channel]["mockData"][eventType][flavor] = mockData
-
+            masterHistDict[channel]["expectedData"][eventType][flavor] = expectedData # save the hist to the masterHistDict
 
     return None
 
@@ -275,9 +279,9 @@ if __name__ == '__main__':
     if args.interpolateSamples: addInterpolatedSignalSamples(masterHistDict, channels = "ZXSR")
 
     ##############################################################################
-    # add 'mockdata' hists, i.e. hist constructed from background samples
+    # add 'expectedData' hists, i.e. hist constructed from background samples
     ##############################################################################
-    addMockData(masterHistDict)
+    addExpectedData(masterHistDict)
 
     ##############################################################################
     # write the histograms in the masterHistDict to file for the limit setting
