@@ -549,6 +549,9 @@ if __name__ == '__main__':
     parser.add_argument( "--rebin", type=int, default=1 , 
     help = "We can rebin the bins. Choose rebin > 1 to rebin #<rebin> bins into 1." ) 
 
+    parser.add_argument( "--batch", default=False, action='store_true' , 
+    help = "If run with '--batch' we will activate root batch mode and suppress all creation of graphics." ) 
+
     args = parser.parse_args()
 
 
@@ -576,7 +579,7 @@ if __name__ == '__main__':
     else: ownershipSetpoint = True
 
 
-
+    if args.batch : ROOT.gROOT.SetBatch(True)
 
     activateATLASPlotStyle()
 
