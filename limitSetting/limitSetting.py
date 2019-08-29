@@ -60,7 +60,7 @@ def drawNominalHists(inputFileName, drawDict, myDrawDSIDHelper = postProcess.DSI
 
         scaleString = ""
 
-        if  ("Data" or"data") in histPath : 
+        if  "data" in histPath.lower() : # make all characters lowercase to avoid missing "Data" or so
             dataHist = currentTH1
             dataHist.SetLineWidth(1)
             dataHist.SetLineColor(1)
@@ -130,7 +130,9 @@ def drawNominalHists(inputFileName, drawDict, myDrawDSIDHelper = postProcess.DSI
     ratioHist.Draw()
 
     canvas.Update()
-    if writeToFile: canvas.Write()
+    if writeToFile:
+        canvas.Write()
+        canvas.Print("overview.pdf")
     canvas.Close()
 
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
@@ -230,7 +232,8 @@ def getFullTDirPath(masterDict, region, eventType, systVariation , flavor):
 
 if __name__ == '__main__':
 
-    inputFileName = "preppedHists_mc16a.root"
+    #inputFileName = "preppedHists_mc16a_unchangedErros.root" 
+    inputFileName = "preppedHists_mc16a_sqrtErros.root"
 
     inputTFile = ROOT.TFile(inputFileName,"OPEN")
     masterDict = TDirTools.buildDictTreeFromTDir(inputTFile) # use this dict for an overview of what hists / channels / systematics / flavors are available
@@ -241,17 +244,18 @@ if __name__ == '__main__':
 
 
     region = "ZXSR"
-    flavor = "All"
+    flavor = "4e"#"All"
 
-    for massPoint in xrange(15,56,5):
+    for massPoint in [30]:#xrange(15,56,5):
         
         signalSample = "ZZd %iGeV" %( massPoint )
 
         
         signalSampleExact = difflib.get_close_matches( signalSample  , masterDict[region].keys())[0]
 
-        dataTDirLocation    = getFullTDirPath(masterDict, region, "expectedData" , "Nominal",  flavor)
-        signalTDirLocation  = region+"/ZZd, m_{Zd} = 35GeV/Nominal/"+flavor+"/ZXSR_ZZd, m_{Zd} = 35GeV_Nominal_All"
+
+        dataTDirLocation    = getFullTDirPath(masterDict, region, "data" , "Nominal",  flavor)
+        signalTDirLocation  = getFullTDirPath(masterDict, region, signalSampleExact , "Nominal",  flavor) # region+"/ZZd, m_{Zd} = 35GeV/Nominal/"+flavor+"/ZXSR_ZZd, m_{Zd} = 35GeV_Nominal_All"
         ZZTDirLocation      = getFullTDirPath(masterDict, region, "ZZ" , "Nominal",  flavor)
         H4lTDirLocation     = getFullTDirPath(masterDict, region, "H4l" , "Nominal",  flavor)
 
@@ -283,10 +287,9 @@ if __name__ == '__main__':
 
         ### Okay, now that we've configured the measurement, we'll start building the tree. We begin by creating the first channel
         chan = ROOT.RooStats.HistFactory.Channel("signalRegion")
-
         ### First, we set the 'data' for this channel The data is a histogram represeting the measured distribution.  It can have 1 or many bins. In this example, we assume that the data histogram is already made and saved in a ROOT file.   So, to 'set the data', we give this channel the path to that ROOT file and the name of the data histogram in that root file The arguments are: SetData(HistogramName, HistogramFile)
         chan.SetData(dataTDirLocation, inputFileName)
-        #chan.SetStatErrorConfig(0.05, "Poisson") # this seems to be not part of the C++ exsample
+        chan.SetStatErrorConfig(0.05, "Poisson") # ??? # this seems to be not part of the C++ exsample
 
 
         # Now, create some samples
@@ -368,12 +371,13 @@ if __name__ == '__main__':
         allWorkspaceVariables = TDirTools.rooArgSetToList( workspace.allVars() )
         workspaceVarDict = {x.GetName() : x for x in allWorkspaceVariables}
 
-        #drawList = [dataTDirLocation, signalTDirLocation, ZZTDirLocation, H4lTDirLocation]
+        keysafeDictReturn = lambda x,aDict : aDict[x] if x in aDict else None # returns none if x is not among the dict's keys
 
+        #drawList = [dataTDirLocation, signalTDirLocation, ZZTDirLocation, H4lTDirLocation]
         drawDict = { dataTDirLocation   : None,
-                     ZZTDirLocation     : workspaceVarDict["ZZNorm"],
-                     H4lTDirLocation    : workspaceVarDict["H4lNorm"],
-                     signalTDirLocation : workspaceVarDict["SigXsecOverSM"]  }
+                     ZZTDirLocation     : keysafeDictReturn("ZZNorm", workspaceVarDict) ,
+                     H4lTDirLocation    : keysafeDictReturn("H4lNorm", workspaceVarDict),
+                     signalTDirLocation : keysafeDictReturn("SigXsecOverSM", workspaceVarDict) }
 
         SigXsecOverSM = workspaceVarDict["SigXsecOverSM"]
         
