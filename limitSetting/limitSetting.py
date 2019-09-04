@@ -223,6 +223,8 @@ def addSystematicsToSample(histFactorySample, inputFileOrName, region = "ZXSR", 
     elif isinstance(inputFileOrName, ROOT.TFile):  inputTFile = inputFileOrName
     else:  warnings.warn("addSystematicsToSample is not properly configured. No systematics Added"); return None
 
+    if finishAfterNSystematics == 0 : return None # no need to do the whole rigmarole if we are not adding any systematics anyway
+
     # let's store information about the systematics here in the following way
     # systematicsDict[ name of systematis][up or down variation][  ] = <aString>
     systematicsDict = collections.defaultdict(lambda: collections.defaultdict(dict))
