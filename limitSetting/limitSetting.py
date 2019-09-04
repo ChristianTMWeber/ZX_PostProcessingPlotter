@@ -292,10 +292,6 @@ def getProfileLikelihoodLimits(workspace, confidenceLevel = 0.95, drawLikelihood
     #interval.UpperLimit( parameterOfInterest )
     #interval.LowerLimit( parameterOfInterest )
 
-    POIErrors = parameterOfInterest.Clone( parameterOfInterest.GetName() + "Cl" + str(confidenceLevel) )
-    #                       low error                                       high error
-    POIErrors.setAsymError( interval.LowerLimit( parameterOfInterest ) , interval.UpperLimit( parameterOfInterest ))
-
     if drawLikelihoodIntervalPlot:
         plot = ROOT.RooStats.LikelihoodIntervalPlot(interval)
         plot.SetNPoints(50)
@@ -304,8 +300,86 @@ def getProfileLikelihoodLimits(workspace, confidenceLevel = 0.95, drawLikelihood
         plot.Draw()
         canvas.Draw()
 
+    return interval
+
+def expectedLimitsAsimov(workspace, confidenceLevel = 0.95, drawLimitPlot = False ):
+    # get expected upper limits on the parameter of interest using the 'AsymptoticCalculator'
+    # provides also +/- n sigma intervals on the expected limits
+    # I don't understand this 'AsymptoticCalculator' fully yet, but the expected limits look reasonable 
+    # I based this here on the following tutorial: https://roostatsworkbook.readthedocs.io/en/latest/docs-cls.html#
+
+    modelConfig = workspace.obj("ModelConfig") # modelConfig = modelConfig
+    data = workspace.data("obsData")
+
+    # setup the cloned modelConfig
+    modelConfigClone = modelConfig.Clone( modelConfig.GetName()+"Clone" )
+    mcClonePOI = modelConfigClone.GetParametersOfInterest().first()
+
+    mcClonePOI.setVal(1.0)
+    modelConfigClone.SetSnapshot( ROOT.RooArgSet( mcClonePOI ) )
+
+    #setup the background only model
+
+    bModel = modelConfig.Clone("BackgroundOnlyModel")
+    bModelPOI = bModel.GetParametersOfInterest().first()
+
+    bModelPOI.setVal(0)
+    bModel.SetSnapshot( ROOT.RooArgSet( bModelPOI )  )
+
+    #  AsymptoticCalculator(data, alternativeModel, nullModel)
+    asympCalc = ROOT.RooStats.AsymptoticCalculator(data, bModel, modelConfigClone ) # asymptotic calculator is for the profile likelihood ratio
+    asympCalc.SetOneSided(True);
+
+
+    inverter = ROOT.RooStats.HypoTestInverter(asympCalc)
+    inverter.SetConfidenceLevel( confidenceLevel );
+    inverter.UseCLs(True);
+    inverter.SetVerbose(False);
+    inverter.SetFixedScan(60,0.0,6.0); # set number of points , xmin and xmax
+
+    result =  inverter.GetInterval();
+
+    if drawLimitPlot: 
+        hypoCanvas = ROOT.TCanvas("hypoCanvas", "hypoCanvas", 1300/2,1300/2)
+        inverterPlot = ROOT.RooStats.HypoTestInverterPlot("HTI_Result_Plot","HypoTest Scan Result",result);
+        inverterPlot.Draw("CLb 2CL");  # plot also CLb and CLs+b
+        hypoCanvas.Update()
+
     # import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-    return POIErrors, interval
+
+    return result
+
+def translateLimits( rooStatsObject, nSigmas = 1 ):
+    # we assume that there is always only one parameter of interest
+
+    if isinstance( rooStatsObject , ROOT.RooStats.LikelihoodInterval ):
+        limitObject = TDirTools.rooArgSetToList( rooStatsObject.GetBestFitParameters() )[0]
+        
+        bestEstimate = limitObject.getVal()
+        lowLimit  = rooStatsObject.LowerLimit( limitObject )
+        highLimit = rooStatsObject.UpperLimit( limitObject )
+
+        suffix = "ProfileLikelihood"
+
+    elif isinstance( rooStatsObject , ROOT.RooStats.HypoTestInverterResult ):
+        limitObject = rooStatsObject
+
+        bestEstimate = limitObject.GetExpectedUpperLimit(0)
+
+        lowLimit  = rooStatsObject.GetExpectedUpperLimit(-nSigmas)
+        highLimit = rooStatsObject.GetExpectedUpperLimit(+nSigmas)
+
+        suffix = "expectedUpperLimit"
+
+    name = limitObject.GetName() +"_"+str(nSigmas) +"SigmaLimit" + "_" + suffix
+    title = limitObject.GetTitle() +"_"+str(nSigmas) +"SigmaLimit" + "_" + suffix
+
+    outputRooRealvar = ROOT.RooRealVar( name, title ,bestEstimate,lowLimit , highLimit)
+    # get the limits via .getVal(), .getMin(), .getMax()
+
+    return outputRooRealvar
+
+        
 
 def getFullTDirPath(masterDict, region, eventType, systVariation , flavor):
 
@@ -423,6 +497,63 @@ if __name__ == '__main__':
 
         meas.PrintXML("tutorialBuildingHistFactoryModel", meas.GetOutputFilePrefix());
 
+
+
+        #One can also create a workspace for only a single channel of a model by supplying that channel:
+        hist2workspace = ROOT.RooStats.HistFactory.HistoToWorkspaceFactoryFast(meas)
+        chan.CollectHistograms() #  see here why this is needed: https://root-forum.cern.ch/t/histfactory-issue-with-makesinglechannelmodel/34201
+        workspace = hist2workspace.MakeSingleChannelModel(meas, chan)
+
+        # profile limit: profileLimit.getVal(), profileLimit.getErrorHi(), profileLimit.getErrorLo()
+        interval = getProfileLikelihoodLimits(workspace )
+
+
+        likelihoodLimit = translateLimits( interval, nSigmas = 1 )
+
+        translateLimits(likelihoodLimit)
+
+
+        allWorkspaceVariables = TDirTools.rooArgSetToList( workspace.allVars() )
+        workspaceVarDict = {x.GetName() : x for x in allWorkspaceVariables}
+        keysafeDictReturn = lambda x,aDict : aDict[x] if x in aDict else None # returns none if x is not among the dict's keys
+        keysafeDictReturn("H4lNorm", workspaceVarDict)
+
+        
+
+        ############## Let's test the CL Calculation START##############
+        # from: https://roostatsworkbook.readthedocs.io/en/latest/docs-cls.html
+
+        expectedResult = expectedLimitsAsimov( workspace )
+
+        translateLimits(expectedResult)
+
+
+
+        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+
+        ############## Let's test the CL Calculation  END ##############
+
+        histHelper.fillBin(overviewHist, massPoint, interval.UpperLimit(intervalVariables["SigXsecOverSM"]) )
+
+        drawDict = {dataTDirLocation   : None, 
+                    H4lTDirLocation    : keysafeDictReturn("H4lNorm", workspaceVarDict),
+                    ZZTDirLocation     : None,
+                    signalTDirLocation : interval}
+
+        drawNominalHists(inputFileName, drawDict, writeToFile =  None)
+
+        continue
+
+        #TDirTools.rooArgSetToList( interval.GetBestFitParameters() )
+
+        # stop here so we can experiment with the limit extracting process
+        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+        #############################################################
+        # likeli working limit estimation below
+        #############################################################
+
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here #  ZXSR/H4l
         # Now, do the measurement
 
@@ -443,6 +574,12 @@ if __name__ == '__main__':
         mc = workspace.obj("ModelConfig")
         data = workspace.data("obsData")
         x = workspace.var("SigXsecOverSM")
+
+        mc.GetParametersOfInterest()
+
+        TDirTools.rooArgSetToList(   mc.GetParametersOfInterest() )
+
+        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
 
         workspace.var("SigXsecOverSM").Print()
@@ -507,10 +644,17 @@ if __name__ == '__main__':
     ###############################################
     # end of "for massPoint in ... "
     ###############################################
+    
+    overviewCanvas = ROOT.TCanvas( "XS limits", "XS limits", 1300/2,1300/2)
+    overviewHist.Draw("L"); overviewCanvas.Update()
+
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
     writeTFile.cd()
     overviewHist.Write()
     writeTFile.Close()
 
+
+
     print("All Done!")
-    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
