@@ -9,6 +9,8 @@ import ROOT
 import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
 import re
 import difflib # so I can be a bit lazier with identification of signal region masspoints via 'difflib.get_close_matches'
+import warnings # to warn about things that might not have gone right
+
 
 # import sys and os.path to be able to import things from the parent directory
 import sys 
@@ -19,12 +21,23 @@ import plotPostProcess as postProcess
 import functions.histHelper as histHelper
 
 
+def activateATLASPlotStyle():
+    # runs the root macro that defines the ATLAS style, and checks that it is active
+    # relies on a seperate style macro
+    ROOT.gROOT.ProcessLine(".x ../atlasStyle.C")
+
+    if "ATLAS" in ROOT.gStyle.GetName(): print("ROOT.gStyle: ATLAS style loaded!")
+    else:                                warnings.warn("Did not load ATLAS style properly")
+
+    return None
+
+
 def drawNominalHists(inputFileName, drawDict, myDrawDSIDHelper = postProcess.DSIDHelper(), writeToFile = False ):
 
     def setupTLegend():
         # set up a TLegend, still need to add the different entries
-        xOffset = 0.5; yOffset = 0.4
-        xWidth  = 0.4; ywidth = 0.5
+        xOffset = 0.6; yOffset = 0.5
+        xWidth  = 0.3; ywidth = 0.4
         TLegend = ROOT.TLegend(xOffset, yOffset ,xOffset + xWidth, yOffset+ ywidth)
         TLegend.SetFillColor(ROOT.kWhite)
         TLegend.SetLineColor(ROOT.kWhite)
@@ -50,9 +63,14 @@ def drawNominalHists(inputFileName, drawDict, myDrawDSIDHelper = postProcess.DSI
 
     legend = setupTLegend()
 
+    
+
     histDict={}
 
-    for histPath in drawDict:
+    sortedDrawKeys = drawDict.keys()
+    sortedDrawKeys.sort()
+
+    for histPath in sortedDrawKeys:
 
         histogram = inputTFile.Get(histPath)
         currentTH1 = histogram.Clone()
@@ -62,16 +80,32 @@ def drawNominalHists(inputFileName, drawDict, myDrawDSIDHelper = postProcess.DSI
 
         if  "data" in histPath.lower() : # make all characters lowercase to avoid missing "Data" or so
             dataHist = currentTH1
-            dataHist.SetLineWidth(1)
-            dataHist.SetLineColor(1)
+            #dataHist.SetLineWidth(1)
+            #dataHist.SetLineColor(1)
         else:
-            if drawDict[histPath] is not None: 
+            if isinstance(drawDict[histPath], ROOT.RooRealVar): # do scaling if we send a RooRealVar along with the histogram path
                 fittedRooReal = drawDict[histPath]
                 scaleByRooRealVar(currentTH1, fittedRooReal)
-                scaleString = ", scale = %.2f #pm %.2f" %( fittedRooReal.getVal(), fittedRooReal.getError() )
+                scaleString = ", scaled by %.2f #pm %.2f" %( fittedRooReal.getVal(), fittedRooReal.getError() )
+            elif isinstance(drawDict[histPath],ROOT.RooStats.LikelihoodInterval): # do scaling if we send a ROOT.RooStats.LikelihoodInterval along with the histogram path
+                interval = drawDict[histPath]
+                intervalVariables = {x.GetName() : x for x in TDirTools.rooArgSetToList(interval.GetParameters())}
+
+                upperLimit = interval.UpperLimit(intervalVariables["SigXsecOverSM"])
+                currentTH1.Scale(upperLimit)
+                scaleString = ", #sigma = %.2f fb" %( upperLimit )
+
+            elif isinstance(drawDict[histPath],float): # do scaling if we send a ROOT.RooStats.LikelihoodInterval along with the histogram path
+                factor = drawDict[histPath]
+                currentTH1.Scale(factor)
+                scaleString = ", XS scaled by %.2f" %( factor )
+
+
+
 
             #currentTH1.SetBinError(12,1)
-            #currentTH1.GetBinError(12)   
+            #currentTH1.GetBinError(12)  
+            currentTH1.SetMarkerStyle(0 ) # SetMarkerStyle(0 ) remove marker from combined backgroun
             nominalHistStack.Add(currentTH1)
             histDict[eventType] = currentTH1
 
@@ -90,10 +124,20 @@ def drawNominalHists(inputFileName, drawDict, myDrawDSIDHelper = postProcess.DSI
     histPad.Draw();              # Draw the upper pad: pad1
     histPad.cd();                # pad1 becomes the current pad
 
+    # prepare scaling of the x axis
+    axRangeLow, axRangeHigh = histHelper.getFirstAndLastNonEmptyBinInHist(nominalHistStack, offset = 1)
+
     # draw the 'regular' histograms
-    dataHist.Draw("E1")
+    dataHist.GetXaxis().SetRange(axRangeLow,axRangeHigh) # let's scale the first histogram we draw
+    dataHist.Draw()
+
+    dataHist.GetYaxis().SetTitle("Events / " + str(dataHist.GetBinWidth(1) )+" GeV" )
+    dataHist.GetYaxis().SetTitleSize(0.05)
+    dataHist.GetYaxis().SetTitleOffset(1.0)
+    dataHist.GetYaxis().CenterTitle()
+
     nominalHistStack.Draw("Hist same")
-    nominalHistStack.Draw("same E0 ")   # "E2" Draw error bars with rectangles:  https://root.cern.ch/doc/v608/classTHistPainter.html
+    nominalHistStack.Draw("same E2 ")   # "E2" Draw error bars with rectangles:  https://root.cern.ch/doc/v608/classTHistPainter.html
     dataHist.Draw("same E1")
     legend.Draw(); # do legend things
 
@@ -130,6 +174,7 @@ def drawNominalHists(inputFileName, drawDict, myDrawDSIDHelper = postProcess.DSI
     ratioHist.Draw()
 
     canvas.Update()
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     if writeToFile:
         canvas.Write()
         canvas.Print("overview.pdf")
