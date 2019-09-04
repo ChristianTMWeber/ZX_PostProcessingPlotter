@@ -132,16 +132,16 @@ dataset_number/I:crossSection/D:kFactor/D:genFiltEff/D:physics_short/C:ami_tags/
 #getMetadata.py --timestamp="2019-03-13 22:13:14" --physicsGroups="PMG,MCGN" --fields="dataset_number,crossSection,kFactor,genFiltEff,physics_short,ami_tags,events,physics_comment,pdf,generator_name" --inDsTxt="bkg_datasets_mc16e_extra.txt"
 
 
-#ZX Signal
-343234 7.29E-07   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd15  e4551_e5984_a875_r9364_r9315_p3654
-343235 9.72E-07   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd20  e4551_e5984_a875_r9364_r9315_p3654
-343236 1.46E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd25  e4551_e5984_a875_r9364_r9315_p3654
-343237 1.21E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd30  e4551_e5984_a875_r9364_r9315_p3654
-343238 9.72E-07   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd35  e4551_e5984_a875_r9364_r9315_p3654
-343239 4.86E-07   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd40  e4551_e5984_a875_r9364_r9315_p3654
-343240 4.86E-07   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd45  e4551_e5984_a875_r9364_r9315_p3654
-343241 7.29E-07   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd50  e4551_e5984_a875_r9364_r9315_p3654
-343242 4.37E-07   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd55  e4551_e5984_a875_r9364_r9315_p3654
+#ZX Signal, remeber, cross section unit here is nb = 1E-9 barn. Let's list the ZZd cross section as 1fb = 1E-15 barn = 1E-6 nb 
+343234 1.00E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd15  e4551_e5984_a875_r9364_r9315_p3654
+343235 1.00E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd20  e4551_e5984_a875_r9364_r9315_p3654
+343236 1.00E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd25  e4551_e5984_a875_r9364_r9315_p3654
+343237 1.00E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd30  e4551_e5984_a875_r9364_r9315_p3654
+343238 1.00E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd35  e4551_e5984_a875_r9364_r9315_p3654
+343239 1.00E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd40  e4551_e5984_a875_r9364_r9315_p3654
+343240 1.00E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd45  e4551_e5984_a875_r9364_r9315_p3654
+343241 1.00E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd50  e4551_e5984_a875_r9364_r9315_p3654
+343242 1.00E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd55  e4551_e5984_a875_r9364_r9315_p3654
 
 # ZdZd Signal
 302073  7.0E-07     1.0 1.0000E+00  MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZdZd4l_mZd0p5     e4022_e5984_s3126_r10724_r10726_p3654
