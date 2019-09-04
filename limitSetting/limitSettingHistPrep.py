@@ -4,12 +4,10 @@
 # and saving them in a structure that is conducive for the limit setting with HistFactory
 
 #   Run as:
-#   python limitSettingHistPrep.py ../post_20190813_144634_ZX_Run1516_Background_DataBckgSignal.root -c mc16a --interpolateSamples 
+#   python limitSettingHistPrep.py ../post_20190831_170144_ZX_Run1516_Background_DataBckgSignal.root -c mc16a --interpolateSamples 
 #   Or for development work as:
-#   python limitSettingHistPrep.py ../post_20190813_144634_ZX_Run1516_Background_DataBckgSignal.root -c mc16a --quick 
+#   python limitSettingHistPrep.py ../post_20190831_170144_ZX_Run1516_Background_DataBckgSignal.root -c mc16a --quick 
 
-# run for now as : 
-#   python limitSettingHistPrep.py post_20190530_165131_ZX_Run2_Background_Syst.root -c mc16ade
 
 import ROOT # to do all the ROOT stuff
 import argparse # to parse command line options
@@ -136,7 +134,7 @@ def prepareSignalSampleOverviewTH2(masterHistDict, channel = None):
     hist = masterHistDict[channel][masspoints.values()[0]]['Nominal']['All']
     nBinsX = hist.GetNbinsX()
     lowLimitX  = hist.GetBinLowEdge(1)
-    highLimitX = hist.GetBinLowEdge(nBinsX+2)
+    highLimitX = hist.GetBinLowEdge(nBinsX+1)
 
     lowLimitY = min(masspoints.keys())
     highLimitY = max(masspoints.keys())+1
@@ -318,7 +316,19 @@ if __name__ == '__main__':
         canvasSignalOverview3 = ROOT.TCanvas( "signalOverview3", "signalOverview3" ,1300/2,1300/2)
         signalSampleStack.Draw("LEGO1")
         # the following works only after calling signalSampleStack.Draw() once
-        signalSampleStack.GetXaxis().SetRange(signalOverviewTH2.GetXaxis().FindBin(15),signalOverviewTH2.GetXaxis().FindBin(61))
+        signalSampleStack.GetXaxis().SetRange(signalOverviewTH2.GetXaxis().FindBin(10),signalOverviewTH2.GetXaxis().FindBin(61))
+
+        signalSampleStack.GetXaxis().SetTitle("m_{34} , " + str(signalSampleStack.GetXaxis().GetBinWidth(1) )+" GeV bin-width" )
+        #signalSampleStack.GetXaxis().SetTitleSize(0.05)
+        signalSampleStack.GetXaxis().SetTitleOffset(2.)
+        signalSampleStack.GetXaxis().CenterTitle()
+
+        signalSampleStack.GetYaxis().SetTitle("signal sample masspoint [GeV]" )
+        signalSampleStack.GetYaxis().SetTitleOffset(2.)
+        signalSampleStack.GetYaxis().CenterTitle()
+
+
+
         signalSampleStack.Draw("LEGO1")
         canvasSignalOverview3.Update()
        
@@ -326,6 +336,22 @@ if __name__ == '__main__':
 
         signalTH1List = []
         for mass in massesSorted: signalTH1List.append(masterHistDict["ZXSR"][ masspoints[mass] ]['Nominal']['All'])
+
+        signalOverviewFile = ROOT.TFile("signalOverview.root","RECREATE")
+        signalOverviewTH2.Write()
+        signalOverviewTH2Interpolated.Write()
+        signalSampleStack.Write()
+        canvasSignalOverview3.Write()
+        for hist in signalTH1List: hist.Write()
+        signalOverviewFile.Close()
+
+        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+
+
+
+
+
 
 
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
