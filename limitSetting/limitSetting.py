@@ -269,6 +269,44 @@ def addSystematicsToSample(histFactorySample, inputFileOrName, region = "ZXSR", 
 
     return None
 
+def getProfileLikelihoodLimits(workspace, confidenceLevel = 0.95, drawLikelihoodIntervalPlot = False):
+    # get the limits on the (first) parameter of interest by doing a profile likelyhood scan
+    # pl.SetConfidenceLevel(0.6827 ) # remember 1 sigma =0.6827, 2 sigma=0.9545,  3 sigma=0.9973 
+
+    mc = workspace.obj("ModelConfig")
+    data = workspace.data("obsData")
+    
+    parameterOfInterest = mc.GetParametersOfInterest().first() # use this, so we don't have to pass the name of the parameter of interest along
+
+    pl = ROOT.RooStats.ProfileLikelihoodCalculator(data,mc)
+    #pl.SetConfidenceLevel(0.6827 ) # remember 1 sigma =0.6827, 2 sigma=0.9545,  3 sigma=0.9973 
+    #pl.SetConfidenceLevel(0.9545 )
+    pl.SetConfidenceLevel(0.95 )
+
+    interval = pl.GetInterval()
+
+    #intervalVariables = {x.GetName() : x for x in TDirTools.rooArgSetToList(interval.GetParameters())}
+    #interval.UpperLimit(intervalVariables["SigXsecOverSM"])
+    #interval.LowerLimit(intervalVariables["SigXsecOverSM"])
+
+    #interval.UpperLimit( parameterOfInterest )
+    #interval.LowerLimit( parameterOfInterest )
+
+    POIErrors = parameterOfInterest.Clone( parameterOfInterest.GetName() + "Cl" + str(confidenceLevel) )
+    #                       low error                                       high error
+    POIErrors.setAsymError( interval.LowerLimit( parameterOfInterest ) , interval.UpperLimit( parameterOfInterest ))
+
+    if drawLikelihoodIntervalPlot:
+        plot = ROOT.RooStats.LikelihoodIntervalPlot(interval)
+        plot.SetNPoints(50)
+        plot.SetMaximum(5)
+        canvas = ROOT.TCanvas()
+        plot.Draw()
+        canvas.Draw()
+
+    # import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    return POIErrors, interval
+
 def getFullTDirPath(masterDict, region, eventType, systVariation , flavor):
 
     histName = masterDict[region][eventType][systVariation][flavor].GetName()
