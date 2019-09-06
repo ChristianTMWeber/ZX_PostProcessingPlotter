@@ -10,6 +10,9 @@ import collections # so we can use collections.defaultdict to more easily constr
 import re
 import difflib # so I can be a bit lazier with identification of signal region masspoints via 'difflib.get_close_matches'
 import warnings # to warn about things that might not have gone right
+import resource # print 'Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+import time # for measuring execution time
+
 
 
 # import sys and os.path to be able to import things from the parent directory
@@ -458,6 +461,7 @@ def getFullTDirPath(masterDict, region, eventType, systVariation , flavor):
 
 
 if __name__ == '__main__':
+    startTime = time.time()
     activateATLASPlotStyle()
 
     #inputFileName = "preppedHists_mc16a_unchangedErros_3GeVBins.root" 
@@ -671,6 +675,8 @@ if __name__ == '__main__':
     expectedLimitsGraph_2Sigma.Write()
 
     writeTFile.Close()
+
+    print "Memory usage: %s kB \t Runtime: %10.1f s" % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/8, (time.time() - startTime ) )
 
 
 
