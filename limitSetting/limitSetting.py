@@ -19,6 +19,7 @@ sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) ) # need
 import functions.rootDictAndTDirTools as TDirTools
 import plotPostProcess as postProcess
 import functions.histHelper as histHelper
+import functions.tGraphHelpers as graphHelper
 
 
 def activateATLASPlotStyle():
@@ -184,6 +185,67 @@ def drawNominalHists(inputFileName, drawDict, myDrawDSIDHelper = postProcess.DSI
 
     return None
 
+def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , colorScheme = ROOT.kRed, writeTo = False):
+
+    def setupTLegend():
+        # set up a TLegend, still need to add the different entries
+        xOffset = 0.6; yOffset = 0.7
+        xWidth  = 0.3; ywidth = 0.2
+        TLegend = ROOT.TLegend(xOffset, yOffset ,xOffset + xWidth, yOffset+ ywidth)
+        TLegend.SetFillColor(ROOT.kWhite)
+        TLegend.SetLineColor(ROOT.kWhite)
+        TLegend.SetNColumns(1);
+        TLegend.SetFillStyle(0);  # make legend background transparent
+        TLegend.SetBorderSize(0); # and remove its border without a border
+        return TLegend
+
+    canv = ROOT.TCanvas("GraphOverview", "GraphOverview")
+ 
+
+    expectedLimit2Sig.GetYaxis().SetTitle("95% CL on #sigma_{ZZ_{d}} [fb] ")
+    expectedLimit2Sig.GetYaxis().SetTitleSize(0.06)
+    expectedLimit2Sig.GetYaxis().SetTitleOffset(0.6)
+    expectedLimit2Sig.GetYaxis().CenterTitle()
+
+    expectedLimit2Sig.GetXaxis().SetTitle("m_{Z_{d}} [GeV]")
+    expectedLimit2Sig.GetXaxis().SetTitleSize(0.05)
+    expectedLimit2Sig.GetXaxis().SetTitleOffset(0.85)
+    #expectedLimit2Sig.GetXaxis().CenterTitle()
+
+    expectedLimit2Sig.SetFillColor(colorScheme-10)  # https://root.cern.ch/doc/master/classTAttFill.html
+    #expectedLimit2Sig.SetFillStyle(3001)  # https://root.cern.ch/doc/master/classTAttFill.html
+    expectedLimit2Sig.Draw("A3") # use 'A' option only for first TGraph apparently
+
+    #expectedLimit1Sig.SetFillColorAlpha(ROOT.kRed+1,0.5) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
+    expectedLimit1Sig.SetFillColor(colorScheme-9)
+    #expectedLimit1Sig.SetFillStyle(3001)  # https://root.cern.ch/doc/master/classTAttFill.html
+    expectedLimit1Sig.Draw("3 same")
+
+    expectedLimitMedian = graphHelper.getTGraphWithoutError( expectedLimit1Sig  , ySetpoint = "median")
+
+    expectedLimitMedian.SetLineStyle(2) # https://root.cern.ch/doc/master/classTAttLine.html#L3
+    expectedLimitMedian.SetLineWidth(2)
+    expectedLimitMedian.SetLineColor(colorScheme)
+    expectedLimitMedian.Draw("same")
+
+    extractedLimit.SetLineStyle(1) # https://root.cern.ch/doc/master/classTAttLine.html#L3
+    extractedLimit.SetLineWidth(2)
+    extractedLimit.SetLineColor(colorScheme)
+    extractedLimit.Draw("same")
+
+    legend = setupTLegend()
+    legend.AddEntry(extractedLimit , "observed Limit"  , "l");
+    legend.AddEntry(expectedLimitMedian , "expected limit"  , "l");
+    legend.AddEntry(expectedLimit1Sig , "#pm1#sigma expected limit"  , "f");
+    legend.AddEntry(expectedLimit2Sig , "#pm2#sigma expected limit"  , "f");    
+
+    legend.Draw()
+
+    canv.Update() #"a3" also seems to work https://root.cern/doc/master/classTGraphPainter
+
+    if writeTo: writeTo.cd(); canv.Write()
+
+    return canv
 
 def prepHistoSys(eventDict, flavor = "All"):
 
@@ -289,8 +351,11 @@ def getProfileLikelihoodLimits(workspace, confidenceLevel = 0.95, drawLikelihood
     #interval.UpperLimit(intervalVariables["SigXsecOverSM"])
     #interval.LowerLimit(intervalVariables["SigXsecOverSM"])
 
-    #interval.UpperLimit( parameterOfInterest )
-    #interval.LowerLimit( parameterOfInterest )
+    # we need to call this here, so that we can retrieve the limits later on with the elements of interval.GetBestFitParameters() later on. It's weird.
+    interval.UpperLimit( parameterOfInterest )
+    interval.LowerLimit( parameterOfInterest )
+
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
     if drawLikelihoodIntervalPlot:
         plot = ROOT.RooStats.LikelihoodIntervalPlot(interval)
@@ -351,6 +416,8 @@ def expectedLimitsAsimov(workspace, confidenceLevel = 0.95, drawLimitPlot = Fals
 
 def translateLimits( rooStatsObject, nSigmas = 1 ):
     # we assume that there is always only one parameter of interest
+    
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
     if isinstance( rooStatsObject , ROOT.RooStats.LikelihoodInterval ):
         limitObject = TDirTools.rooArgSetToList( rooStatsObject.GetBestFitParameters() )[0]
@@ -389,23 +456,33 @@ def getFullTDirPath(masterDict, region, eventType, systVariation , flavor):
     return fullTDirPath
 
 
-if __name__ == '__main__':
 
-    #inputFileName = "preppedHists_mc16a_unchangedErros.root" 
-    inputFileName = "preppedHists_mc16a_sqrtErros.root"
+if __name__ == '__main__':
+    activateATLASPlotStyle()
+
+    #inputFileName = "preppedHists_mc16a_unchangedErros_3GeVBins.root" 
+    #inputFileName = "preppedHists_mc16a_sqrtErros_3GeVBins.root"
+    #inputFileName = "preppedHists_mc16a_sqrtErros_1GeVBins.root"
+    inputFileName = "preppedHists_mc16a_sqrtErros_0.5GeVBins.root"
 
     inputTFile = ROOT.TFile(inputFileName,"OPEN")
     masterDict = TDirTools.buildDictTreeFromTDir(inputTFile) # use this dict for an overview of what hists / channels / systematics / flavors are available
-
-    overviewHist = ROOT.TH1D("ZX_limit_Overview","ZX_limit_Overview", 41, 15,56)
 
     writeTFile = ROOT.TFile("limitOutput.root",  "RECREATE")# "UPDATE")
 
 
     region = "ZXSR"
-    flavor = "4e"#"All"
+    flavor = "All"
 
-    for massPoint in [30]:#xrange(15,56,5):
+    massesToProcess =  range(15,56,5)
+    # setup some output datastructures
+    overviewHist = ROOT.TH1D("ZX_limit_Overview","ZX_limit_Overview", len(massesToProcess), min(massesToProcess), max(massesToProcess) + 1 ) # construct the hist this way, so that we have a bin for each mass point
+
+    observedLimitGraph    = graphHelper.createNamedTGraphAsymmErrors("observedLimitGraph")
+    expectedLimitsGraph_1Sigma = graphHelper.createNamedTGraphAsymmErrors("expectedLimits_1Sigma")
+    expectedLimitsGraph_2Sigma = graphHelper.createNamedTGraphAsymmErrors("expectedLimits_2Sigma")
+
+    for massPoint in massesToProcess:
         
         signalSample = "ZZd %iGeV" %( massPoint )
 
@@ -437,9 +514,7 @@ if __name__ == '__main__':
 
         ### Set the luminosity There are a few conventions for this. Here, we assume that all histograms have already been scaled by luminosity We also set a 10% uncertainty
         meas.SetLumi(1.0)
-        meas.SetLumiRelErr(0.10)
-
-
+        #meas.SetLumiRelErr(0.10)
 
 
         # Create a channel
@@ -456,8 +531,8 @@ if __name__ == '__main__':
         # Create the signal sample Now that we have a channel and have attached data to it, we will start creating our Samples These describe the various processes that we use to model the data. Here, they just consist of a signal process and a single background process.
         signal = ROOT.RooStats.HistFactory.Sample("signal", signalTDirLocation, inputFileName)
         ### Having created this sample, we configure it First, we add the cross-section scaling parameter that we call SigXsecOverSM Then, we add a systematic with a 5% uncertainty Finally, we add it to our channel
-        #signal.AddOverallSys("syst1",  0.1, 1.9) # review what does this exactly do
-        signal.AddNormFactor("SigXsecOverSM", 1, 0, 3)
+        #signal.AddOverallSys("syst1",  0.1, 1.9) # ??? # review what does this exactly do
+        signal.AddNormFactor("SigXsecOverSM", 0, 0, 10)
         chan.AddSample(signal)
 
         # ZZ background
@@ -465,7 +540,7 @@ if __name__ == '__main__':
         backgroundZZ = ROOT.RooStats.HistFactory.Sample("backgroundZZ", ZZTDirLocation, inputFileName)
         #backgroundZZ.ActivateStatError()#ActivateStatError("backgroundZZ_statUncert", inputFileName)
         #backgroundZZ.AddOverallSys("syst2", 0.95, 1.05 )
-        backgroundZZ.AddNormFactor("ZZNorm", 1, 0, 3) # let's add this to fit the normalization of the background
+        #backgroundZZ.AddNormFactor("ZZNorm", 1, 0, 3) # let's add this to fit the normalization of the background
         chan.AddSample(backgroundZZ)
 
 
@@ -474,8 +549,8 @@ if __name__ == '__main__':
         backgroundH4l = ROOT.RooStats.HistFactory.Sample("backgroundH4l",H4lTDirLocation , inputFileName)
         # backgroundH4l.ActivateStatError()
         # backgroundH4l.AddOverallSys("syst3", 0.95, 1.05 )
-        backgroundH4l.AddNormFactor("H4lNorm", 1, 0, 3) # let's add this to fit the normalization of the background
-        addSystematicsToSample(backgroundH4l, inputTFile, region = "ZXSR", eventType = "H4l", flavor = "All", finishAfterNSystematics = -1)
+        # backgroundH4l.AddNormFactor("H4lNorm", 1, 0, 3) # let's add this to fit the normalization of the background
+        addSystematicsToSample(backgroundH4l, inputTFile, region = "ZXSR", eventType = "H4l", flavor = "All", finishAfterNSystematics = 0)
         chan.AddSample(backgroundH4l)
 
 
@@ -510,40 +585,44 @@ if __name__ == '__main__':
 
         likelihoodLimit = translateLimits( interval, nSigmas = 1 )
 
-        translateLimits(likelihoodLimit)
+        graphHelper.fillTGraphWithRooRealVar(observedLimitGraph, massPoint, likelihoodLimit)
 
-
-        allWorkspaceVariables = TDirTools.rooArgSetToList( workspace.allVars() )
-        workspaceVarDict = {x.GetName() : x for x in allWorkspaceVariables}
-        keysafeDictReturn = lambda x,aDict : aDict[x] if x in aDict else None # returns none if x is not among the dict's keys
-        keysafeDictReturn("H4lNorm", workspaceVarDict)
-
-        
-
-        ############## Let's test the CL Calculation START##############
+        ############## Expected Limits##############
         # from: https://roostatsworkbook.readthedocs.io/en/latest/docs-cls.html
 
         expectedResult = expectedLimitsAsimov( workspace )
 
-        translateLimits(expectedResult)
+        expectedLimit_1Sig = translateLimits(expectedResult, nSigmas = 1)
+        expectedLimit_2Sig = translateLimits(expectedResult, nSigmas = 2)
+
+        graphHelper.fillTGraphWithRooRealVar(expectedLimitsGraph_1Sigma, massPoint, expectedLimit_1Sig)
+        graphHelper.fillTGraphWithRooRealVar(expectedLimitsGraph_2Sigma, massPoint, expectedLimit_2Sig)
 
 
+        continue
 
-        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-
-
-        ############## Let's test the CL Calculation  END ##############
-
+        
         histHelper.fillBin(overviewHist, massPoint, interval.UpperLimit(intervalVariables["SigXsecOverSM"]) )
+
+        #allWorkspaceVariables = TDirTools.rooArgSetToList( workspace.allVars() )
+        #workspaceVarDict = {x.GetName() : x for x in allWorkspaceVariables}
+        #keysafeDictReturn = lambda x,aDict : aDict[x] if x in aDict else None # returns none if x is not among the dict's keys
+        #keysafeDictReturn("H4lNorm", workspaceVarDict)
 
         drawDict = {dataTDirLocation   : None, 
                     H4lTDirLocation    : keysafeDictReturn("H4lNorm", workspaceVarDict),
                     ZZTDirLocation     : None,
                     signalTDirLocation : interval}
 
-        drawNominalHists(inputFileName, drawDict, writeToFile =  None)
 
-        continue
+        writeTFile.mkdir( signalSample ); 
+        writeTDir = writeTFile.Get( signalSample )
+        writeTDir.cd()
+
+
+        drawNominalHists(inputFileName, drawDict, writeToFile =  None)
+        #drawNominalHists(inputFileName, drawDict, writeToFile =  writeTDir)
+
 
         #TDirTools.rooArgSetToList( interval.GetBestFitParameters() )
 
@@ -554,16 +633,10 @@ if __name__ == '__main__':
         # likeli working limit estimation below
         #############################################################
 
-        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here #  ZXSR/H4l
         # Now, do the measurement
 
         ### Finally, run the measurement. This is the same thing that happens when one runs 'hist2workspace' on an xml files
         ROOT.RooStats.HistFactory.MakeModelAndMeasurementFast(meas);
-
-        #pass
-        #if __name__ == "__main__":
-        #    main()
-        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
         ##################### end of the tutorial, everything below here is me tinkering
         # I am tinkering with things from here: https://www.nikhef.nl/~vcroft/KaggleFit-Histfactory.html
@@ -575,86 +648,31 @@ if __name__ == '__main__':
         data = workspace.data("obsData")
         x = workspace.var("SigXsecOverSM")
 
-        mc.GetParametersOfInterest()
-
-        TDirTools.rooArgSetToList(   mc.GetParametersOfInterest() )
-
-        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-
-
-        workspace.var("SigXsecOverSM").Print()
-
-
         pl = ROOT.RooStats.ProfileLikelihoodCalculator(data,mc)
         pl.SetConfidenceLevel(0.95); 
 
         pl.GetInterval()
-
-        allWorkspaceVariables = TDirTools.rooArgSetToList( workspace.allVars() )
-        workspaceVarDict = {x.GetName() : x for x in allWorkspaceVariables}
-
-        keysafeDictReturn = lambda x,aDict : aDict[x] if x in aDict else None # returns none if x is not among the dict's keys
-
-        #drawList = [dataTDirLocation, signalTDirLocation, ZZTDirLocation, H4lTDirLocation]
-        drawDict = { dataTDirLocation   : None,
-                     ZZTDirLocation     : keysafeDictReturn("ZZNorm", workspaceVarDict) ,
-                     H4lTDirLocation    : keysafeDictReturn("H4lNorm", workspaceVarDict),
-                     signalTDirLocation : keysafeDictReturn("SigXsecOverSM", workspaceVarDict) }
-
-        SigXsecOverSM = workspaceVarDict["SigXsecOverSM"]
-        
-        histHelper.fillBin(overviewHist, massPoint, SigXsecOverSM.getVal(), SigXsecOverSM.getError())
-            
-
-        writeTFile.mkdir( signalSample ); 
-        writeTDir = writeTFile.Get( signalSample )
-        writeTDir.cd()
-
-        SigXsecOverSM.Write() # write the rooRealVar that is the parameter we tried to estimate to file
-        drawNominalHists(inputFileName, drawDict, writeToFile =  writeTDir)
-
-
-        #for x in allWorkspaceVariables:  workspaceVarDict[x.GetName()] = x
-
-        #workspace.var("SigXsecOverSM").Print()
-        #workspace.var("SigXsecOverSM").getError() # gets me the error of the on the parameter of interest 
-        #x.var("SigXsecOverSM").getError() # this as well!
-
-        # 
-
-
-
-        #plot = ROOT.RooStats.LikelihoodIntervalPlot(interval)
-        #plot.SetNPoints(50)
-        #plot.SetMaximum(5)
-        #c = ROOT.TCanvas()
-        #plot.Draw()
-        #c.Draw()
-
-
-
-
-
-        ############################## 
-
-        # me playing around with things
 
         #ROOT.RooStats.HistFactory.GetChannelEstimateSummaries(meas,chan)
 
     ###############################################
     # end of "for massPoint in ... "
     ###############################################
-    
-    overviewCanvas = ROOT.TCanvas( "XS limits", "XS limits", 1300/2,1300/2)
-    overviewHist.Draw("L"); overviewCanvas.Update()
 
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    graphOverviewCanvas = makeGraphOverview( graphHelper.getTGraphWithoutError( observedLimitGraph , ySetpoint = "yHigh"), 
+                                             expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = writeTFile)
 
     writeTFile.cd()
-    overviewHist.Write()
+    #overviewCanvas = ROOT.TCanvas( "XS limits", "XS limits", 1300/2,1300/2)
+    #overviewHist.Draw("L"); overviewCanvas.Update()
+    #overviewHist.Write()
+    observedLimitGraph.Write()
+    expectedLimitsGraph_1Sigma.Write()
+    expectedLimitsGraph_2Sigma.Write()
+
     writeTFile.Close()
 
 
 
     print("All Done!")
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here

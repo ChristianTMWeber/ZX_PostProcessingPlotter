@@ -1,5 +1,6 @@
 *.pdf
 *.png
+*.jpg
 # ignore *.txt files
 *.txt
 # but not the ones in the metadata folder which carry metadata information
