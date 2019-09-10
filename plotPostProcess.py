@@ -378,7 +378,7 @@ def activateATLASPlotStyle():
 
 def setupTLegend():
     # set up a TLegend, still need to add the different entries
-    TLegend = ROOT.TLegend(0.15,0.65,0.45,0.87)
+    TLegend = ROOT.TLegend(0.15,0.70,0.55,0.95)
     TLegend.SetFillColor(ROOT.kWhite)
     TLegend.SetLineColor(ROOT.kWhite)
     TLegend.SetNColumns(2);
@@ -538,7 +538,7 @@ if __name__ == '__main__':
     parser.add_argument( "--DSID_Binning", type=str, help = "set how the different DSIDS are combined, ",
         choices=["physicsProcess","physicsSubProcess","DSID","analysisMapping"] , default="physicsProcess" )
 
-    parser.add_argument( "--holdAtPlot", type=bool, default=False , 
+    parser.add_argument( "--holdAtPlot", default=False , action='store_true',
         help = "Debugging option. If True sets a debugger tracer and \
         activates the debugger at the point where the plot has has been fully assembled." ) 
 
@@ -552,6 +552,9 @@ if __name__ == '__main__':
 
     parser.add_argument( "--batch", default=False, action='store_true' , 
     help = "If run with '--batch' we will activate root batch mode and suppress all creation of graphics." ) 
+
+    parser.add_argument( "--skipRatioHist", default=False, action='store_true' , 
+    help = "If run with '--skipRatioHist' we will skip drawing of the ratio hist." ) 
 
     args = parser.parse_args()
 
@@ -700,6 +703,7 @@ if __name__ == '__main__':
             #print(backgroundSamples)
             #import pdb; pdb.set_trace() # import the debugger and instruct
             sortedSamples = mergeHistsByMapping(backgroundSamples, DSIDMappingDict)
+
             myDSIDHelper.colorizeHistsInDict(sortedSamples) # change the fill colors of the hists in a nice way
             statsTexts = []
 
@@ -709,19 +713,29 @@ if __name__ == '__main__':
             statsTexts.append( addRegionAndChannelToStatsText(canvas.GetName() ) ) 
             statsTexts.append( "  " ) 
 
+            # use these to report the total number of background and signal samples each later on
+            backgroundTallyTH1 = sortedSamples.values()[0].Clone( "backgroundTally")
+            backgroundTallyTH1.Scale(0)
+            signalTallyTH1 = backgroundTallyTH1.Clone("signalTally")
+
             for key in myDSIDHelper.defineSequenceOfSortedSamples( sortedSamples  ): # add merged samples to the backgroundTHStack 
                 #for key in sortedSamples.keys(): # add merged samples to the backgroundTHStack
                 mergedHist = sortedSamples[key]
                 backgroundTHStack.Add( mergedHist )
-                legend.AddEntry(mergedHist , key , "f");
-                statsTexts.append( key + ": %.2f #pm %.2f" %( getHistIntegralWithUnertainty(mergedHist)) )
+
+                keyProperArrow = re.sub('->', '#rightarrow ', key) # make sure the legend displays the proper kind of arrow
+                legend.AddEntry(mergedHist , keyProperArrow , "f");
+                statsTexts.append( keyProperArrow + ": %.2f #pm %.2f" %( getHistIntegralWithUnertainty(mergedHist)) )
+
+                if myDSIDHelper.isSignalSample( key ): signalTallyTH1.Add(sortedSamples[key])
+                else:                                  backgroundTallyTH1.Add(sortedSamples[key])
 
             # create a pad for the CrystalBall fit + data
-            if gotDataSample: histPadYStart = 3./13
+            if gotDataSample and not args.skipRatioHist: histPadYStart = 3./13
             else:  histPadYStart = 0
             histPad = ROOT.TPad("histPad", "histPad", 0, histPadYStart, 1, 1);
             ROOT.SetOwnership(histPad, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
-            if gotDataSample: histPad.SetBottomMargin(0.06); # Seperation between upper and lower plots
+            if gotDataSample and not args.skipRatioHist: histPad.SetBottomMargin(0.06); # Seperation between upper and lower plots
             else: histPad.SetBottomMargin(0.12)
             #histPad.SetGridx();          # Vertical grid
             histPad.Draw();              # Draw the upper pad: pad1
@@ -744,13 +758,16 @@ if __name__ == '__main__':
 
             backgroundTHStack.GetYaxis().SetTitle("Events / " + str(backgroundMergedTH1.GetBinWidth(1) )+" GeV" )
             backgroundTHStack.GetYaxis().SetTitleSize(0.05)
-            backgroundTHStack.GetYaxis().SetTitleOffset(1.0)
+            backgroundTHStack.GetYaxis().SetTitleOffset(1.1)
             backgroundTHStack.GetYaxis().CenterTitle()
             
-            
+            #backgroundTHStack.GetXaxis().SetTitleSize(0.12)
+            backgroundTHStack.GetXaxis().SetTitleOffset(1.1)
 
             statsTexts.append( "  " )       
-            statsTexts.append( "Background + Signal: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(backgroundMergedTH1)) )
+            #statsTexts.append( "Background + Signal: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(backgroundMergedTH1)) )
+            statsTexts.append( "Background : %.2f #pm %.2f" %( getHistIntegralWithUnertainty(backgroundTallyTH1)) )
+            statsTexts.append( "Signal: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(signalTallyTH1)) )
 
 
 
@@ -777,7 +794,7 @@ if __name__ == '__main__':
             backgroundTHStack.GetXaxis().SetRange(axRangeLow,axRangeHigh)
 
             #statsOffset = (0.6,0.55), statsWidths = (0.3,0.32)
-            statsTPave=ROOT.TPaveText(0.60,0.55,0.9,0.87,"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
+            statsTPave=ROOT.TPaveText(0.55,0.55,0.9,0.87,"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
             for stats in statsTexts:   statsTPave.AddText(stats);
             statsTPave.Draw();
             legend.Draw(); # do legend things
@@ -789,7 +806,7 @@ if __name__ == '__main__':
 
 
 
-            if gotDataSample: # fill the ratio pad with the ratio of the data bins to  mc bckground bins
+            if gotDataSample and not args.skipRatioHist: # fill the ratio pad with the ratio of the data bins to  mc bckground bins
 
                 # define a TPad where we can add a histogram of the ratio of the data and MC bins
                 ratioPad = ROOT.TPad("ratioPad", "ratioPad", 0, 0, 1, histPadYStart);
@@ -811,12 +828,12 @@ if __name__ == '__main__':
                 ratioHist.GetYaxis().SetLabelSize(0.1)
 
                 ratioHist.GetYaxis().SetTitle("Data / MC")
-                ratioHist.GetYaxis().SetTitleSize(0.13)
+                ratioHist.GetYaxis().SetTitleSize(0.11)
                 ratioHist.GetYaxis().SetTitleOffset(0.4)
                 ratioHist.GetYaxis().CenterTitle()
 
                 ratioHist.GetXaxis().SetLabelSize(0.12)
-                ratioHist.GetXaxis().SetTitleSize(0.12)
+                ratioHist.GetXaxis().SetTitleSize(0.13)
                 ratioHist.GetXaxis().SetTitleOffset(1.0)
                 ratioHist.Draw()
             else: backgroundTHStack.GetXaxis().SetTitle( sortedSamples.values()[0].GetXaxis().GetTitle()  )
