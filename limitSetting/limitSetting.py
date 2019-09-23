@@ -12,7 +12,7 @@ import difflib # so I can be a bit lazier with identification of signal region m
 import warnings # to warn about things that might not have gone right
 import resource # print 'Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 import time # for measuring execution time
-
+import datetime # to convert seconds to hours:minutes:seconds
 
 
 # import sys and os.path to be able to import things from the parent directory
@@ -464,21 +464,26 @@ if __name__ == '__main__':
     startTime = time.time()
     activateATLASPlotStyle()
 
+    doNSystematics = -1
+    outputFileName = "limitOutput.root" # "limitOutput_H4lNormFloating_allSystematic_allmassPoints_fullRun2.root"  # 
+    
+
     #inputFileName = "preppedHists_mc16a_unchangedErros_3GeVBins.root" 
     #inputFileName = "preppedHists_mc16a_sqrtErros_3GeVBins.root"
     #inputFileName = "preppedHists_mc16a_sqrtErros_1GeVBins.root"
     inputFileName = "preppedHists_mc16a_sqrtErros_0.5GeVBins.root"
+    #inputFileName = "preppedHists_mc16ade_sqrtErros_0.5GeVBins.root"
 
     inputTFile = ROOT.TFile(inputFileName,"OPEN")
     masterDict = TDirTools.buildDictTreeFromTDir(inputTFile) # use this dict for an overview of what hists / channels / systematics / flavors are available
 
-    writeTFile = ROOT.TFile("limitOutput.root",  "RECREATE")# "UPDATE")
+    writeTFile = ROOT.TFile( outputFileName,  "RECREATE")# "UPDATE")
 
 
     region = "ZXSR"
     flavor = "All"
 
-    massesToProcess =  range(15,56,5)
+    massesToProcess =  range(15,56,1)#[30]#range(15,56,5)
     # setup some output datastructures
     overviewHist = ROOT.TH1D("ZX_limit_Overview","ZX_limit_Overview", len(massesToProcess), min(massesToProcess), max(massesToProcess) + 1 ) # construct the hist this way, so that we have a bin for each mass point
 
@@ -494,7 +499,7 @@ if __name__ == '__main__':
         signalSampleExact = difflib.get_close_matches( signalSample  , masterDict[region].keys())[0]
 
 
-        dataTDirLocation    = getFullTDirPath(masterDict, region, "data" , "Nominal",  flavor)
+        dataTDirLocation    = getFullTDirPath(masterDict, region, "data" , "Nominal",  flavor) # "expectedData"
         signalTDirLocation  = getFullTDirPath(masterDict, region, signalSampleExact , "Nominal",  flavor) # region+"/ZZd, m_{Zd} = 35GeV/Nominal/"+flavor+"/ZXSR_ZZd, m_{Zd} = 35GeV_Nominal_All"
         ZZTDirLocation      = getFullTDirPath(masterDict, region, "ZZ" , "Nominal",  flavor)
         H4lTDirLocation     = getFullTDirPath(masterDict, region, "H4l" , "Nominal",  flavor)
@@ -545,6 +550,8 @@ if __name__ == '__main__':
         #backgroundZZ.ActivateStatError()#ActivateStatError("backgroundZZ_statUncert", inputFileName)
         #backgroundZZ.AddOverallSys("syst2", 0.95, 1.05 )
         #backgroundZZ.AddNormFactor("ZZNorm", 1, 0, 3) # let's add this to fit the normalization of the background
+        addSystematicsToSample(backgroundZZ, inputTFile, region = "ZXSR", eventType = "ZZ", flavor = "All", finishAfterNSystematics = doNSystematics)
+
         chan.AddSample(backgroundZZ)
 
 
@@ -553,8 +560,8 @@ if __name__ == '__main__':
         backgroundH4l = ROOT.RooStats.HistFactory.Sample("backgroundH4l",H4lTDirLocation , inputFileName)
         # backgroundH4l.ActivateStatError()
         # backgroundH4l.AddOverallSys("syst3", 0.95, 1.05 )
-        # backgroundH4l.AddNormFactor("H4lNorm", 1, 0, 3) # let's add this to fit the normalization of the background
-        addSystematicsToSample(backgroundH4l, inputTFile, region = "ZXSR", eventType = "H4l", flavor = "All", finishAfterNSystematics = 0)
+        backgroundH4l.AddNormFactor("H4lNorm", 1, 0, 3) # let's add this to fit the normalization of the background
+        addSystematicsToSample(backgroundH4l, inputTFile, region = "ZXSR", eventType = "H4l", flavor = "All", finishAfterNSystematics = doNSystematics)
         chan.AddSample(backgroundH4l)
 
 
@@ -676,7 +683,9 @@ if __name__ == '__main__':
 
     writeTFile.Close()
 
-    print "Memory usage: %s kB \t Runtime: %10.1f s" % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/8, (time.time() - startTime ) )
+    runtime = time.time() - startTime
+
+    print "Memory usage: %s kB \t Runtime: " % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/8) + str(datetime.timedelta(seconds=runtime) )
 
 
 
