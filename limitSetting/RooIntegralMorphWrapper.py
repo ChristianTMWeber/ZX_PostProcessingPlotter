@@ -1,15 +1,17 @@
 import ROOT
 
+def setupIndependentVar(hist):
+    nBins = hist.GetNbinsX()
+    lowLimit  = hist.GetBinLowEdge(1)
+    highLimit = hist.GetBinLowEdge(nBins+1)
+    # independent variable for out RooFit objects (PDFs and rooDatahists [the RDHs] )  
+    indepVar = ROOT.RooRealVar("indepVariable","indepVariable",  lowLimit , highLimit)
+    return indepVar
+
 def TH1ToRooHistPDF( inputTH1, indepVar = None):
     # convert a ROOT.TH1 to a RooDataHist (a RooFit data format)
     # better provide a RooRealVar that can serve as the independent variable in the RooDataHist and RooAbsPDF 
-    if indepVar is None: # prepare an indepdentend variable if none is given
-        # prepare bin information so that we can use it on the output histograms eventually
-        nBins = inputTH1.GetNbinsX()
-        lowLimit  = inputTH1.GetBinLowEdge(1)
-        highLimit = inputTH1.GetBinLowEdge(nBins+1)
-        # independent variable for out RooFit objects (PDFs and rooDatahists [the RDHs] )  
-        indepVar = ROOT.RooRealVar("indepVariable","indepVariable",  lowLimit , highLimit)
+    if indepVar is None: indepVar = setupIndependentVar(hist) # prepare an indepdentend variable if none is given
 
     aRooDataHist = ROOT.RooDataHist( inputTH1.GetName()+"RDH", inputTH1.GetTitle()+"RDH", ROOT.RooArgList(indepVar), inputTH1,1)
     aRooAbsPdf   = ROOT.RooHistPdf(  inputTH1.GetName()+"PDF", inputTH1.GetTitle()+"PDF", ROOT.RooArgSet(indepVar) , aRooDataHist )
@@ -41,7 +43,15 @@ def drawSetOfHists( histList , drawOptions = [] ):
 
     return canvasPDF
 
-def getInterpolatedHistogram(histA, histB,  paramA = 0 , paramB = 1, interpolateAt = 0.5, morphErrorsToo = False):
+def getNewSetNorm( x1, x2, y1, y2, xNew ): 
+    # let f(x_i)  = y_i
+    # interpolate between x1 and x2 them linearly
+    slope = float(y2-y1)/float(x2-x1) 
+    yNew = slope * (xNew - x1)  + y1
+    return yNew
+
+
+def getInterpolatedHistogram_IntegralMorph(histA, histB,  paramA = 0 , paramB = 1, interpolateAt = 0.5, morphErrorsToo = False):
     # Assumine we have two histograms histA and histB that represent slices of a 2d histogram
     # along some axis Y, I.e. histA == hist( Y_A), histB == hist( Y_B)
     # we assume here Y_A < Y_B
@@ -60,13 +70,8 @@ def getInterpolatedHistogram(histA, histB,  paramA = 0 , paramB = 1, interpolate
     # check input values
     assert (paramA < interpolateAt) and (interpolateAt < paramB)
 
-    # prepare bin information so that we can use it on the output histograms eventually
-    nBins = histA.GetNbinsX()
-    lowLimit  = histA.GetBinLowEdge(1)
-    highLimit = histA.GetBinLowEdge(nBins+1)
-
     # independent variable for out RooFit objects (PDFs and rooDatahists [the RDHs] )  
-    x = ROOT.RooRealVar("indepVariable","indepVariable",  lowLimit , highLimit)
+    x = setupIndependentVar(histA)  # creates independ variable with the limits of the input histogram
 
     histA_PDF, histA_RDH = TH1ToRooHistPDF( histA, x)
     histB_PDF, histB_RDH = TH1ToRooHistPDF( histB, x)
@@ -74,19 +79,20 @@ def getInterpolatedHistogram(histA, histB,  paramA = 0 , paramB = 1, interpolate
     # scale the parameters values to the interval [0,1], RooIntegralMorph assumes it to be that way
     delta = float(paramB - paramA)
     scaledInterpolateTo = float(interpolateAt - paramA)/delta
-
+    
     # do the interpolation
-    alpha = ROOT.RooRealVar("alpha", "alpha", scaledInterpolateTo,  0. , 1.) 
+    alpha = ROOT.RooRealVar("alpha", "alpha", scaledInterpolateTo,  0. , 1.) # alpha is here the interpolation paramter, we assume histA and histB represent at at alpha=0, and 1, respectively. At want to interpolate at 0 < scaledInterpolateTo < 1
     morphInt = ROOT.RooIntegralMorph('morph','morph',  histB_PDF, histA_PDF , x, alpha) # this is not the sequence of A and B hist I expected, but it gives the expected behavior
+
+    nBins = histA.GetNbinsX()
     morphedHist = morphInt.createHistogram("indepVariable",nBins)
 
-    # interpolate the normalization of the morphed histogram
-    normA = histA.Integral()
-    normB = histB.Integral()
+
+    # normalize histogram
+    newSetNorm = getNewSetNorm( paramA, paramB, histA.Integral(), histB.Integral(), interpolateAt )
     normMorph = morphedHist.Integral()
 
-    scaleFactor = ( normA * (1-scaledInterpolateTo)  + normB*(scaledInterpolateTo) )/normMorph
-    morphedHist.Scale(scaleFactor )
+    morphedHist.Scale( newSetNorm/normMorph )
 
     ################################### 
     # interpolate errors as well if so
@@ -102,7 +108,7 @@ def getInterpolatedHistogram(histA, histB,  paramA = 0 , paramB = 1, interpolate
         errorHistB = prepErrorHist(histB)
 
         # let's morph these errorHists, and remember: the bin contents of the 'morphedErrors' hist, are the bin erros of 'morphedHist' that we are looking for 
-        morphedErrors = getInterpolatedHistogram(errorHistA, errorHistB,  paramA , paramB, interpolateAt, morphErrorsToo = False)
+        morphedErrors = getInterpolatedHistogram_IntegralMorph(errorHistA, errorHistB,  paramA , paramB, interpolateAt, morphErrorsToo = False)
         # transfer the bin errors from 'morphedErrors' to 'morphedHist' 
         for n in xrange(0, morphedHist.GetNbinsX() +2 ): # start at 0 for the underflow, end at +2 to reach also the overflow
             morphedHist.SetBinError(n, morphedErrors.GetBinContent(n) )
@@ -166,14 +172,14 @@ if __name__ == '__main__':
     morphedHistList = []
 
     for n in np.arange(mean1.getVal(), mean2.getVal(),2)+1: 
-        morphedHist = getInterpolatedHistogram(histA, histB, mean1.getVal(), mean2.getVal(), n , morphErrorsToo = True)
+        morphedHist = getInterpolatedHistogram_IntegralMorph(histA, histB, mean1.getVal(), mean2.getVal(), n , morphErrorsToo = True)
         morphedHist.SetLineColor(ROOT.kGreen)
         morphedHistList.append(morphedHist)
 
     #myFile = ROOT.TFile("morphData.root","OPEN")
     #histA = myFile.Get("30Gev")
     #histB = myFile.Get("35Gev")
-    #morphedHist = getInterpolatedHistogram(histA, histB )
+    #morphedHist = getInterpolatedHistogram_IntegralMorph(histA, histB )
 
     ##########################
     # Plot the results of the morphing to investigate them
@@ -193,6 +199,15 @@ if __name__ == '__main__':
     
     legend.Draw(); # do legend things
     aCanvas.Update()
+
+
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    # try moment morph
+
+    #RooMomentMorph morph("morph", "morph", alpha, vList, hpdfList, paramVec, RooMomentMorph::Linear);
+
+
 
     import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 

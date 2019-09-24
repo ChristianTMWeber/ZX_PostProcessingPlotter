@@ -5,6 +5,7 @@
 
 #   Run as:
 #   python limitSettingHistPrep.py ../post_20190831_170144_ZX_Run1516_Background_DataBckgSignal.root -c mc16a --interpolateSamples 
+#   python limitSettingHistPrep.py ../post_20190905_233618_ZX_Run2_BckgSignal.root -c mc16ade --interpolateSamples 
 #   Or for development work as:
 #   python limitSettingHistPrep.py ../post_20190831_170144_ZX_Run1516_Background_DataBckgSignal.root -c mc16a --quick 
 
@@ -171,7 +172,7 @@ def addInterpolatedSignalSamples(masterHistDict, channels = None):
                 # we want to interpolate between lowHist and highHist in 1GeV steps
                 for newMass in xrange(lowMass+1,highMass,1):
                     # do the actual interpolation
-                    newSignalHist = integralMorphWrapper.getInterpolatedHistogram(lowHist, highHist,  paramA = lowMass , paramB = highMass, interpolateAt = newMass, morphErrorsToo = True)
+                    newSignalHist = integralMorphWrapper.getInterpolatedHistogram_IntegralMorph(lowHist, highHist,  paramA = lowMass , paramB = highMass, interpolateAt = newMass, morphErrorsToo = True)
                     # determine new names and eventType
                     newEventType = re.sub('\d{2}', str(newMass), masspointDict[lowMass]) # make the new eventType string, by replacing the mass number in a given old one
                     newTH1Name   = re.sub('\d{2}', str(newMass), lowHist.GetName())
