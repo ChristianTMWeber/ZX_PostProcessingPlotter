@@ -15,6 +15,7 @@ import argparse # to parse command line options
 import warnings # to warn about things that might not have gone right
 import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
 import re
+import time # for measuring execution time
 
 
 # import sys and os.path to be able to import plotPostProcess from the parent directory
@@ -147,6 +148,7 @@ def prepareSignalSampleOverviewTH2(masterHistDict, channel = None):
     return signalOverviewTH2
 
 def addInterpolatedSignalSamples(masterHistDict, channels = None):
+    startTimeInterp = time.time()
 
     if channels is None: channels = masterHistDict.keys()
     elif not isinstance(channels, list):  channels = [channels]
@@ -171,14 +173,16 @@ def addInterpolatedSignalSamples(masterHistDict, channels = None):
 
                 # we want to interpolate between lowHist and highHist in 1GeV steps
                 for newMass in xrange(lowMass+1,highMass,1):
-                    # do the actual interpolation
-                    newSignalHist = integralMorphWrapper.getInterpolatedHistogram(lowHist, highHist,  paramA = lowMass , paramB = highMass, interpolateAt = newMass, morphErrorsToo = True, morphType = "momentMorph")
+                    # do the actual interpolation                                                                                                       #                             errorInterpolation = simulateErrors,  morph1SigmaHists, or morphErrorsToo
+                    newSignalHist = integralMorphWrapper.getInterpolatedHistogram(lowHist, highHist,  paramA = lowMass , paramB = highMass, interpolateAt = newMass, morphType = "momentMorph", errorInterpolation = "morph1SigmaHists", nSimulationRounds = 10)
                     # determine new names and eventType
                     newEventType = re.sub('\d{2}', str(newMass), masspointDict[lowMass]) # make the new eventType string, by replacing the mass number in a given old one
                     newTH1Name   = re.sub('\d{2}', str(newMass), lowHist.GetName())
                     newSignalHist.SetName(newTH1Name)
                     # add the new histogram to the sample
                     masterHistDict[channel][ newEventType ]["Nominal"][flavor] = newSignalHist
+
+                    integralMorphWrapper.reportMemUsage(startTime = startTimeInterp)
     return None
 
 if __name__ == '__main__':
@@ -249,6 +253,7 @@ if __name__ == '__main__':
     ######################################################
     # Open the attached .root file and loop over all elements over it
     ######################################################
+    startTime = time.time()
     postProcessedData = ROOT.TFile(args.input,"READ"); # open the file with te data from the ZdZdPostProcessing
 
     myDSIDHelper.fillSumOfEventWeightsDict(postProcessedData)
@@ -286,6 +291,8 @@ if __name__ == '__main__':
     # write the histograms in the masterHistDict to file for the limit setting
     ##############################################################################
     rootDictAndTDirTools.writeDictTreeToRootFile( masterHistDict, targetFilename = "testoutput.root" )
+
+    integralMorphWrapper.reportMemUsage(startTime = startTime)
 
     ##############################################################################
     # create an overview of the signal samples (regular and interpolated)

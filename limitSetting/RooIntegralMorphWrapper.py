@@ -183,7 +183,10 @@ def getInterpolatedHistogram(histA, histB,  paramA = 0 , paramB = 1, interpolate
     # interpolate errors as well 
     ################################### 
 
-    if errorInterpolation == "simulateErrors": 
+    if errorInterpolation == "simulateErrors":  # We'll morph the errors too
+        # by sampling hists from histA and histB, 
+        # interpolating these samples multiple times
+        # and calculating a binwise standard deviation, that we take to be the error of the morphed histogram
 
         binValueArray =  np.zeros( (nSimulationRounds, histA.GetNbinsX()) )
 
@@ -201,7 +204,27 @@ def getInterpolatedHistogram(histA, histB,  paramA = 0 , paramB = 1, interpolate
 
         for n in xrange( histA.GetNbinsX() ): morphedHist.SetBinError(n+1, binStandardDevs[n] )
 
-    
+    elif errorInterpolation == "morph1SigmaHists": # We'll morph the errors too
+        # by calculing histA+histA_Error and histB+histB_Error
+        # interpolint these, and take the difference to the original interpolates hist as error
+
+        def make1signaHist( hist): # for each bin we have BinContent + Bin Error of hist
+            hist1Sigma = hist.Clone(hist.GetName()+"1sigma")
+            makeErrorHistogram( hist1Sigma, hist)
+            hist1Sigma.Add(hist)
+            return hist1Sigma
+
+        histA1sigma = make1signaHist( histA)
+        histB1sigma = make1signaHist( histB)
+
+        # let's morph these errorHists, and remember: the bin contents of the 'morphedErrors' hist, are the bin erros of 'morphedHist' that we are looking for 
+        morphedErrors = getInterpolatedHistogram(histA1sigma, histB1sigma,  paramA , paramB, interpolateAt, errorInterpolation = False, morphType = morphType)
+
+        morphedErrors.Add(morphedHist,-1) # subtraction: morphedErrors-morphedHist
+        # transfer the bin errors from 'morphedErrors' to 'morphedHist' 
+        for n in xrange(0, morphedHist.GetNbinsX() +2 ): # start at 0 for the underflow, end at +2 to reach also the overflow
+            morphedHist.SetBinError(n, morphedErrors.GetBinContent(n) )
+
 
     elif errorInterpolation == "morphErrorsToo": # We'll morph the errors too
         # by making 'errorHists' whose bin content is the bin errors of the 'regular hists'
@@ -288,7 +311,8 @@ if __name__ == '__main__':
 
     startTime = time.time()
     for n in np.arange(mean1.getVal(), mean2.getVal(),2)+1: 
-        morphedHist = getInterpolatedHistogram(histA, histB, mean1.getVal(), mean2.getVal(), n , errorInterpolation = "simulateErrors", morphType = "momentMorph", nSimulationRounds = 100)
+        #                             errorInterpolation options:        simulateErrors      morph1SigmaHists        morphErrorsToo
+        morphedHist = getInterpolatedHistogram(histA, histB, mean1.getVal(), mean2.getVal(), n , errorInterpolation = "morph1SigmaHists", morphType = "momentMorph", nSimulationRounds = 100)
         morphedHist.SetLineColor(ROOT.kGreen)
         morphedHistList.append(morphedHist)
         reportMemUsage(startTime = startTime)
