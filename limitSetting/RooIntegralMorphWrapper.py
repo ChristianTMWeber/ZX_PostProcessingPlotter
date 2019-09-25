@@ -115,7 +115,7 @@ def sampleTH1FromTH1(sourceTH1):
     return sampledTH1
 
 def TH1toArray(TH1):
-    nBins = histA.GetNbinsX()
+    nBins = TH1.GetNbinsX()
     outArray = np.zeros(nBins)
     # we are skipping under- and overflow for now
     for n in xrange(1,nBins+1):  outArray[n-1] = TH1.GetBinContent(n) 
