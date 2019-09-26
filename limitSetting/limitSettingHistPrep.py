@@ -28,7 +28,7 @@ import functions.rootDictAndTDirTools as rootDictAndTDirTools
 from functions.compareVersions import compareVersions # to compare root versions
 import functions.histHelper as histHelper # to help me fill some histograms
 
-import RooIntegralMorphWrapper as integralMorphWrapper
+import limitFunctions.RooIntegralMorphWrapper as integralMorphWrapper
 
 def skipTObject(path, baseHist, requiredRootType = ROOT.TH1, selectChannels = ["ZXSR", "ZXVR1"], 
                 selectKinematic = "m34", selectCuts = ["HWindow", "LowMassSidebands"]  ):

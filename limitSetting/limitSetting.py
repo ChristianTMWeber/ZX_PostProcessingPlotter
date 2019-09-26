@@ -15,6 +15,10 @@ import time # for measuring execution time
 import datetime # to convert seconds to hours:minutes:seconds
 
 
+from limitFunctions.listsToTTree import fillTTreeWithDictOfList # concert of dict of lists into a TTree
+import limitFunctions.sampleTH1FromTH1 as sampleTH1FromTH1 # generate a new TH1 from a given one, each bin is taken from a poission distribution
+
+
 # import sys and os.path to be able to import things from the parent directory
 import sys 
 from os import path
