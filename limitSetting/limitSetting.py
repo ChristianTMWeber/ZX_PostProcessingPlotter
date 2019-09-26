@@ -280,6 +280,89 @@ def prepHistoSys(eventDict, flavor = "All"):
 
     return allTheHistoSys
 
+def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile):
+
+
+    ### Create the measurement object ### This is the top node of the structure  ### We do some minor configuration as well
+    meas = ROOT.RooStats.HistFactory.Measurement("ZXMeasurement", "ZXMeasurement")
+
+    ### Set the prefix that will appear before all output for this measurement We Set ExportOnly to false, meaning we will fit the measurement and make  plots in addition to saving the workspace
+    meas.SetOutputFilePrefix("./testHistfactoryOutput/")
+    meas.SetExportOnly(False)
+
+    ### Set the name of the parameter of interest Note that this parameter hasn't yet been created, we are anticipating it
+    meas.SetPOI("SigXsecOverSM")
+
+    meas.AddConstantParam("Lumi")           # this is not part of the C++ exsample
+    meas.AddConstantParam("alpha_syst1")    # this is not part of the C++ exsample
+
+    ### Set the luminosity There are a few conventions for this. Here, we assume that all histograms have already been scaled by luminosity We also set a 10% uncertainty
+    meas.SetLumi(1.0)
+    #meas.SetLumiRelErr(0.10)
+
+    # Create a channel
+
+    ### Okay, now that we've configured the measurement, we'll start building the tree. We begin by creating the first channel
+    chan = ROOT.RooStats.HistFactory.Channel("signalRegion")
+    ### First, we set the 'data' for this channel The data is a histogram represeting the measured distribution.  It can have 1 or many bins. In this example, we assume that the data histogram is already made and saved in a ROOT file.   So, to 'set the data', we give this channel the path to that ROOT file and the name of the data histogram in that root file The arguments are: SetData(HistogramName, HistogramFile)
+    chan.SetData(templatePaths["Data"] )   # <- this seems to work, everything seems to run ok, but the programm completeres with a segmentation violation.
+    #chan.SetData(templatePaths["Data"], inputFileName) # <- this one compleres without a segmentation vialation. Switch to this one if necessary
+    
+    chan.SetStatErrorConfig(0.05, "Poisson") # ??? # this seems to be not part of the C++ exsample
+
+    # Now, create some samples
+
+    # Create the signal sample Now that we have a channel and have attached data to it, we will start creating our Samples These describe the various processes that we use to model the data. Here, they just consist of a signal process and a single background process.
+    signal = ROOT.RooStats.HistFactory.Sample("signal", templatePaths["Signal"], inputFileName)
+    ### Having created this sample, we configure it First, we add the cross-section scaling parameter that we call SigXsecOverSM Then, we add a systematic with a 5% uncertainty Finally, we add it to our channel
+    #signal.AddOverallSys("syst1",  0.1, 1.9) # ??? # review what does this exactly do
+    signal.AddNormFactor("SigXsecOverSM", 0, 0, 10)
+    chan.AddSample(signal)
+
+    # ZZ background
+    ### We do a similar thing for our background
+    backgroundZZ = ROOT.RooStats.HistFactory.Sample("backgroundZZ", templatePaths["ZZ"], inputFileName)
+    #backgroundZZ.ActivateStatError()#ActivateStatError("backgroundZZ_statUncert", inputFileName)
+    #backgroundZZ.AddOverallSys("syst2", 0.95, 1.05 )
+    #backgroundZZ.AddNormFactor("ZZNorm", 1, 0, 3) # let's add this to fit the normalization of the background
+    addSystematicsToSample(backgroundZZ, inputTFile, region = region, eventType = "ZZ", flavor = flavor, finishAfterNSystematics = doNSystematics)
+
+    chan.AddSample(backgroundZZ)
+
+    # H4l Background
+    ### And we create a second background for good measure
+    backgroundH4l = ROOT.RooStats.HistFactory.Sample("backgroundH4l",templatePaths["H4l"] , inputFileName)
+    # backgroundH4l.ActivateStatError()
+    # backgroundH4l.AddOverallSys("syst3", 0.95, 1.05 )
+    backgroundH4l.AddNormFactor("H4lNorm", 1, 0, 3) # let's add this to fit the normalization of the background
+    addSystematicsToSample(backgroundH4l, inputTFile, region = region, eventType = "H4l", flavor = flavor, finishAfterNSystematics = doNSystematics)
+    chan.AddSample(backgroundH4l)
+
+
+    # Done with this channel
+    # Add it to the measurement:
+    ### Now that we have fully configured our channel, we add it to the main measurement
+    meas.AddChannel(chan)
+
+    # Collect the histograms from their files,
+    # print some output,
+    ### At this point, we have only given our channel and measurement the input histograms as strings We must now have the measurement open the files, collect the histograms, copy and store them. This step involves I/O 
+    meas.CollectHistograms()
+
+    ### Print to the screen a text representation of the model just for minor debugging
+    #meas.PrintTree();
+
+    # One can print XML code to an output directory:
+    # meas.PrintXML("xmlFromCCode", meas.GetOutputFilePrefix());
+
+    meas.PrintXML("tutorialBuildingHistFactoryModel", meas.GetOutputFilePrefix());
+
+    #meas.CollectHistograms()
+    chan.CollectHistograms() #  see here why this is needed: https://root-forum.cern.ch/t/histfactory-issue-with-makesinglechannelmodel/34201
+
+    return meas
+
+
 
 def addSystematicsToSample(histFactorySample, inputFileOrName, region = "ZXSR", eventType = "H4l", flavor = "All", finishAfterNSystematics = -1 ):
 
@@ -367,6 +450,7 @@ def getProfileLikelihoodLimits(workspace, confidenceLevel = 0.95, drawLikelihood
         canvas = ROOT.TCanvas()
         plot.Draw()
         canvas.Draw()
+        canvas.Print("ProfileLikelihood.pdf")
 
     return interval
 
@@ -491,107 +575,39 @@ if __name__ == '__main__':
     expectedLimitsGraph_1Sigma = graphHelper.createNamedTGraphAsymmErrors("expectedLimits_1Sigma")
     expectedLimitsGraph_2Sigma = graphHelper.createNamedTGraphAsymmErrors("expectedLimits_2Sigma")
 
+
+
+    dataHistPath = getFullTDirPath(masterDict, region, "data" , "Nominal",  flavor)
+    dataHist = inputTFile.Get( dataHistPath )
+
     for massPoint in massesToProcess:
-        
+
+        templatePaths = {}
+
+        # Prep signal sample locations
         signalSample = "ZZd %iGeV" %( massPoint )
+        signalSampleExact = difflib.get_close_matches( signalSample  , masterDict[region].keys())[0]
+        templatePaths["Signal"]  = getFullTDirPath(masterDict, region, signalSampleExact , "Nominal",  flavor) # region+"/ZZd, m_{Zd} = 35GeV/Nominal/"+flavor+"/ZXSR_ZZd, m_{Zd} = 35GeV_Nominal_All"
+
+        templatePaths["ZZ"]      = getFullTDirPath(masterDict, region, "ZZ" , "Nominal",  flavor)
+        templatePaths["H4l"]     = getFullTDirPath(masterDict, region, "H4l" , "Nominal",  flavor)
+
+        templatePaths["Data"]    = dataHist
 
         
-        signalSampleExact = difflib.get_close_matches( signalSample  , masterDict[region].keys())[0]
+        meas = prepMeasurement(templatePaths, region, flavor, inputFileName, inputTFile)
 
-
-        dataTDirLocation    = getFullTDirPath(masterDict, region, "data" , "Nominal",  flavor) # "expectedData"
-        signalTDirLocation  = getFullTDirPath(masterDict, region, signalSampleExact , "Nominal",  flavor) # region+"/ZZd, m_{Zd} = 35GeV/Nominal/"+flavor+"/ZXSR_ZZd, m_{Zd} = 35GeV_Nominal_All"
-        ZZTDirLocation      = getFullTDirPath(masterDict, region, "ZZ" , "Nominal",  flavor)
-        H4lTDirLocation     = getFullTDirPath(masterDict, region, "H4l" , "Nominal",  flavor)
+        chan = meas.GetChannel("signalRegion")
 
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
-        ### Create the measurement object
-        ### This is the top node of the structure
-        ### We do some minor configuration as well
-        meas = ROOT.RooStats.HistFactory.Measurement("ZXMeasurement", "ZXMeasurement")
-
-        ### Set the prefix that will appear before all output for this measurement We Set ExportOnly to false, meaning we will fit the measurement and make  plots in addition to saving the workspace
-        meas.SetOutputFilePrefix("./testHistfactoryOutput/")
-        meas.SetExportOnly(False)
-
-        ### Set the name of the parameter of interest Note that this parameter hasn't yet been created, we are anticipating it
-        meas.SetPOI("SigXsecOverSM")
-
-        meas.AddConstantParam("Lumi")           # this is not part of the C++ exsample
-        meas.AddConstantParam("alpha_syst1")    # this is not part of the C++ exsample
-
-        ### Set the luminosity There are a few conventions for this. Here, we assume that all histograms have already been scaled by luminosity We also set a 10% uncertainty
-        meas.SetLumi(1.0)
-        #meas.SetLumiRelErr(0.10)
-
-
-        # Create a channel
-
-        ### Okay, now that we've configured the measurement, we'll start building the tree. We begin by creating the first channel
-        chan = ROOT.RooStats.HistFactory.Channel("signalRegion")
-        ### First, we set the 'data' for this channel The data is a histogram represeting the measured distribution.  It can have 1 or many bins. In this example, we assume that the data histogram is already made and saved in a ROOT file.   So, to 'set the data', we give this channel the path to that ROOT file and the name of the data histogram in that root file The arguments are: SetData(HistogramName, HistogramFile)
-        chan.SetData(dataTDirLocation, inputFileName)
-        chan.SetStatErrorConfig(0.05, "Poisson") # ??? # this seems to be not part of the C++ exsample
-
-
-        # Now, create some samples
-
-        # Create the signal sample Now that we have a channel and have attached data to it, we will start creating our Samples These describe the various processes that we use to model the data. Here, they just consist of a signal process and a single background process.
-        signal = ROOT.RooStats.HistFactory.Sample("signal", signalTDirLocation, inputFileName)
-        ### Having created this sample, we configure it First, we add the cross-section scaling parameter that we call SigXsecOverSM Then, we add a systematic with a 5% uncertainty Finally, we add it to our channel
-        #signal.AddOverallSys("syst1",  0.1, 1.9) # ??? # review what does this exactly do
-        signal.AddNormFactor("SigXsecOverSM", 0, 0, 10)
-        chan.AddSample(signal)
-
-        # ZZ background
-        ### We do a similar thing for our background
-        backgroundZZ = ROOT.RooStats.HistFactory.Sample("backgroundZZ", ZZTDirLocation, inputFileName)
-        #backgroundZZ.ActivateStatError()#ActivateStatError("backgroundZZ_statUncert", inputFileName)
-        #backgroundZZ.AddOverallSys("syst2", 0.95, 1.05 )
-        #backgroundZZ.AddNormFactor("ZZNorm", 1, 0, 3) # let's add this to fit the normalization of the background
-        addSystematicsToSample(backgroundZZ, inputTFile, region = "ZXSR", eventType = "ZZ", flavor = "All", finishAfterNSystematics = doNSystematics)
-
-        chan.AddSample(backgroundZZ)
-
-
-        # H4l Background
-        ### And we create a second background for good measure
-        backgroundH4l = ROOT.RooStats.HistFactory.Sample("backgroundH4l",H4lTDirLocation , inputFileName)
-        # backgroundH4l.ActivateStatError()
-        # backgroundH4l.AddOverallSys("syst3", 0.95, 1.05 )
-        backgroundH4l.AddNormFactor("H4lNorm", 1, 0, 3) # let's add this to fit the normalization of the background
-        addSystematicsToSample(backgroundH4l, inputTFile, region = "ZXSR", eventType = "H4l", flavor = "All", finishAfterNSystematics = doNSystematics)
-        chan.AddSample(backgroundH4l)
-
-
-        # Done with this channel
-        # Add it to the measurement:
-        ### Now that we have fully configured our channel, we add it to the main measurement
-        meas.AddChannel(chan)
-
-        # Collect the histograms from their files,
-        # print some output,
-        ### At this point, we have only given our channel and measurement the input histograms as strings We must now have the measurement open the files, collect the histograms, copy and store them. This step involves I/O 
-        meas.CollectHistograms()
-
-        ### Print to the screen a text representation of the model just for minor debugging
-        meas.PrintTree();
-
-        # One can print XML code to an output directory:
-        # meas.PrintXML("xmlFromCCode", meas.GetOutputFilePrefix());
-
-        meas.PrintXML("tutorialBuildingHistFactoryModel", meas.GetOutputFilePrefix());
-
-
-
         #One can also create a workspace for only a single channel of a model by supplying that channel:
         hist2workspace = ROOT.RooStats.HistFactory.HistoToWorkspaceFactoryFast(meas)
-        chan.CollectHistograms() #  see here why this is needed: https://root-forum.cern.ch/t/histfactory-issue-with-makesinglechannelmodel/34201
+        #chan.CollectHistograms() #  see here why this is needed: https://root-forum.cern.ch/t/histfactory-issue-with-makesinglechannelmodel/34201
         workspace = hist2workspace.MakeSingleChannelModel(meas, chan)
 
         # profile limit: profileLimit.getVal(), profileLimit.getErrorHi(), profileLimit.getErrorLo()
-        interval = getProfileLikelihoodLimits(workspace )
+        interval = getProfileLikelihoodLimits(workspace , drawLikelihoodIntervalPlot = True)
 
 
         likelihoodLimit = translateLimits( interval, nSigmas = 1 )
@@ -620,10 +636,10 @@ if __name__ == '__main__':
         #keysafeDictReturn = lambda x,aDict : aDict[x] if x in aDict else None # returns none if x is not among the dict's keys
         #keysafeDictReturn("H4lNorm", workspaceVarDict)
 
-        drawDict = {dataTDirLocation   : None, 
-                    H4lTDirLocation    : keysafeDictReturn("H4lNorm", workspaceVarDict),
-                    ZZTDirLocation     : None,
-                    signalTDirLocation : interval}
+        drawDict = {templatePaths["Data"]   : None, 
+                    templatePaths["H4l"]    : keysafeDictReturn("H4lNorm", workspaceVarDict),
+                    templatePaths["ZZ"]     : None,
+                    templatePaths["Signal"] : interval}
 
 
         writeTFile.mkdir( signalSample ); 
@@ -638,7 +654,7 @@ if __name__ == '__main__':
         #TDirTools.rooArgSetToList( interval.GetBestFitParameters() )
 
         # stop here so we can experiment with the limit extracting process
-        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
         #############################################################
         # likeli working limit estimation below
