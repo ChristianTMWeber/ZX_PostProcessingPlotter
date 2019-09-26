@@ -501,7 +501,7 @@ def expectedLimitsAsimov(workspace, confidenceLevel = 0.95, drawLimitPlot = Fals
         inverterPlot.Draw("CLb 2CL");  # plot also CLb and CLs+b
         hypoCanvas.Update()
 
-    # import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
     return result
 
@@ -552,8 +552,7 @@ if __name__ == '__main__':
     startTime = time.time()
     activateATLASPlotStyle()
 
-    doNSystematics = -1
-    outputFileName = "limitOutput.root" # "limitOutput_H4lNormFloating_allSystematic_allmassPoints_fullRun2.root"  # 
+    doNSystematics = 0#-1
     
 
     #inputFileName = "preppedHists_mc16a_unchangedErros_3GeVBins.root" 
@@ -565,13 +564,19 @@ if __name__ == '__main__':
     inputTFile = ROOT.TFile(inputFileName,"OPEN")
     masterDict = TDirTools.buildDictTreeFromTDir(inputTFile) # use this dict for an overview of what hists / channels / systematics / flavors are available
 
+
+    #limitType =  "asymptotic"# options: "toys", "asymptotic", "observed"
+    #limitType =  "toys"      # options: "toys", "asymptotic", "observed"
+    limitType =  "observed"  # options: "toys", "asymptotic", "observed"
+
+    outputFileName = "limitOutput_"+limitType+".root" # "limitOutput_H4lNormFloating_allSystematic_allmassPoints_fullRun2.root"  # 
     writeTFile = ROOT.TFile( outputFileName,  "RECREATE")# "UPDATE")
 
 
     region = "ZXSR"
     flavor = "All"
 
-    massesToProcess =  range(15,56,1)#[30]#range(15,56,5)
+    massesToProcess =  [30]#range(15,56,1)#[30]#range(15,56,5)
     # setup some output datastructures
     overviewHist = ROOT.TH1D("ZX_limit_Overview","ZX_limit_Overview", len(massesToProcess), min(massesToProcess), max(massesToProcess) + 1 ) # construct the hist this way, so that we have a bin for each mass point
 
@@ -579,10 +584,27 @@ if __name__ == '__main__':
     expectedLimitsGraph_1Sigma = graphHelper.createNamedTGraphAsymmErrors("expectedLimits_1Sigma")
     expectedLimitsGraph_2Sigma = graphHelper.createNamedTGraphAsymmErrors("expectedLimits_2Sigma")
 
+    bestEstimateDict   = collections.defaultdict(list)
+    upperLimits1SigDict = collections.defaultdict(list)
+    upperLimits2SigDict = collections.defaultdict(list)
+
+    myHistSampler = sampleTH1FromTH1.histSampler()
 
 
-    dataHistPath = getFullTDirPath(masterDict, region, "data" , "Nominal",  flavor)
-    dataHist = inputTFile.Get( dataHistPath )
+    # setup data hist
+
+    if limitType == "toys":
+        dataHistPath = getFullTDirPath(masterDict, region, "expectedData" , "Nominal",  flavor)
+        expectedDataHist = inputTFile.Get( dataHistPath )
+
+        dataHist = myHistSampler.sampleFromTH1(expectedDataHist)
+
+    else :   # either do asymptotic expected limits, or get real data limits
+        dataHistPath = getFullTDirPath(masterDict, region, "data" , "Nominal",  flavor)
+        dataHist = inputTFile.Get( dataHistPath )
+
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
 
     for massPoint in massesToProcess:
 
@@ -610,24 +632,35 @@ if __name__ == '__main__':
         #chan.CollectHistograms() #  see here why this is needed: https://root-forum.cern.ch/t/histfactory-issue-with-makesinglechannelmodel/34201
         workspace = hist2workspace.MakeSingleChannelModel(meas, chan)
 
-        # profile limit: profileLimit.getVal(), profileLimit.getErrorHi(), profileLimit.getErrorLo()
-        interval = getProfileLikelihoodLimits(workspace , drawLikelihoodIntervalPlot = True)
 
+        if limitType == "asymptotic":
+            # from: https://roostatsworkbook.readthedocs.io/en/latest/docs-cls.html
 
-        likelihoodLimit = translateLimits( interval, nSigmas = 1 )
+            asymptoticResuls = expectedLimitsAsimov( workspace , drawLimitPlot = False)
+
+            likelihoodLimit = translateLimits(asymptoticResuls, nSigmas = 1)
+            likelihoodLimit_2Sig = translateLimits(asymptoticResuls, nSigmas = 2)
+
+        else :  # profile limits, for actual limits or expected limits from toys 
+
+            # profile limit: profileLimit.getVal(), profileLimit.getErrorHi(), profileLimit.getErrorLo()
+            interval = getProfileLikelihoodLimits(workspace , drawLikelihoodIntervalPlot = False)
+
+            likelihoodLimit = translateLimits( interval, nSigmas = 1 )
+            likelihoodLimit_2Sig = translateLimits( interval, nSigmas = 2 )
+
 
         graphHelper.fillTGraphWithRooRealVar(observedLimitGraph, massPoint, likelihoodLimit)
+        graphHelper.fillTGraphWithRooRealVar(expectedLimitsGraph_1Sigma, massPoint, likelihoodLimit)
+        graphHelper.fillTGraphWithRooRealVar(expectedLimitsGraph_2Sigma, massPoint, likelihoodLimit_2Sig)
 
-        ############## Expected Limits##############
-        # from: https://roostatsworkbook.readthedocs.io/en/latest/docs-cls.html
 
-        expectedResult = expectedLimitsAsimov( workspace )
+        bestEstimateDict[signalSample].append( likelihoodLimit.getVal() )
+        upperLimits1SigDict[signalSample].append(likelihoodLimit.getMax())
+        upperLimits2SigDict[signalSample].append(likelihoodLimit_2Sig.getMax())
 
-        expectedLimit_1Sig = translateLimits(expectedResult, nSigmas = 1)
-        expectedLimit_2Sig = translateLimits(expectedResult, nSigmas = 2)
 
-        graphHelper.fillTGraphWithRooRealVar(expectedLimitsGraph_1Sigma, massPoint, expectedLimit_1Sig)
-        graphHelper.fillTGraphWithRooRealVar(expectedLimitsGraph_2Sigma, massPoint, expectedLimit_2Sig)
+
 
 
         continue
@@ -700,6 +733,19 @@ if __name__ == '__main__':
     observedLimitGraph.Write()
     expectedLimitsGraph_1Sigma.Write()
     expectedLimitsGraph_2Sigma.Write()
+
+    bestEstimatesTTree   = fillTTreeWithDictOfList(bestEstimateDict, treeName = "bestEstimates_"+limitType)
+    upperLimits1SigTTree = fillTTreeWithDictOfList(upperLimits1SigDict, treeName = "upperLimits1Sig_"+limitType)
+    upperLimits2SigTTree = fillTTreeWithDictOfList(upperLimits2SigDict, treeName = "upperLimits2Sig_"+limitType)
+
+    bestEstimatesTTree.Write()
+    upperLimits1SigTTree.Write()
+    upperLimits2SigTTree.Write()
+
+    #limitType = ROOT.TString( str(limitType) )
+    #limitType.Write()
+
+    writeTFile.Write()
 
     writeTFile.Close()
 
