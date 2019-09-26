@@ -552,7 +552,7 @@ if __name__ == '__main__':
     startTime = time.time()
     activateATLASPlotStyle()
 
-    doNSystematics = 0#-1
+    doNSystematics = -1
     
 
     #inputFileName = "preppedHists_mc16a_unchangedErros_3GeVBins.root" 
@@ -590,137 +590,145 @@ if __name__ == '__main__':
 
     myHistSampler = sampleTH1FromTH1.histSampler()
 
+    if limitType == "toys":   nIterations = 10
+    else:                     nIterations = 1
 
-    # setup data hist
+    for limitIteration in xrange(nIterations):
 
-    if limitType == "toys":
-        dataHistPath = getFullTDirPath(masterDict, region, "expectedData" , "Nominal",  flavor)
-        expectedDataHist = inputTFile.Get( dataHistPath )
+        # setup data hist
 
-        dataHist = myHistSampler.sampleFromTH1(expectedDataHist)
+        if limitType == "toys":
+            dataHistPath = getFullTDirPath(masterDict, region, "expectedData" , "Nominal",  flavor)
+            expectedDataHist = inputTFile.Get( dataHistPath )
 
-    else :   # either do asymptotic expected limits, or get real data limits
-        dataHistPath = getFullTDirPath(masterDict, region, "data" , "Nominal",  flavor)
-        dataHist = inputTFile.Get( dataHistPath )
+            dataHist = myHistSampler.sampleFromTH1(expectedDataHist)
 
-    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-
-
-    for massPoint in massesToProcess:
-
-        templatePaths = {}
-
-        # Prep signal sample locations
-        signalSample = "ZZd %iGeV" %( massPoint )
-        signalSampleExact = difflib.get_close_matches( signalSample  , masterDict[region].keys())[0]
-        templatePaths["Signal"]  = getFullTDirPath(masterDict, region, signalSampleExact , "Nominal",  flavor) # region+"/ZZd, m_{Zd} = 35GeV/Nominal/"+flavor+"/ZXSR_ZZd, m_{Zd} = 35GeV_Nominal_All"
-
-        templatePaths["ZZ"]      = getFullTDirPath(masterDict, region, "ZZ" , "Nominal",  flavor)
-        templatePaths["H4l"]     = getFullTDirPath(masterDict, region, "H4l" , "Nominal",  flavor)
-
-        templatePaths["Data"]    = dataHist
-
-        
-        meas = prepMeasurement(templatePaths, region, flavor, inputFileName, inputTFile)
-
-        chan = meas.GetChannel("signalRegion")
+        else :   # either do asymptotic expected limits, or get real data limits
+            dataHistPath = getFullTDirPath(masterDict, region, "data" , "Nominal",  flavor)
+            dataHist = inputTFile.Get( dataHistPath )
 
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
-        #One can also create a workspace for only a single channel of a model by supplying that channel:
-        hist2workspace = ROOT.RooStats.HistFactory.HistoToWorkspaceFactoryFast(meas)
-        #chan.CollectHistograms() #  see here why this is needed: https://root-forum.cern.ch/t/histfactory-issue-with-makesinglechannelmodel/34201
-        workspace = hist2workspace.MakeSingleChannelModel(meas, chan)
+
+        for massPoint in massesToProcess:
+
+            templatePaths = {}
+
+            # Prep signal sample locations
+            signalSample = "ZZd %iGeV" %( massPoint )
+            signalSampleExact = difflib.get_close_matches( signalSample  , masterDict[region].keys())[0]
+            templatePaths["Signal"]  = getFullTDirPath(masterDict, region, signalSampleExact , "Nominal",  flavor) # region+"/ZZd, m_{Zd} = 35GeV/Nominal/"+flavor+"/ZXSR_ZZd, m_{Zd} = 35GeV_Nominal_All"
+
+            templatePaths["ZZ"]      = getFullTDirPath(masterDict, region, "ZZ" , "Nominal",  flavor)
+            templatePaths["H4l"]     = getFullTDirPath(masterDict, region, "H4l" , "Nominal",  flavor)
+
+            templatePaths["Data"]    = dataHist
+
+            
+            meas = prepMeasurement(templatePaths, region, flavor, inputFileName, inputTFile)
+
+            chan = meas.GetChannel("signalRegion")
+
+            #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+            #One can also create a workspace for only a single channel of a model by supplying that channel:
+            hist2workspace = ROOT.RooStats.HistFactory.HistoToWorkspaceFactoryFast(meas)
+            #chan.CollectHistograms() #  see here why this is needed: https://root-forum.cern.ch/t/histfactory-issue-with-makesinglechannelmodel/34201
+            workspace = hist2workspace.MakeSingleChannelModel(meas, chan)
 
 
-        if limitType == "asymptotic":
-            # from: https://roostatsworkbook.readthedocs.io/en/latest/docs-cls.html
+            if limitType == "asymptotic":
+                # from: https://roostatsworkbook.readthedocs.io/en/latest/docs-cls.html
 
-            asymptoticResuls = expectedLimitsAsimov( workspace , drawLimitPlot = False)
+                asymptoticResuls = expectedLimitsAsimov( workspace , drawLimitPlot = False)
 
-            likelihoodLimit = translateLimits(asymptoticResuls, nSigmas = 1)
-            likelihoodLimit_2Sig = translateLimits(asymptoticResuls, nSigmas = 2)
+                likelihoodLimit = translateLimits(asymptoticResuls, nSigmas = 1)
+                likelihoodLimit_2Sig = translateLimits(asymptoticResuls, nSigmas = 2)
 
-        else :  # profile limits, for actual limits or expected limits from toys 
+            else :  # profile limits, for actual limits or expected limits from toys 
 
-            # profile limit: profileLimit.getVal(), profileLimit.getErrorHi(), profileLimit.getErrorLo()
-            interval = getProfileLikelihoodLimits(workspace , drawLikelihoodIntervalPlot = False)
+                # profile limit: profileLimit.getVal(), profileLimit.getErrorHi(), profileLimit.getErrorLo()
+                interval = getProfileLikelihoodLimits(workspace , drawLikelihoodIntervalPlot = False)
 
-            likelihoodLimit = translateLimits( interval, nSigmas = 1 )
-            likelihoodLimit_2Sig = translateLimits( interval, nSigmas = 2 )
-
-
-        graphHelper.fillTGraphWithRooRealVar(observedLimitGraph, massPoint, likelihoodLimit)
-        graphHelper.fillTGraphWithRooRealVar(expectedLimitsGraph_1Sigma, massPoint, likelihoodLimit)
-        graphHelper.fillTGraphWithRooRealVar(expectedLimitsGraph_2Sigma, massPoint, likelihoodLimit_2Sig)
+                likelihoodLimit = translateLimits( interval, nSigmas = 1 )
+                likelihoodLimit_2Sig = translateLimits( interval, nSigmas = 2 )
 
 
-        bestEstimateDict[signalSample].append( likelihoodLimit.getVal() )
-        upperLimits1SigDict[signalSample].append(likelihoodLimit.getMax())
-        upperLimits2SigDict[signalSample].append(likelihoodLimit_2Sig.getMax())
+            graphHelper.fillTGraphWithRooRealVar(observedLimitGraph, massPoint, likelihoodLimit)
+            graphHelper.fillTGraphWithRooRealVar(expectedLimitsGraph_1Sigma, massPoint, likelihoodLimit)
+            graphHelper.fillTGraphWithRooRealVar(expectedLimitsGraph_2Sigma, massPoint, likelihoodLimit_2Sig)
 
 
+            bestEstimateDict[signalSample].append( likelihoodLimit.getVal() )
+            upperLimits1SigDict[signalSample].append(likelihoodLimit.getMax())
+            upperLimits2SigDict[signalSample].append(likelihoodLimit_2Sig.getMax())
 
 
 
-        continue
-
-        
-        histHelper.fillBin(overviewHist, massPoint, interval.UpperLimit(intervalVariables["SigXsecOverSM"]) )
-
-        #allWorkspaceVariables = TDirTools.rooArgSetToList( workspace.allVars() )
-        #workspaceVarDict = {x.GetName() : x for x in allWorkspaceVariables}
-        #keysafeDictReturn = lambda x,aDict : aDict[x] if x in aDict else None # returns none if x is not among the dict's keys
-        #keysafeDictReturn("H4lNorm", workspaceVarDict)
-
-        drawDict = {templatePaths["Data"]   : None, 
-                    templatePaths["H4l"]    : keysafeDictReturn("H4lNorm", workspaceVarDict),
-                    templatePaths["ZZ"]     : None,
-                    templatePaths["Signal"] : interval}
 
 
-        writeTFile.mkdir( signalSample ); 
-        writeTDir = writeTFile.Get( signalSample )
-        writeTDir.cd()
+            continue
+
+            
+            histHelper.fillBin(overviewHist, massPoint, interval.UpperLimit(intervalVariables["SigXsecOverSM"]) )
+
+            #allWorkspaceVariables = TDirTools.rooArgSetToList( workspace.allVars() )
+            #workspaceVarDict = {x.GetName() : x for x in allWorkspaceVariables}
+            #keysafeDictReturn = lambda x,aDict : aDict[x] if x in aDict else None # returns none if x is not among the dict's keys
+            #keysafeDictReturn("H4lNorm", workspaceVarDict)
+
+            drawDict = {templatePaths["Data"]   : None, 
+                        templatePaths["H4l"]    : keysafeDictReturn("H4lNorm", workspaceVarDict),
+                        templatePaths["ZZ"]     : None,
+                        templatePaths["Signal"] : interval}
 
 
-        drawNominalHists(inputFileName, drawDict, writeToFile =  None)
-        #drawNominalHists(inputFileName, drawDict, writeToFile =  writeTDir)
+            writeTFile.mkdir( signalSample ); 
+            writeTDir = writeTFile.Get( signalSample )
+            writeTDir.cd()
 
 
-        #TDirTools.rooArgSetToList( interval.GetBestFitParameters() )
+            drawNominalHists(inputFileName, drawDict, writeToFile =  None)
+            #drawNominalHists(inputFileName, drawDict, writeToFile =  writeTDir)
 
-        # stop here so we can experiment with the limit extracting process
-        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
-        #############################################################
-        # likeli working limit estimation below
-        #############################################################
+            #TDirTools.rooArgSetToList( interval.GetBestFitParameters() )
 
-        # Now, do the measurement
+            # stop here so we can experiment with the limit extracting process
+            #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
-        ### Finally, run the measurement. This is the same thing that happens when one runs 'hist2workspace' on an xml files
-        ROOT.RooStats.HistFactory.MakeModelAndMeasurementFast(meas);
+            #############################################################
+            # likeli working limit estimation below
+            #############################################################
 
-        ##################### end of the tutorial, everything below here is me tinkering
-        # I am tinkering with things from here: https://www.nikhef.nl/~vcroft/KaggleFit-Histfactory.html
-        hist2workspace = ROOT.RooStats.HistFactory.HistoToWorkspaceFactoryFast(meas)
-        #workspace = hist2workspace.MakeSingleChannelModel(meas, chan)
-        workspace = hist2workspace.MakeCombinedModel(meas)
+            # Now, do the measurement
 
-        mc = workspace.obj("ModelConfig")
-        data = workspace.data("obsData")
-        x = workspace.var("SigXsecOverSM")
+            ### Finally, run the measurement. This is the same thing that happens when one runs 'hist2workspace' on an xml files
+            ROOT.RooStats.HistFactory.MakeModelAndMeasurementFast(meas);
 
-        pl = ROOT.RooStats.ProfileLikelihoodCalculator(data,mc)
-        pl.SetConfidenceLevel(0.95); 
+            ##################### end of the tutorial, everything below here is me tinkering
+            # I am tinkering with things from here: https://www.nikhef.nl/~vcroft/KaggleFit-Histfactory.html
+            hist2workspace = ROOT.RooStats.HistFactory.HistoToWorkspaceFactoryFast(meas)
+            #workspace = hist2workspace.MakeSingleChannelModel(meas, chan)
+            workspace = hist2workspace.MakeCombinedModel(meas)
 
-        pl.GetInterval()
+            mc = workspace.obj("ModelConfig")
+            data = workspace.data("obsData")
+            x = workspace.var("SigXsecOverSM")
 
-        #ROOT.RooStats.HistFactory.GetChannelEstimateSummaries(meas,chan)
+            pl = ROOT.RooStats.ProfileLikelihoodCalculator(data,mc)
+            pl.SetConfidenceLevel(0.95); 
+
+            pl.GetInterval()
+
+            #ROOT.RooStats.HistFactory.GetChannelEstimateSummaries(meas,chan)
+
+        ###############################################
+        # end of "for massPoint in ... "
+        ###############################################
 
     ###############################################
-    # end of "for massPoint in ... "
+    # end of "for limitIteration in xrange(nIterations): "
     ###############################################
 
     graphOverviewCanvas = makeGraphOverview( graphHelper.getTGraphWithoutError( observedLimitGraph , ySetpoint = "yHigh"), 
