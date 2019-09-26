@@ -738,17 +738,17 @@ if __name__ == '__main__':
     #overviewCanvas = ROOT.TCanvas( "XS limits", "XS limits", 1300/2,1300/2)
     #overviewHist.Draw("L"); overviewCanvas.Update()
     #overviewHist.Write()
-    observedLimitGraph.Write()
-    expectedLimitsGraph_1Sigma.Write()
-    expectedLimitsGraph_2Sigma.Write()
+    #observedLimitGraph.Write()
+    #expectedLimitsGraph_1Sigma.Write()
+    #expectedLimitsGraph_2Sigma.Write()
 
     bestEstimatesTTree   = fillTTreeWithDictOfList(bestEstimateDict, treeName = "bestEstimates_"+limitType)
     upperLimits1SigTTree = fillTTreeWithDictOfList(upperLimits1SigDict, treeName = "upperLimits1Sig_"+limitType)
     upperLimits2SigTTree = fillTTreeWithDictOfList(upperLimits2SigDict, treeName = "upperLimits2Sig_"+limitType)
 
-    bestEstimatesTTree.Write()
-    upperLimits1SigTTree.Write()
-    upperLimits2SigTTree.Write()
+    #bestEstimatesTTree.Write()
+    #upperLimits1SigTTree.Write()
+    #upperLimits2SigTTree.Write()
 
     #limitType = ROOT.TString( str(limitType) )
     #limitType.Write()
@@ -765,3 +765,4 @@ if __name__ == '__main__':
 
     print("All Done!")
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
