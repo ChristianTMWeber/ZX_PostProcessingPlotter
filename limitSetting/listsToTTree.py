@@ -1,7 +1,8 @@
 import ROOT # to do all the ROOT stuff
 import array
+import re
 
-def fillTTreeWithDictOfList(aDict):
+def fillTTreeWithDictOfList(aDict, treeName = "myTTree" ):
     # input: aDict[ 'branchName1'] = [n1, n2 ,n3, ...]
     #        aDict[ 'branchName2'] = [m1, m2 ,m3, ...]
     # list elemets are assumed to be numbers and are going to be saved as floats
@@ -14,7 +15,7 @@ def fillTTreeWithDictOfList(aDict):
         for aList in aDict.values(): assert len(aList) == nListElements
 
 
-    TTree = ROOT.TTree( 'myTTree', 'myTTree' ) # this will be TTree to fill and output
+    TTree = ROOT.TTree( treeName, treeName ) # this will be TTree to fill and output
 
     # each TTree branch needs to be associated with an array
     # we will set those up here and associate them with each other
@@ -23,7 +24,9 @@ def fillTTreeWithDictOfList(aDict):
     for key in aDict: 
         # setup the array
         arrayDict[key] = array.array( "f", [ 0. ] )      # can also use "d" here for doubles
-        TTree.Branch( key, arrayDict[key], key+"/F" )# can also use "D" here for doubles
+
+        keyNoSpace = re.sub(" " , "_", key) # replace space with underscore, because spaces breat root :(
+        TTree.Branch( keyNoSpace, arrayDict[key], keyNoSpace+"/F" )# can also use "D" here for doubles
 
 
     # fill the branches
@@ -32,6 +35,8 @@ def fillTTreeWithDictOfList(aDict):
             arrayDict[key][0] = aDict[key][n]
         # fill all the branches of the TTree
         TTree.Fill()
+
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
     return TTree
 
@@ -43,6 +48,7 @@ if __name__ == '__main__':
 
     testDict["var1"] = range(10)
     testDict["var2"] = [ 2*x for x in xrange(10)]
+    testDict["var3"] = [ 1./(1+x) for x in xrange(10)]
 
 
     myTTree = fillTTreeWithDictOfList(testDict)
@@ -57,3 +63,4 @@ if __name__ == '__main__':
     testTFile.Write()
     testTFile.Close()
 
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
