@@ -547,7 +547,13 @@ def getFullTDirPath(masterDict, region, eventType, systVariation , flavor):
 
     return fullTDirPath
 
+def setupHistofactoryData(TH1):
 
+    dataObj = ROOT.RooStats.HistFactory.Data()
+    dataObj.SetName("data")
+    dataObj.SetHisto(TH1)
+
+    return dataObj
 
 if __name__ == '__main__':
 
@@ -599,7 +605,7 @@ if __name__ == '__main__':
         outputFileName = os.path.join(args.outputDir,outputFileName)
 
 
-    writeTFile = ROOT.TFile( outputFileName,  "RECREATE")# "UPDATE")
+    #writeTFile = ROOT.TFile( outputFileName,  "RECREATE")# "UPDATE")
 
 
     region = "ZXSR"
@@ -632,9 +638,13 @@ if __name__ == '__main__':
 
             dataHist = myHistSampler.sampleFromTH1(expectedDataHist)
 
+            dataObj = setupHistofactoryData(dataHist) # put things in a HistFactory.Data object to avoit some seg faults
+
         else :   # either do asymptotic expected limits, or get real data limits
             dataHistPath = getFullTDirPath(masterDict, region, "data" , "Nominal",  flavor)
             dataHist = inputTFile.Get( dataHistPath )
+
+            dataObj = setupHistofactoryData(dataHist)
 
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
@@ -651,7 +661,7 @@ if __name__ == '__main__':
             templatePaths["ZZ"]      = getFullTDirPath(masterDict, region, "ZZ" , "Nominal",  flavor)
             templatePaths["H4l"]     = getFullTDirPath(masterDict, region, "H4l" , "Nominal",  flavor)
 
-            templatePaths["Data"]    = dataHist
+            templatePaths["Data"]    = dataObj#dataHist
 
             
             meas = prepMeasurement(templatePaths, region, flavor, inputFileName, inputTFile)
@@ -763,15 +773,19 @@ if __name__ == '__main__':
         upperLimits1SigTTree = fillTTreeWithDictOfList(upperLimits1SigDict, treeName = "upperLimits1Sig_"+limitType)
         upperLimits2SigTTree = fillTTreeWithDictOfList(upperLimits2SigDict, treeName = "upperLimits2Sig_"+limitType)
 
+        if limitType != "toys":
+            graphOverviewCanvas = makeGraphOverview( graphHelper.getTGraphWithoutError( observedLimitGraph , ySetpoint = "yHigh"), 
+                                             expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = writeTFile)
+
+
         writeTFile.Write()
+        writeTFile.Close()
 
 
     ###############################################
     # end of "for limitIteration in xrange(nIterations): "
     ###############################################
 
-    graphOverviewCanvas = makeGraphOverview( graphHelper.getTGraphWithoutError( observedLimitGraph , ySetpoint = "yHigh"), 
-                                             expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = writeTFile)
 
 
     #overviewCanvas = ROOT.TCanvas( "XS limits", "XS limits", 1300/2,1300/2)
@@ -790,7 +804,7 @@ if __name__ == '__main__':
     #limitType.Write()
 
 
-    writeTFile.Close()
+
 
     runtime = time.time() - startTime
 
