@@ -553,7 +553,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--outputDir", type=str, default="." ,
+    parser.add_argument("--outputDir", type=str, default=None ,
         help="directory of where to save the output. Default is the direcotry of the .py file" )
     parser.add_argument("--outputFileName", type=str, default=None ,
         help="name of the output file. We'll add .root if necessary" )
@@ -594,10 +594,12 @@ if __name__ == '__main__':
 
     if not outputFileName.endswith(".root"): outputFileName += ".root"
 
-    if not os.path.exists(args.outputDir): os.makedirs(args.outputDir)
-    outputFileNameFull = args.outputDir + "/" + outputFileName # "limitOutput_H4lNormFloating_allSystematic_allmassPoints_fullRun2.root"  # 
+    if args.outputDir is not None:
+        if not os.path.exists(args.outputDir): os.makedirs(args.outputDir)
+        outputFileName = os.path.join(args.outputDir,outputFileName)
 
-    writeTFile = ROOT.TFile( outputFileNameFull,  "RECREATE")# "UPDATE")
+
+    writeTFile = ROOT.TFile( outputFileName,  "RECREATE")# "UPDATE")
 
 
     region = "ZXSR"
@@ -755,7 +757,7 @@ if __name__ == '__main__':
         ###############################################
 
 
-        writeTFile = ROOT.TFile( outputFileNameFull,  "RECREATE")# "UPDATE")
+        writeTFile = ROOT.TFile( outputFileName,  "RECREATE")# "UPDATE")
         writeTFile.cd()
         bestEstimatesTTree   = fillTTreeWithDictOfList(bestEstimateDict, treeName = "bestEstimates_"+limitType)
         upperLimits1SigTTree = fillTTreeWithDictOfList(upperLimits1SigDict, treeName = "upperLimits1Sig_"+limitType)
