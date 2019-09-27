@@ -564,6 +564,8 @@ if __name__ == '__main__':
         help="directory of where to save the output. Default is the direcotry of the .py file" )
     parser.add_argument("--outputFileName", type=str, default=None ,
         help="name of the output file. We'll add .root if necessary" )
+    parser.add_argument("--nSystematics", type=int, default=-1 ,
+        help="number of sustematics to process, setting '--nSystematics -1' processes them all " )
 
     args = parser.parse_args()
 
@@ -571,7 +573,7 @@ if __name__ == '__main__':
     startTime = time.time()
     activateATLASPlotStyle()
 
-    doNSystematics = -1
+    doNSystematics = args.nSystematics
 
     # RooFit command to suppress all the Info and Progress message is below
     # the message are ordered by the following enumeration defined in RooGlobalFunc.h
