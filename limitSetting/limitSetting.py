@@ -708,6 +708,8 @@ if __name__ == '__main__':
 
             reportMemUsage.reportMemUsage(startTime = startTime)
            
+            # let's try delete these objects here to stem the growing memory demand with increasing 'limitIteration' count
+            del chan, meas
 
 
             #################################################################
