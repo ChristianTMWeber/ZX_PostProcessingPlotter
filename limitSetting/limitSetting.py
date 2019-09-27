@@ -560,6 +560,9 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("--inputFileName", type=str, default="preppedHists_mc16a_sqrtErros_0.5GeVBins.root" ,
+        help="name of the .root file that has the input histograms for the limist setting" )
+
     parser.add_argument("--outputDir", type=str, default=None ,
         help="directory of where to save the output. Default is the direcotry of the .py file" )
     parser.add_argument("--outputFileName", type=str, default=None ,
@@ -587,7 +590,8 @@ if __name__ == '__main__':
     #inputFileName = "preppedHists_mc16a_unchangedErros_3GeVBins.root" 
     #inputFileName = "preppedHists_mc16a_sqrtErros_3GeVBins.root"
     #inputFileName = "preppedHists_mc16a_sqrtErros_1GeVBins.root"
-    inputFileName = "preppedHists_mc16a_sqrtErros_0.5GeVBins.root"
+    #inputFileName = "preppedHists_mc16a_sqrtErros_0.5GeVBins.root"
+    inputFileName = args.inputFileName 
     #inputFileName = "preppedHists_mc16ade_sqrtErros_0.5GeVBins.root"
 
     inputTFile = ROOT.TFile(inputFileName,"OPEN")
