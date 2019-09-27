@@ -565,7 +565,9 @@ if __name__ == '__main__':
     parser.add_argument("--outputFileName", type=str, default=None ,
         help="name of the output file. We'll add .root if necessary" )
     parser.add_argument("--nSystematics", type=int, default=-1 ,
-        help="number of sustematics to process, setting '--nSystematics -1' processes them all " )
+        help="number of systematics to process, setting '--nSystematics -1' processes them all " )
+    parser.add_argument("--nIterations", type=int, default=10 ,
+        help="number of iterations over all the masspoints " )
 
     args = parser.parse_args()
 
@@ -628,7 +630,7 @@ if __name__ == '__main__':
 
     myHistSampler = sampleTH1FromTH1.histSampler()
 
-    if limitType == "toys":   nIterations = 30
+    if limitType == "toys":   nIterations = args.nIterations
     else:                     nIterations = 1
 
     for limitIteration in xrange(nIterations):
