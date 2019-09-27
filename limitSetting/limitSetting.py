@@ -674,6 +674,7 @@ if __name__ == '__main__':
             #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
             #One can also create a workspace for only a single channel of a model by supplying that channel:
+            # see here for an example:  https://www.nikhef.nl/~vcroft/KaggleFit-Histfactory.html
             hist2workspace = ROOT.RooStats.HistFactory.HistoToWorkspaceFactoryFast(meas)
             #chan.CollectHistograms() #  see here why this is needed: https://root-forum.cern.ch/t/histfactory-issue-with-makesinglechannelmodel/34201
             workspace = hist2workspace.MakeSingleChannelModel(meas, chan)
@@ -705,65 +706,36 @@ if __name__ == '__main__':
             upperLimits1SigDict[signalSample].append(likelihoodLimit.getMax())
             upperLimits2SigDict[signalSample].append(likelihoodLimit_2Sig.getMax())
 
-
-
-
             reportMemUsage.reportMemUsage(startTime = startTime)
-            continue
-
-            
-            histHelper.fillBin(overviewHist, massPoint, interval.UpperLimit(intervalVariables["SigXsecOverSM"]) )
-
-            #allWorkspaceVariables = TDirTools.rooArgSetToList( workspace.allVars() )
-            #workspaceVarDict = {x.GetName() : x for x in allWorkspaceVariables}
-            #keysafeDictReturn = lambda x,aDict : aDict[x] if x in aDict else None # returns none if x is not among the dict's keys
-            #keysafeDictReturn("H4lNorm", workspaceVarDict)
-
-            drawDict = {templatePaths["Data"]   : None, 
-                        templatePaths["H4l"]    : keysafeDictReturn("H4lNorm", workspaceVarDict),
-                        templatePaths["ZZ"]     : None,
-                        templatePaths["Signal"] : interval}
+           
 
 
-            writeTFile.mkdir( signalSample ); 
-            writeTDir = writeTFile.Get( signalSample )
-            writeTDir.cd()
-
-
-            drawNominalHists(inputFileName, drawDict, writeToFile =  None)
-            #drawNominalHists(inputFileName, drawDict, writeToFile =  writeTDir)
-
-
-            #TDirTools.rooArgSetToList( interval.GetBestFitParameters() )
-
-            # stop here so we can experiment with the limit extracting process
-            #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-
-            #############################################################
-            # likeli working limit estimation below
-            #############################################################
-
-            # Now, do the measurement
-
-            ### Finally, run the measurement. This is the same thing that happens when one runs 'hist2workspace' on an xml files
-            ROOT.RooStats.HistFactory.MakeModelAndMeasurementFast(meas);
-
-            ##################### end of the tutorial, everything below here is me tinkering
-            # I am tinkering with things from here: https://www.nikhef.nl/~vcroft/KaggleFit-Histfactory.html
-            hist2workspace = ROOT.RooStats.HistFactory.HistoToWorkspaceFactoryFast(meas)
-            #workspace = hist2workspace.MakeSingleChannelModel(meas, chan)
-            workspace = hist2workspace.MakeCombinedModel(meas)
-
-            mc = workspace.obj("ModelConfig")
-            data = workspace.data("obsData")
-            x = workspace.var("SigXsecOverSM")
-
-            pl = ROOT.RooStats.ProfileLikelihoodCalculator(data,mc)
-            pl.SetConfidenceLevel(0.95); 
-
-            pl.GetInterval()
-
-            #ROOT.RooStats.HistFactory.GetChannelEstimateSummaries(meas,chan)
+            #################################################################
+            # Draw the fitted m34 distribututions
+            #################################################################
+            #histHelper.fillBin(overviewHist, massPoint, interval.UpperLimit(intervalVariables["SigXsecOverSM"]) )
+            #
+            #
+            ##allWorkspaceVariables = TDirTools.rooArgSetToList( workspace.allVars() )
+            ##workspaceVarDict = {x.GetName() : x for x in allWorkspaceVariables}
+            ##keysafeDictReturn = lambda x,aDict : aDict[x] if x in aDict else None # returns none if x is not among the dict's keys
+            ##keysafeDictReturn("H4lNorm", workspaceVarDict)
+            #
+            #drawDict = {templatePaths["Data"]   : None, 
+            #            templatePaths["H4l"]    : keysafeDictReturn("H4lNorm", workspaceVarDict),
+            #            templatePaths["ZZ"]     : None,
+            #            templatePaths["Signal"] : interval}
+            #
+            #
+            #writeTFile.mkdir( signalSample ); 
+            #writeTDir = writeTFile.Get( signalSample )
+            #writeTDir.cd()
+            #
+            #
+            #drawNominalHists(inputFileName, drawDict, writeToFile =  None)
+            ##drawNominalHists(inputFileName, drawDict, writeToFile =  writeTDir)
+            #
+            ##ROOT.RooStats.HistFactory.GetChannelEstimateSummaries(meas,chan)
 
         ###############################################
         # end of "for massPoint in ... "
