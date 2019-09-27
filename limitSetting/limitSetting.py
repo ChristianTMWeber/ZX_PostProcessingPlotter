@@ -13,7 +13,8 @@ import warnings # to warn about things that might not have gone right
 import resource # print 'Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 import time # for measuring execution time
 import datetime # to convert seconds to hours:minutes:seconds
-
+import argparse # to parse command line options
+import os # to check existence of directories for example
 
 from limitFunctions.listsToTTree import fillTTreeWithDictOfList # concert of dict of lists into a TTree
 import limitFunctions.sampleTH1FromTH1 as sampleTH1FromTH1 # generate a new TH1 from a given one, each bin is taken from a poission distribution
@@ -549,10 +550,27 @@ def getFullTDirPath(masterDict, region, eventType, systVariation , flavor):
 
 
 if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--outputDir", type=str, default="." ,
+        help="directory of where to save the output. Default is the direcotry of the .py file" )
+    parser.add_argument("--outputFileName", type=str, default=None ,
+        help="name of the output file. We'll add .root if necessary" )
+
+    args = parser.parse_args()
+
+
     startTime = time.time()
     activateATLASPlotStyle()
 
     doNSystematics = -1
+
+    # RooFit command to suppress all the Info and Progress message is below
+    # the message are ordered by the following enumeration defined in RooGlobalFunc.h
+    # enum MsgLevel { DEBUG=0, INFO=1, PROGRESS=2, WARNING=3, ERROR=4, FATAL=5 } ;
+    rooMsgServe = ROOT.RooMsgService.instance()                
+    rooMsgServe.setGlobalKillBelow(ROOT.RooFit.WARNING)
     
 
     #inputFileName = "preppedHists_mc16a_unchangedErros_3GeVBins.root" 
@@ -566,17 +584,26 @@ if __name__ == '__main__':
 
 
     #limitType =  "asymptotic"# options: "toys", "asymptotic", "observed"
-    #limitType =  "toys"      # options: "toys", "asymptotic", "observed"
-    limitType =  "observed"  # options: "toys", "asymptotic", "observed"
+    limitType =  "toys"      # options: "toys", "asymptotic", "observed"
+    #limitType =  "observed"  # options: "toys", "asymptotic", "observed"
 
-    outputFileName = "limitOutput_"+limitType+".root" # "limitOutput_H4lNormFloating_allSystematic_allmassPoints_fullRun2.root"  # 
-    writeTFile = ROOT.TFile( outputFileName,  "RECREATE")# "UPDATE")
+    # deal with the output file
+
+    if args.outputFileName is None: outputFileName = "limitOutput_"+limitType+".root"
+    else:                           outputFileName = args.outputFileName
+
+    if not outputFileName.endswith(".root"): outputFileName += ".root"
+
+    if not os.path.exists(args.outputDir): os.makedirs(args.outputDir)
+    outputFileNameFull = args.outputDir + "/" + outputFileName # "limitOutput_H4lNormFloating_allSystematic_allmassPoints_fullRun2.root"  # 
+
+    writeTFile = ROOT.TFile( outputFileNameFull,  "RECREATE")# "UPDATE")
 
 
     region = "ZXSR"
     flavor = "All"
 
-    massesToProcess =  [30]#range(15,56,1)#[30]#range(15,56,5)
+    massesToProcess =  range(15,56,1)#[30]#range(15,56,5)
     # setup some output datastructures
     overviewHist = ROOT.TH1D("ZX_limit_Overview","ZX_limit_Overview", len(massesToProcess), min(massesToProcess), max(massesToProcess) + 1 ) # construct the hist this way, so that we have a bin for each mass point
 
@@ -590,7 +617,7 @@ if __name__ == '__main__':
 
     myHistSampler = sampleTH1FromTH1.histSampler()
 
-    if limitType == "toys":   nIterations = 10
+    if limitType == "toys":   nIterations = 30
     else:                     nIterations = 1
 
     for limitIteration in xrange(nIterations):
@@ -727,6 +754,16 @@ if __name__ == '__main__':
         # end of "for massPoint in ... "
         ###############################################
 
+
+        writeTFile = ROOT.TFile( outputFileNameFull,  "RECREATE")# "UPDATE")
+        writeTFile.cd()
+        bestEstimatesTTree   = fillTTreeWithDictOfList(bestEstimateDict, treeName = "bestEstimates_"+limitType)
+        upperLimits1SigTTree = fillTTreeWithDictOfList(upperLimits1SigDict, treeName = "upperLimits1Sig_"+limitType)
+        upperLimits2SigTTree = fillTTreeWithDictOfList(upperLimits2SigDict, treeName = "upperLimits2Sig_"+limitType)
+
+        writeTFile.Write()
+
+
     ###############################################
     # end of "for limitIteration in xrange(nIterations): "
     ###############################################
@@ -734,7 +771,7 @@ if __name__ == '__main__':
     graphOverviewCanvas = makeGraphOverview( graphHelper.getTGraphWithoutError( observedLimitGraph , ySetpoint = "yHigh"), 
                                              expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = writeTFile)
 
-    writeTFile.cd()
+
     #overviewCanvas = ROOT.TCanvas( "XS limits", "XS limits", 1300/2,1300/2)
     #overviewHist.Draw("L"); overviewCanvas.Update()
     #overviewHist.Write()
@@ -742,9 +779,6 @@ if __name__ == '__main__':
     #expectedLimitsGraph_1Sigma.Write()
     #expectedLimitsGraph_2Sigma.Write()
 
-    bestEstimatesTTree   = fillTTreeWithDictOfList(bestEstimateDict, treeName = "bestEstimates_"+limitType)
-    upperLimits1SigTTree = fillTTreeWithDictOfList(upperLimits1SigDict, treeName = "upperLimits1Sig_"+limitType)
-    upperLimits2SigTTree = fillTTreeWithDictOfList(upperLimits2SigDict, treeName = "upperLimits2Sig_"+limitType)
 
     #bestEstimatesTTree.Write()
     #upperLimits1SigTTree.Write()
@@ -753,7 +787,6 @@ if __name__ == '__main__':
     #limitType = ROOT.TString( str(limitType) )
     #limitType.Write()
 
-    writeTFile.Write()
 
     writeTFile.Close()
 
