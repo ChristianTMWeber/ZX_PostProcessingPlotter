@@ -29,6 +29,8 @@ from functions.compareVersions import compareVersions # to compare root versions
 import functions.histHelper as histHelper # to help me fill some histograms
 
 import limitFunctions.RooIntegralMorphWrapper as integralMorphWrapper
+import limitFunctions.reportMemUsage as reportMemUsage
+
 
 def skipTObject(path, baseHist, requiredRootType = ROOT.TH1, selectChannels = ["ZXSR", "ZXVR1"], 
                 selectKinematic = "m34", selectCuts = ["HWindow", "LowMassSidebands"]  ):
@@ -182,7 +184,7 @@ def addInterpolatedSignalSamples(masterHistDict, channels = None):
                     # add the new histogram to the sample
                     masterHistDict[channel][ newEventType ]["Nominal"][flavor] = newSignalHist
 
-                    integralMorphWrapper.reportMemUsage(startTime = startTimeInterp)
+                    reportMemUsage.reportMemUsage(startTime = startTimeInterp)
     return None
 
 if __name__ == '__main__':

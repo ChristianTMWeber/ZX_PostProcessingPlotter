@@ -2,19 +2,8 @@ import ROOT
 import numpy as np # to generate randum numbers 
 import time # for measuring execution time
 
+import reportMemUsage
 
-def reportMemUsage(startTime = None):
-    import resource # print 'Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    import time # for measuring execution time
-    import datetime # to convert seconds to hours:minutes:seconds
-
-    displayString = "Memory usage: %s kB \t Runtime: " % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/8) 
-
-    if startTime is not None: displayString += str(datetime.timedelta(seconds=( time.time()- startTime) ))
-    
-    print displayString
-
-    return None
 
 def setupIndependentVar(hist):
     nBins = hist.GetNbinsX()
@@ -315,7 +304,7 @@ if __name__ == '__main__':
         morphedHist = getInterpolatedHistogram(histA, histB, mean1.getVal(), mean2.getVal(), n , errorInterpolation = "morph1SigmaHists", morphType = "momentMorph", nSimulationRounds = 100)
         morphedHist.SetLineColor(ROOT.kGreen)
         morphedHistList.append(morphedHist)
-        reportMemUsage(startTime = startTime)
+        reportMemUsage.reportMemUsage(startTime = startTime)
 
     #myFile = ROOT.TFile("morphData.root","OPEN")
     #histA = myFile.Get("30Gev")

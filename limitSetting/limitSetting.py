@@ -29,6 +29,7 @@ import plotPostProcess as postProcess
 import functions.histHelper as histHelper
 import functions.tGraphHelpers as graphHelper
 
+import limitFunctions.reportMemUsage as reportMemUsage
 
 def activateATLASPlotStyle():
     # runs the root macro that defines the ATLAS style, and checks that it is active
@@ -705,7 +706,7 @@ if __name__ == '__main__':
 
 
 
-
+            reportMemUsage.reportMemUsage(startTime = startTime)
             continue
 
             
@@ -766,7 +767,7 @@ if __name__ == '__main__':
         # end of "for massPoint in ... "
         ###############################################
 
-
+        reportMemUsage.reportMemUsage(startTime = startTime)
         writeTFile = ROOT.TFile( outputFileName,  "RECREATE")# "UPDATE")
         writeTFile.cd()
         bestEstimatesTTree   = fillTTreeWithDictOfList(bestEstimateDict, treeName = "bestEstimates_"+limitType)
@@ -806,10 +807,7 @@ if __name__ == '__main__':
 
 
 
-    runtime = time.time() - startTime
-
-    print "Memory usage: %s kB \t Runtime: " % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/8) + str(datetime.timedelta(seconds=runtime) )
-
+    reportMemUsage.reportMemUsage(startTime = startTime)
 
 
     print("All Done!")
