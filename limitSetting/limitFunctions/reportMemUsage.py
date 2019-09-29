@@ -5,10 +5,14 @@ import datetime # to convert seconds to hours:minutes:seconds
 
 def reportMemUsage(startTime = None):
 
-	# ru_maxrss is actually in kilobytes: http://man7.org/linux/man-pages/man2/getrusage.2.html
-    displayString = "Memory usage: %s kB \t Runtime: " % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) 
+    # ru_maxrss is actually in kilobytes: http://man7.org/linux/man-pages/man2/getrusage.2.html
 
-    if startTime is not None: displayString += str(datetime.timedelta(seconds=( time.time()- startTime) ))
+    memoryUsedMB =  round( float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)/1024 )
+
+    displayString = "Memory usage: %i MiB " % (memoryUsedMB) 
+
+    if startTime is not None: 
+        displayString += "\t Runtime: " + str(datetime.timedelta(seconds=( time.time()- startTime) ))
     
     print displayString
 
@@ -16,8 +20,11 @@ def reportMemUsage(startTime = None):
 
 if __name__ == '__main__':
 
-	startTime = time.time()
+    startTime = time.time()
 
-	reportMemUsage(startTime = startTime)
+    reportMemUsage()
+    reportMemUsage(startTime = startTime)
+
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
 
