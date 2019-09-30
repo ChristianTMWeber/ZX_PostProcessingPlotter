@@ -26,13 +26,34 @@ def createNamedTGraphAsymmErrors( objectName):
 
 def fillTGraphWithRooRealVar(graph, xFill, yFill):
 
-
     pointNr = graph.GetN()
 
     graph.SetPoint( pointNr, xFill, yFill.getVal() )
 
     yErrorHi = abs( yFill.getMax()-yFill.getVal() )
     yErrorLo = abs( -yFill.getMin() + yFill.getVal() )
+    graph.SetPointError( pointNr, 0,0, yErrorLo , yErrorHi )
+
+    return graph
+
+def fillTGraphWithTuple(graph, xFill, yFill):
+
+    # yFill = ( yLow , y, yHigh )
+    # yLow <= y < =  yHigh
+    # yLow and yHigh are the lower and upper limits on y
+
+    assert len(yFill) == 3
+    assert yFill[0] <= yFill[1] and yFill[1] <= yFill[2]
+
+    yLow  = yFill[0] ;  y = yFill[1] ; yHigh = yFill[2]
+
+
+    pointNr = graph.GetN()
+
+    graph.SetPoint( pointNr, xFill, y )
+
+    yErrorHi = abs( yHigh-y )
+    yErrorLo = abs( -yLow + y )
     graph.SetPointError( pointNr, 0,0, yErrorLo , yErrorHi )
 
     return graph
