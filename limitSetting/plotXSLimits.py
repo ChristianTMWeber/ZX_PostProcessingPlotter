@@ -4,6 +4,8 @@ import numpy as np
 
 import re
 
+import math
+
 
 # import sys and os.path to be able to import things from the parent directory
 import sys 
@@ -13,6 +15,7 @@ sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) ) # need
 import functions.tGraphHelpers as graphHelper
 import functions.RootTools as RootTools
 
+from functions.getArrayConfInterval import getArrayConfInterval
 
 def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , colorScheme = ROOT.kRed, writeTo = False):
 
@@ -76,67 +79,78 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
 
     return canv
 
-def getMeanAndStdDictFromTTree(TTree, cutAt = 10):
 
-    meanDict = {}
-    stdDict = {}
+
+def yieldBranchAndContent(TTree, cutAt = 10):
+
 
     for branch in TTree.GetListOfBranches():         
+        
         varName =  branch.GetName() 
-
-        mass = int(re.search("\d{2}", varName).group())  # systematics
-
         cutString = varName + " < " + str(cutAt)
 
         arrayFromTTree = RootTools.GetValuesFromTree(TTree, varName, cutString)
 
-        meanDict[mass] = np.mean(arrayFromTTree)
-        stdDict[mass] = np.std(arrayFromTTree)
+        mass = int(re.search("\d{2}", varName).group())  # systematics
 
-    return meanDict, stdDict
+        yield mass, arrayFromTTree
 
 
-def getconfInterval(TTree, cutAt = 10):
+
+def getMeanAndStdDictFromTTree(TTree, nSigma = 1, cutAt = 10):
 
     meanDict = {}
     stdDict = {}
 
-    for branch in TTree.GetListOfBranches():         
-        varName =  branch.GetName() 
+    for mass, npArray in yieldBranchAndContent(TTree, cutAt = cutAt):
 
-        mass = int(re.search("\d{2}", varName).group())  # systematics
+        meanDict[mass] =  np.mean( npArray )
+        stdDict[mass]  =  np.std( npArray  ) * nSigma
 
-        cutString = varName + " < " + str(cutAt)
+    return meanDict, stdDict, stdDict
 
-        arrayFromTTree = RootTools.GetValuesFromTree(TTree, varName, cutString)
+def getconfInterval(TTree,  nSigma = 1. , cutAt = 10):
 
-        meanDict[mass] = np.mean(arrayFromTTree)
-        stdDict[mass] = np.std(arrayFromTTree)
+    meanDict = {}
+    errorLow = {}
+    errorHigh = {}
 
-    return meanDict, stdDict
+    confidenceSetpoint = math.erf( float(nSigma) / 2.**0.5)
+
+    for mass, npArray in yieldBranchAndContent(TTree, cutAt = cutAt):
+
+        arrayMean = np.mean( npArray )
+
+
+        lowLimit , highLimit = getArrayConfInterval( npArray, confidenceValue = confidenceSetpoint,  intervalCenter = arrayMean)
+        meanDict[mass]   =  arrayMean
+        errorLow[mass]   =  arrayMean - lowLimit
+        errorHigh[mass]  =  highLimit - arrayMean
+
+    return meanDict, errorLow, errorHigh
 
 
 
-def getToyLimits( filename , TTreeName = "upperLimits1Sig_toys", graphName = "toyLimit_1sigma" ,nSigma = 1):
+def getToyLimits( filename , TTreeName = "upperLimits1Sig_toys", graphName = "toyLimit_1sigma" ,nSigma = 1, intervalType = "confInterval"):
 
     testFile = ROOT.TFile(filename)
 
     upperLimitTree1Sig = testFile.Get(TTreeName)
 
-    mean1, std1 = getMeanAndStdDictFromTTree(upperLimitTree1Sig, cutAt = 10)
+    
+    if intervalType == "confInterval":
+        mean, errorLow, errorHigh = getconfInterval(upperLimitTree1Sig, nSigma = nSigma , cutAt = 10)
+    elif intervalType == "standardDeviation":
+        mean, errorLow, errorHigh = getMeanAndStdDictFromTTree(upperLimitTree1Sig, nSigma = nSigma, cutAt = 10)
+
 
     toyLimitTGrapah = graphHelper.createNamedTGraphAsymmErrors("toyLimit_1sigma")
 
-    for mass in sorted(mean1.keys()):
-        y = mean1[mass]
-        error = std1[mass]
-
-        error *= nSigma
-        yTuple = ( y-error, y, y+error)
-
+    for mass in sorted(mean.keys()):
         pointNr = toyLimitTGrapah.GetN()
-        toyLimitTGrapah.SetPoint( pointNr, mass, y )
-        toyLimitTGrapah.SetPointError( pointNr, 0,0, error , error )
+
+        toyLimitTGrapah.SetPoint( pointNr, mass, mean[mass] )
+        toyLimitTGrapah.SetPointError( pointNr, 0,0, errorLow[mass] , errorHigh[mass] )
 
     return toyLimitTGrapah
 
@@ -150,8 +164,8 @@ if __name__ == '__main__':
 
     upperLimitTree1Sig = testFile.Get("upperLimits1Sig_toys")
 
-    toyLimitTGrapah1Sigma = getToyLimits( "../allCombinedMC16a_1895.root" , TTreeName = "upperLimits1Sig_toys", graphName = "toyLimit_1sigma", nSigma = 1)
-    toyLimitTGrapah2Sigma = getToyLimits( "../allCombinedMC16a_1895.root" , TTreeName = "upperLimits1Sig_toys", graphName = "toyLimit_1sigma", nSigma = 2)
+    toyLimitTGrapah1Sigma = getToyLimits( "../allCombinedMC16a_1895.root" , TTreeName = "upperLimits1Sig_toys", graphName = "toyLimit_1sigma", nSigma = 1, intervalType = "confInterval")
+    toyLimitTGrapah2Sigma = getToyLimits( "../allCombinedMC16a_1895.root" , TTreeName = "upperLimits1Sig_toys", graphName = "toyLimit_2sigma", nSigma = 2, intervalType = "confInterval")
 
     canvas = makeGraphOverview( toyLimitTGrapah1Sigma,  toyLimitTGrapah1Sigma, toyLimitTGrapah2Sigma , colorScheme = ROOT.kRed, writeTo = False)
 
