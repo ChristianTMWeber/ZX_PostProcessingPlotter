@@ -1,11 +1,15 @@
 *.pdf
 *.png
 *.jpg
+
 # ignore *.txt files
 *.txt
 # but not the ones in the metadata folder which carry metadata information
 !metadata/*.txt
-*.pyc
+
+# ignore compiled python files, they will be automatically re-created
+*.pyc 
+
 *.root
 *.xml
 *.eps
