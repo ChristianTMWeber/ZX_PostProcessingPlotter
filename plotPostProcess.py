@@ -638,7 +638,7 @@ if __name__ == '__main__':
 
         # output a running counter of processed hists and used memory
         histCounter += 1
-        if histCounter %1000 == 0: print str(histCounter) + " relevant hists processed. \t Memory usage: %s (kB)" % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/8)
+        if histCounter %1000 == 0: print str(histCounter) + " relevant hists processed. \t Memory usage: %s (MB)" % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1000)
 
 
 
