@@ -451,7 +451,6 @@ def expectedLimitsAsimov(workspace, confidenceLevel = 0.95, drawLimitPlot = Fals
 
 def translateLimits( rooStatsObject, nSigmas = 1 ):
     # we assume that there is always only one parameter of interest
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
     if isinstance( rooStatsObject , ROOT.RooStats.LikelihoodInterval ):
@@ -511,7 +510,7 @@ if __name__ == '__main__':
         help="name of the output file. We'll add .root if necessary" )
     parser.add_argument("--nSystematics", type=int, default=-1 ,
         help="number of systematics to process, setting '--nSystematics -1' processes them all " )
-    parser.add_argument("--nIterations", type=int, default=10 ,
+    parser.add_argument("--nIterations", type=int, default=1 ,
         help="number of iterations over all the masspoints " )
 
     args = parser.parse_args()
@@ -653,8 +652,6 @@ if __name__ == '__main__':
             bestEstimateDict[signalSample].append( likelihoodLimit.getVal() )
             upperLimits1SigDict[signalSample].append(likelihoodLimit.getMax())
             upperLimits2SigDict[signalSample].append(likelihoodLimit_2Sig.getMax())
-
-            import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
             reportMemUsage.reportMemUsage(startTime = startTime)
            
