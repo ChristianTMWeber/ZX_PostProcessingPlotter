@@ -241,12 +241,12 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile):
     ### Set the name of the parameter of interest Note that this parameter hasn't yet been created, we are anticipating it
     meas.SetPOI("SigXsecOverSM")
 
-    meas.AddConstantParam("Lumi")           # this is not part of the C++ exsample
-    meas.AddConstantParam("alpha_syst1")    # this is not part of the C++ exsample
+    #meas.AddConstantParam("Lumi")           # this is not part of the C++ exsample
+    #meas.AddConstantParam("alpha_syst1")    # this is not part of the C++ exsample
 
     ### Set the luminosity There are a few conventions for this. Here, we assume that all histograms have already been scaled by luminosity We also set a 10% uncertainty
     meas.SetLumi(1.0)
-    #meas.SetLumiRelErr(0.10)
+    meas.SetLumiRelErr(0.017) # This is for full run2: https://twiki.cern.ch/twiki/bin/viewauth/Atlas/LuminosityForPhysics#Proton_proton_data
 
     # Create a channel
 
