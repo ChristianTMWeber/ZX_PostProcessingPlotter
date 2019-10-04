@@ -606,6 +606,7 @@ if __name__ == '__main__':
     bestEstimateDict   = collections.defaultdict(list)
     upperLimits1SigDict = collections.defaultdict(list)
     upperLimits2SigDict = collections.defaultdict(list)
+    timingDict = collections.defaultdict(list)
 
     myHistSampler = sampleTH1FromTH1.histSampler()
 
@@ -634,6 +635,8 @@ if __name__ == '__main__':
 
 
         for massPoint in massesToProcess:
+
+            massPointTime = time.time()
 
             templatePaths = {}
 
@@ -731,6 +734,9 @@ if __name__ == '__main__':
         bestEstimatesTTree   = fillTTreeWithDictOfList(bestEstimateDict, treeName = "bestEstimates_"+limitType)
         upperLimits1SigTTree = fillTTreeWithDictOfList(upperLimits1SigDict, treeName = "upperLimits1Sig_"+limitType)
         upperLimits2SigTTree = fillTTreeWithDictOfList(upperLimits2SigDict, treeName = "upperLimits2Sig_"+limitType)
+        calculationTimeTTree = fillTTreeWithDictOfList(timingDict, treeName = "calclationTime")
+
+        
 
         if limitType != "toys":
             graphOverviewCanvas = plotXSLimits.makeGraphOverview( graphHelper.getTGraphWithoutError( observedLimitGraph , ySetpoint = "yHigh"), 
