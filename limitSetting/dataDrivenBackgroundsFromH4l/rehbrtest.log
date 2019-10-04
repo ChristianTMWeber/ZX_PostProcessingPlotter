@@ -1,0 +1,471 @@
+Retrieving shapes from file: 
+Found shapes for...
+Event type: 4mu 4e 2mu2e 2e2mu 2l2mu 2l2e 4l 
+Prod type: 0Jet 1Jet 2Jet ge1Jet ge2Jet ge3Jet |y4l|<0.5 <0.5|y4l|<1.0 <1.0|y4l|<1.5 <1.5|y4l|<2.5 0Jet_Pt4l_0_10 0Jet_Pt4l_10_100 0Jet_Pt4l_GE100 1Jet_Pt4l_0_60_b1 1Jet_Pt4l_0_60_b2 1Jet_Pt4l_60_120_b1 1Jet_Pt4l_60_120_b2 1Jet_Pt4l_120_200 1Jet_Pt4l_GE200 2Jet_b1 2Jet_b2 2Jet_VBF_ptGE200 VHLep ttH_leptonic ttH_hadronic_b1 ttH_hadronic_b2 SB_0jet SB_1jet SB_2jet SB_ttH SB_VHLep incl 
+Observable: njets pt4l m4l NN nbjets pt4l_y4l0 pt4l_y4l1 pt4l_y4l2 pt4l_y4l3 y4l cts cth1 cth2 phi phi1 m12 m34 m12m34 mjj detajj dphijj jet1pt jet2pt m4lHM 
+Retrieving normalizations from file: 
+Found normalizations for...
+Event type: 4mu 4e 2mu2e 2e2mu 2l2mu 2l2e 4l 
+Prod type: 0Jet 1Jet 2Jet ge1Jet ge2Jet ge3Jet |y4l|<0.5 <0.5|y4l|<1.0 <1.0|y4l|<1.5 <1.5|y4l|<2.5 0Jet_Pt4l_0_10 0Jet_Pt4l_10_100 0Jet_Pt4l_GE100 1Jet_Pt4l_0_60_b1 1Jet_Pt4l_0_60_b2 1Jet_Pt4l_60_120_b1 1Jet_Pt4l_60_120_b2 1Jet_Pt4l_120_200 1Jet_Pt4l_GE200 2Jet_b1 2Jet_b2 2Jet_VBF_ptGE200 VHLep ttH_leptonic ttH_hadronic_b1 ttH_hadronic_b2 SB_0jet SB_1jet SB_2jet SB_ttH SB_VHLep incl 
+Retrieving HM normalizations from file: 
+Found HM normalizations for...
+Event type: 4mu 4e 2mu2e 2e2mu 2l2mu 2l2e 4l 
+Prod type: ggF VBF 
+Retrieving relaxIsoD0 normalizations from file: 
+
+=> Reducible background, full mass range
+4l 		 60.0518 +- 2.83976% (stat.) +- 8.2246% (syst.)
+2l2e 		 32.3018 +- 3.97611% (stat.) +- 13.9853 (syst.)
+2l2mu 		 27.75 +- 1.51702% (stat.) +- 7.19457% (syst.)
+
+full mass range njet yields
+0Jet | 15.6 \pm 2.84\% \pm 8.61\% | 17.1 \pm 7.23\% \pm 14\% | 32.7 \pm 5.14\% \pm 8.4\% \\ 
+1Jet | 7.66 \pm 1.99\% \pm 8.46\% | 9.09 \pm 6.02\% \pm 14\% | 16.8 \pm 4.18\% \pm 8.52\% \\ 
+2Jet | 3.36 \pm 2.12\% \pm 12.1\% | 3.83 \pm 6.98\% \pm 14\% | 7.19 \pm 4.71\% \pm 9.35\% \\ 
+ge1Jet | 13.6 \pm 1.3\% \pm 6.18\% | 15.2 \pm 5.66\% \pm 14\% | 28.7 \pm 3.6\% \pm 7.93\% \\ 
+ge2Jet | 5.92 \pm 1.49\% \pm 9.03\% | 6.06 \pm 6.62\% \pm 14\% | 12 \pm 4.09\% \pm 8.36\% \\ 
+ge3Jet | 2.56 \pm 2.02\% \pm 13.6\% | 2.24 \pm 9.71\% \pm 14\% | 4.79 \pm 5.61\% \pm 9.75\% \\ 
+
+reducible background in final states, 115<m4l<130
+4mu: 2.29 +- 1.52% (stat.) +- 7.19% (syst.)
+4e: 2.54 +- 8.43% (stat.) +- 13% (syst.)
+2mu2e: 3.19 +- 5.97% (stat.) +- 14.8% (syst.)
+2e2mu: 2.57 +- 1.52% (stat.) +- 7.19% (syst.)
+4l: 10.6 +- 2.84% (stat.) +- 8.22% (syst.)
+
+reducible background in final states, 0<m4l<115
+4mu: 1.73 +- 1.52% (stat.) +- 7.19% (syst.)
+4e: 2.58 +- 8.43% (stat.) +- 13% (syst.)
+2mu2e: 3.24 +- 5.97% (stat.) +- 14.8% (syst.)
+2e2mu: 1.95 +- 1.52% (stat.) +- 7.19% (syst.)
+4l: 9.49 +- 2.84% (stat.) +- 8.22% (syst.)
+
+reducible background in final states, 105<m4l<160
+4mu: 7.66 +- 1.52% (stat.) +- 7.19% (syst.)
+4e: 7.76 +- 8.43% (stat.) +- 13% (syst.)
+2mu2e: 9.74 +- 5.97% (stat.) +- 14.8% (syst.)
+2e2mu: 8.61 +- 1.52% (stat.) +- 7.19% (syst.)
+
+category normalizations for 115<m4l<130 GeV
+0Jet | 2.87 \pm 2.84\% \pm 8.61\% | 3.28 \pm 7.23\% \pm 14\% | 6.15 \pm 5.14\% \pm 8.4\% \\ 
+1Jet | 1.1 \pm 1.99\% \pm 8.46\% | 1.43 \pm 6.02\% \pm 14\% | 2.53 \pm 4.18\% \pm 8.52\% \\ 
+2Jet | 0.467 \pm 2.12\% \pm 12.1\% | 0.486 \pm 6.98\% \pm 14\% | 0.953 \pm 4.71\% \pm 9.35\% \\ 
+ge1Jet | 1.93 \pm 1.3\% \pm 6.18\% | 2.31 \pm 5.66\% \pm 14\% | 4.24 \pm 3.6\% \pm 7.93\% \\ 
+ge2Jet | 0.693 \pm 1.49\% \pm 9.03\% | 0.819 \pm 6.62\% \pm 14\% | 1.51 \pm 4.09\% \pm 8.36\% \\ 
+ge3Jet | 0.186 \pm 2.02\% \pm 13.6\% | 0.286 \pm 9.71\% \pm 14\% | 0.472 \pm 5.61\% \pm 9.75\% \\ 
+|y_{4l}|<0.5 | 1.87 \pm 2.92\% \pm 9.14\% | 2.29 \pm 8.39\% \pm 14\% | 4.16 \pm 5.91\% \pm 8.69\% \\ 
+0.5<|y_{4l}|<1.0 | 1.58 \pm 3.45\% \pm 9.34\% | 1.69 \pm 5.93\% \pm 14\% | 3.27 \pm 4.72\% \pm 8.49\% \\ 
+1.0<|y_{4l}|<1.5 | 1.18 \pm 4.23\% \pm 10.9\% | 1.09 \pm 6.31\% \pm 14\% | 2.27 \pm 5.22\% \pm 8.76\% \\ 
+1.5<|y_{4l}|<2.5 | 0.461 \pm 7.2\% \pm 14.7\% | 0.666 \pm 6.75\% \pm 14\% | 1.13 \pm 6.94\% \pm 10.2\% \\ 
+0-jet, 0<p_{T}^{4l}<10 GeV | 0.488 \pm 12.5\% \pm 11.6\% | 0.289 \pm 9.48\% \pm 14\% | 0.781 \pm 11.4\% \pm 8.97\% \\ 
+0-jet, 10<p_{T}^{4l}<100 GeV | 2.37 \pm 2.93\% \pm 8.62\% | 2.83 \pm 7.76\% \pm 14\% | 5.19 \pm 5.52\% \pm 8.49\% \\ 
+0-jet, p_{T}^{4l}>100 GeV | 0.00881 \pm 9.53\% \pm 46.5\% | 0.176 \pm 10.2\% \pm 14\% | 0.182 \pm 10.2\% \pm 13.5\% \\ 
+1-jet, 0<p_{T}^{4l}<60 GeV, bin 1 | 0.138 \pm 2.61\% \pm 9.6\% | 0.145 \pm 10.8\% \pm 14\% | 0.284 \pm 6.61\% \pm 8.41\% \\ 
+1-jet, 0<p_{T}^{4l}<60 GeV, bin 2 | 0.594 \pm 2.84\% \pm 9.32\% | 0.634 \pm 7.14\% \pm 14\% | 1.23 \pm 4.96\% \pm 8.36\% \\ 
+1-jet, 60<p_{T}^{4l}<120 GeV, bin 1 | 0.0501 \pm 2.96\% \pm 13.5\% | 0.0774 \pm 13.7\% \pm 14\% | 0.127 \pm 9.24\% \pm 9.92\% \\ 
+1-jet, 60<p_{T}^{4l}<120 GeV, bin 2 | 0.265 \pm 2.95\% \pm 13.6\% | 0.382 \pm 7.95\% \pm 14\% | 0.645 \pm 5.79\% \pm 9.89\% \\ 
+1-jet, 120<p_{T}^{4l}<200 GeV | 0.05 \pm 9.61\% \pm 27\% | 0.142 \pm 10.1\% \pm 14\% | 0.189 \pm 9.99\% \pm 12.6\% \\ 
+1-jet, p_{T}^{4l}>200 GeV | 0.004 \pm 31.8\% \pm 43\% | 0.0377 \pm 12.4\% \pm 14\% | 0.0404 \pm 14.4\% \pm 13.3\% \\ 
+2-jet bin 1 | 0.0017 \pm 15.2\% \pm 61.4\% | 0.0456 \pm 12.1\% \pm 14\% | 0.0444 \pm 12.2\% \pm 13.6\% \\ 
+2-jet bin 2 | 0.00442 \pm 14.5\% \pm 49.6\% | 0.191 \pm 9.49\% \pm 14\% | 0.183 \pm 9.62\% \pm 13.7\% \\ 
+2-jet VBF-enriched, p_{T}^{j1}>200 GeV | 0.6447 \pm 1.592\% \pm 10.36\% | 0.5437 \pm 7.36\% \pm 13.99\% | 1.203 \pm 4.028\% \pm 8.408\% \\ 
+VH-leptonic | 0.00259 \pm 46.4\% \pm 36.9\% | 0.00263 \pm 46.4\% \pm 40.3\% | 0.00522 \pm 46.4\% \pm 37.8\% \\ 
+t\bar{t}H-leptonic | 0.0006261 \pm 52\% \pm 71\% | 0.001041 \pm 136.1\% \pm 13.99\% | 0.001647 \pm 101.7\% \pm 30.24\% \\ 
+t\bar{t}H-hadronic, bin 1 | 0.006922 \pm 3.94\% \pm 31.8\% | 0.0194 \pm 36.97\% \pm 13.99\% | 0.02558 \pm 27.34\% \pm 13.57\% \\ 
+t\bar{t}H-hadronic, bin 2 | 0.03925 \pm 3.878\% \pm 33.7\% | 0.02122 \pm 33\% \pm 13.99\% | 0.06213 \pm 13.17\% \pm 23.38\% \\ 
+0-jet sideband | 2.72 \pm 2.83\% \pm 8.61\% | 3.06 \pm 7.21\% \pm 14\% | 5.78 \pm 5.13\% \pm 8.41\% \\ 
+1-jet sideband | 1.32 \pm 1.99\% \pm 8.46\% | 1.6 \pm 6.02\% \pm 14\% | 2.93 \pm 4.18\% \pm 8.53\% \\ 
+2-jet sideband | 0.973 \pm 1.56\% \pm 10.3\% | 1.04 \pm 6.68\% \pm 14\% | 2.01 \pm 4.18\% \pm 8.77\% \\ 
+t\bar{t}H-enriched sideband | 0.04873 \pm 5.127\% \pm 26.62\% | 0.03166 \pm 16.28\% \pm 13.99\% | 0.0821 \pm 9.144\% \pm 17.76\% \\ 
+VH-leptonic sideband | 0.0156 \pm 18.1\% \pm 128\% | 0.0158 \pm 18.1\% \pm 129\% | 0.0314 \pm 18.1\% \pm 128\% \\ 
+incl | 4.86 \pm 1.52\% \pm 7.19\% | 5.73 \pm 3.98\% \pm 14\% | 10.6 \pm 2.84\% \pm 8.22\% \\ 
+Warning in <TFile::Append>: Replacing existing TH1: h_syst_up_m4l_incl_2l2mu (Potential memory leak).
+Warning in <TFile::Append>: Replacing existing TH1: h_syst_dn_m4l_incl_2l2mu (Potential memory leak).
+Warning in <TFile::Append>: Replacing existing TH1: h_syst_up_m4l_incl_2l2e (Potential memory leak).
+Warning in <TFile::Append>: Replacing existing TH1: h_syst_dn_m4l_incl_2l2e (Potential memory leak).
+Warning in <TFile::Append>: Replacing existing TH1: h_syst_up_m4l_incl_2l2mu (Potential memory leak).
+Warning in <TFile::Append>: Replacing existing TH1: h_syst_dn_m4l_incl_2l2mu (Potential memory leak).
+Warning in <TFile::Append>: Replacing existing TH1: h_syst_up_m4l_incl_2l2e (Potential memory leak).
+Warning in <TFile::Append>: Replacing existing TH1: h_syst_dn_m4l_incl_2l2e (Potential memory leak).
+normalizations for high mass categories
+2l2mu ggF 26.6 +- 174% (stat.) +- 5.29% (syst.)
+2l2e ggF 31.5 +- 5.9% (stat.) +- 14% (syst.)
+2mu2e ggF 17.5 +- 6.03% (stat.) +- 14.8% (syst.)
+4e ggF 14 +- 8.47% (stat.) +- 13% (syst.)
+4mu ggF 12.5 +- 174% (stat.) +- 6.2% (syst.)
+2e2mu ggF 14.1 +- 174% (stat.) +- 6.07% (syst.)
+2l2mu VBF 1.14 +- 122% (stat.) +- 5.29% (syst.)
+2l2e VBF 0.803 +- 12.3% (stat.) +- 14% (syst.)
+2mu2e VBF 0.447 +- 12.3% (stat.) +- 14.8% (syst.)
+4e VBF 0.356 +- 13.7% (stat.) +- 13% (syst.)
+4mu VBF 0.538 +- 122% (stat.) +- 6.2% (syst.)
+2e2mu VBF 0.604 +- 122% (stat.) +- 6.07% (syst.)
+get m4lHM measurement for ggF, 2l2mu
+get m4lHM measurement for ggF, 2l2e
+get m4lHM measurement for ggF, 2mu2e
+get m4lHM measurement for ggF, 4e
+get m4lHM measurement for ggF, 4mu
+get m4lHM measurement for ggF, 2e2mu
+get m4lHM measurement for VBF, 2l2mu
+get m4lHM measurement for VBF, 2l2e
+get m4lHM measurement for VBF, 2mu2e
+get m4lHM measurement for VBF, 4e
+get m4lHM measurement for VBF, 4mu
+get m4lHM measurement for VBF, 2e2mu
+relaxed ttbar 4mu 0Jet_Pt4l_0_10 47 +- 4.26% (stat.) 
+relaxed ttbar 4mu 0Jet_Pt4l_10_100 563 +- 13.6% (stat.) 
+relaxed ttbar 4mu 0Jet_Pt4l_GE100 28.8 +- 2.98% (stat.) 
+relaxed ttbar 4mu 1Jet_Pt4l_0_60_b1 407 +- 11.7% (stat.) 
+WARNING Did not find normalization
+relaxed ttbar 4mu 1Jet_Pt4l_0_60_b2 0 +- 0% (stat.) 
+relaxed ttbar 4mu 1Jet_Pt4l_60_120_b1 156 +- 7.39% (stat.) 
+WARNING Did not find normalization
+relaxed ttbar 4mu 1Jet_Pt4l_60_120_b2 0 +- 0% (stat.) 
+relaxed ttbar 4mu 1Jet_Pt4l_120_200 25 +- 2.74% (stat.) 
+relaxed ttbar 4mu 1Jet_Pt4l_GE200 4.76 +- 1.14% (stat.) 
+relaxed ttbar 4mu 2Jet_b1 17.6 +- 2.4% (stat.) 
+WARNING Did not find normalization
+relaxed ttbar 4mu 2Jet_b2 0 +- 0% (stat.) 
+relaxed ttbar 4mu 2Jet_VBF_ptGE200 589 +- 14.7% (stat.) 
+relaxed ttbar 4mu VHLep 1.6 +- 1.34% (stat.) 
+relaxed ttbar 4mu ttH_leptonic 3.2 +- 0.946% (stat.) 
+relaxed ttbar 4mu ttH_hadronic_b1 55.7 +- 4.83% (stat.) 
+WARNING Did not find normalization
+relaxed ttbar 4mu ttH_hadronic_b2 0 +- 0% (stat.) 
+relaxed ttbar 4mu SB_0jet 638 +- 14.6% (stat.) 
+relaxed ttbar 4mu SB_1jet 593 +- 14.1% (stat.) 
+relaxed ttbar 4mu SB_2jet 655 +- 15.4% (stat.) 
+relaxed ttbar 4mu SB_ttH 2.75 +- 1.68% (stat.) 
+relaxed ttbar 4mu SB_VHLep 10.5 +- 3.15% (stat.) 
+relaxed ttbar 4mu incl 1.9e+03 +- 34.1% (stat.) 
+relaxed ttbar 2e2mu 0Jet_Pt4l_0_10 35.4 +- 3.22% (stat.) 
+relaxed ttbar 2e2mu 0Jet_Pt4l_10_100 424 +- 10.3% (stat.) 
+relaxed ttbar 2e2mu 0Jet_Pt4l_GE100 21.7 +- 2.24% (stat.) 
+relaxed ttbar 2e2mu 1Jet_Pt4l_0_60_b1 307 +- 8.79% (stat.) 
+WARNING Did not find normalization
+relaxed ttbar 2e2mu 1Jet_Pt4l_0_60_b2 0 +- 0% (stat.) 
+relaxed ttbar 2e2mu 1Jet_Pt4l_60_120_b1 118 +- 5.57% (stat.) 
+WARNING Did not find normalization
+relaxed ttbar 2e2mu 1Jet_Pt4l_60_120_b2 0 +- 0% (stat.) 
+relaxed ttbar 2e2mu 1Jet_Pt4l_120_200 18.9 +- 2.07% (stat.) 
+relaxed ttbar 2e2mu 1Jet_Pt4l_GE200 3.59 +- 0.861% (stat.) 
+relaxed ttbar 2e2mu 2Jet_b1 13.3 +- 1.81% (stat.) 
+WARNING Did not find normalization
+relaxed ttbar 2e2mu 2Jet_b2 0 +- 0% (stat.) 
+relaxed ttbar 2e2mu 2Jet_VBF_ptGE200 444 +- 11.1% (stat.) 
+relaxed ttbar 2e2mu VHLep 1.21 +- 1.01% (stat.) 
+relaxed ttbar 2e2mu ttH_leptonic 2.41 +- 0.714% (stat.) 
+relaxed ttbar 2e2mu ttH_hadronic_b1 42 +- 3.64% (stat.) 
+WARNING Did not find normalization
+relaxed ttbar 2e2mu ttH_hadronic_b2 0 +- 0% (stat.) 
+relaxed ttbar 2e2mu SB_0jet 481 +- 11% (stat.) 
+relaxed ttbar 2e2mu SB_1jet 447 +- 10.7% (stat.) 
+relaxed ttbar 2e2mu SB_2jet 494 +- 11.6% (stat.) 
+relaxed ttbar 2e2mu SB_ttH 2.07 +- 1.27% (stat.) 
+relaxed ttbar 2e2mu SB_VHLep 7.92 +- 2.38% (stat.) 
+relaxed ttbar 2e2mu incl 1.43e+03 +- 25.8% (stat.) 
+relaxed ttbar 2l2mu 0Jet_Pt4l_0_10 82.4 +- 7.48% (stat.) 
+relaxed ttbar 2l2mu 0Jet_Pt4l_10_100 987 +- 23.9% (stat.) 
+relaxed ttbar 2l2mu 0Jet_Pt4l_GE100 50.5 +- 5.22% (stat.) 
+relaxed ttbar 2l2mu 1Jet_Pt4l_0_60_b1 714 +- 20.4% (stat.) 
+WARNING Did not find normalization
+relaxed ttbar 2l2mu 1Jet_Pt4l_0_60_b2 0 +- 0% (stat.) 
+relaxed ttbar 2l2mu 1Jet_Pt4l_60_120_b1 274 +- 13% (stat.) 
+WARNING Did not find normalization
+relaxed ttbar 2l2mu 1Jet_Pt4l_60_120_b2 0 +- 0% (stat.) 
+relaxed ttbar 2l2mu 1Jet_Pt4l_120_200 43.9 +- 4.81% (stat.) 
+relaxed ttbar 2l2mu 1Jet_Pt4l_GE200 8.36 +- 2% (stat.) 
+relaxed ttbar 2l2mu 2Jet_b1 30.9 +- 4.21% (stat.) 
+WARNING Did not find normalization
+relaxed ttbar 2l2mu 2Jet_b2 0 +- 0% (stat.) 
+relaxed ttbar 2l2mu 2Jet_VBF_ptGE200 1.03e+03 +- 25.9% (stat.) 
+relaxed ttbar 2l2mu VHLep 2.81 +- 2.36% (stat.) 
+relaxed ttbar 2l2mu ttH_leptonic 5.61 +- 1.66% (stat.) 
+relaxed ttbar 2l2mu ttH_hadronic_b1 97.7 +- 8.48% (stat.) 
+WARNING Did not find normalization
+relaxed ttbar 2l2mu ttH_hadronic_b2 0 +- 0% (stat.) 
+relaxed ttbar 2l2mu SB_0jet 1.12e+03 +- 25.6% (stat.) 
+relaxed ttbar 2l2mu SB_1jet 1.04e+03 +- 24.8% (stat.) 
+relaxed ttbar 2l2mu SB_2jet 1.15e+03 +- 27.1% (stat.) 
+relaxed ttbar 2l2mu SB_ttH 4.82 +- 2.95% (stat.) 
+relaxed ttbar 2l2mu SB_VHLep 18.4 +- 5.53% (stat.) 
+relaxed ttbar 2l2mu incl 3.33e+03 +- 59.9% (stat.) 
+relaxed Zjets 4mu 0Jet_Pt4l_0_10 11.4 +- 1.31% (stat.) 
+relaxed Zjets 4mu 0Jet_Pt4l_10_100 275 +- 5.89% (stat.) 
+relaxed Zjets 4mu 0Jet_Pt4l_GE100 16 +- 1.38% (stat.) 
+relaxed Zjets 4mu 1Jet_Pt4l_0_60_b1 310 +- 6.09% (stat.) 
+WARNING Did not find normalization
+relaxed Zjets 4mu 1Jet_Pt4l_0_60_b2 0 +- 0% (stat.) 
+relaxed Zjets 4mu 1Jet_Pt4l_60_120_b1 199 +- 4.71% (stat.) 
+WARNING Did not find normalization
+relaxed Zjets 4mu 1Jet_Pt4l_60_120_b2 0 +- 0% (stat.) 
+relaxed Zjets 4mu 1Jet_Pt4l_120_200 17 +- 1.42% (stat.) 
+relaxed Zjets 4mu 1Jet_Pt4l_GE200 0.863 +- 0.356% (stat.) 
+relaxed Zjets 4mu 2Jet_b1 5.1 +- 0.824% (stat.) 
+WARNING Did not find normalization
+relaxed Zjets 4mu 2Jet_b2 0 +- 0% (stat.) 
+relaxed Zjets 4mu 2Jet_VBF_ptGE200 783 +- 9.42% (stat.) 
+relaxed Zjets 4mu VHLep 9.25 +- 1.25% (stat.) 
+relaxed Zjets 4mu ttH_leptonic 0.773 +- 0.536% (stat.) 
+relaxed Zjets 4mu ttH_hadronic_b1 131 +- 3.78% (stat.) 
+WARNING Did not find normalization
+relaxed Zjets 4mu ttH_hadronic_b2 0 +- 0% (stat.) 
+relaxed Zjets 4mu SB_0jet 302 +- 6.21% (stat.) 
+relaxed Zjets 4mu SB_1jet 527 +- 7.84% (stat.) 
+relaxed Zjets 4mu SB_2jet 788 +- 9.5% (stat.) 
+relaxed Zjets 4mu SB_ttH 10 +- 1.34% (stat.) 
+relaxed Zjets 4mu SB_VHLep 131 +- 3.67% (stat.) 
+relaxed Zjets 4mu incl 1.76e+03 +- 19% (stat.) 
+relaxed Zjets 2e2mu 0Jet_Pt4l_0_10 8.6 +- 0.986% (stat.) 
+relaxed Zjets 2e2mu 0Jet_Pt4l_10_100 207 +- 4.44% (stat.) 
+relaxed Zjets 2e2mu 0Jet_Pt4l_GE100 12 +- 1.04% (stat.) 
+relaxed Zjets 2e2mu 1Jet_Pt4l_0_60_b1 234 +- 4.59% (stat.) 
+WARNING Did not find normalization
+relaxed Zjets 2e2mu 1Jet_Pt4l_0_60_b2 0 +- 0% (stat.) 
+relaxed Zjets 2e2mu 1Jet_Pt4l_60_120_b1 150 +- 3.55% (stat.) 
+WARNING Did not find normalization
+relaxed Zjets 2e2mu 1Jet_Pt4l_60_120_b2 0 +- 0% (stat.) 
+relaxed Zjets 2e2mu 1Jet_Pt4l_120_200 12.8 +- 1.07% (stat.) 
+relaxed Zjets 2e2mu 1Jet_Pt4l_GE200 0.651 +- 0.269% (stat.) 
+relaxed Zjets 2e2mu 2Jet_b1 3.84 +- 0.622% (stat.) 
+WARNING Did not find normalization
+relaxed Zjets 2e2mu 2Jet_b2 0 +- 0% (stat.) 
+relaxed Zjets 2e2mu 2Jet_VBF_ptGE200 591 +- 7.11% (stat.) 
+relaxed Zjets 2e2mu VHLep 6.98 +- 0.943% (stat.) 
+relaxed Zjets 2e2mu ttH_leptonic 0.583 +- 0.404% (stat.) 
+relaxed Zjets 2e2mu ttH_hadronic_b1 99.2 +- 2.85% (stat.) 
+WARNING Did not find normalization
+relaxed Zjets 2e2mu ttH_hadronic_b2 0 +- 0% (stat.) 
+relaxed Zjets 2e2mu SB_0jet 228 +- 4.69% (stat.) 
+relaxed Zjets 2e2mu SB_1jet 397 +- 5.91% (stat.) 
+relaxed Zjets 2e2mu SB_2jet 595 +- 7.17% (stat.) 
+relaxed Zjets 2e2mu SB_ttH 7.58 +- 1.01% (stat.) 
+relaxed Zjets 2e2mu SB_VHLep 99.2 +- 2.77% (stat.) 
+relaxed Zjets 2e2mu incl 1.33e+03 +- 14.3% (stat.) 
+relaxed Zjets 2l2mu 0Jet_Pt4l_0_10 20 +- 2.29% (stat.) 
+relaxed Zjets 2l2mu 0Jet_Pt4l_10_100 482 +- 10.3% (stat.) 
+relaxed Zjets 2l2mu 0Jet_Pt4l_GE100 28 +- 2.41% (stat.) 
+relaxed Zjets 2l2mu 1Jet_Pt4l_0_60_b1 544 +- 10.7% (stat.) 
+WARNING Did not find normalization
+relaxed Zjets 2l2mu 1Jet_Pt4l_0_60_b2 0 +- 0% (stat.) 
+relaxed Zjets 2l2mu 1Jet_Pt4l_60_120_b1 349 +- 8.26% (stat.) 
+WARNING Did not find normalization
+relaxed Zjets 2l2mu 1Jet_Pt4l_60_120_b2 0 +- 0% (stat.) 
+relaxed Zjets 2l2mu 1Jet_Pt4l_120_200 29.8 +- 2.49% (stat.) 
+relaxed Zjets 2l2mu 1Jet_Pt4l_GE200 1.51 +- 0.625% (stat.) 
+relaxed Zjets 2l2mu 2Jet_b1 8.94 +- 1.45% (stat.) 
+WARNING Did not find normalization
+relaxed Zjets 2l2mu 2Jet_b2 0 +- 0% (stat.) 
+relaxed Zjets 2l2mu 2Jet_VBF_ptGE200 1.37e+03 +- 16.5% (stat.) 
+relaxed Zjets 2l2mu VHLep 16.2 +- 2.19% (stat.) 
+relaxed Zjets 2l2mu ttH_leptonic 1.36 +- 0.94% (stat.) 
+relaxed Zjets 2l2mu ttH_hadronic_b1 231 +- 6.63% (stat.) 
+WARNING Did not find normalization
+relaxed Zjets 2l2mu ttH_hadronic_b2 0 +- 0% (stat.) 
+relaxed Zjets 2l2mu SB_0jet 530 +- 10.9% (stat.) 
+relaxed Zjets 2l2mu SB_1jet 924 +- 13.7% (stat.) 
+relaxed Zjets 2l2mu SB_2jet 1.38e+03 +- 16.7% (stat.) 
+relaxed Zjets 2l2mu SB_ttH 17.6 +- 2.34% (stat.) 
+relaxed Zjets 2l2mu SB_VHLep 231 +- 6.44% (stat.) 
+relaxed Zjets 2l2mu incl 3.09e+03 +- 33.3% (stat.) 
+relaxed light 4e 0Jet_Pt4l_0_10 21.1 +- 11.1% (stat.) 
+relaxed light 4e 0Jet_Pt4l_10_100 57.3 +- 16% (stat.) 
+relaxed light 4e 0Jet_Pt4l_GE100 1.4 +- 0.363% (stat.) 
+relaxed light 4e 1Jet_Pt4l_0_60_b1 6.96 +- 3.26% (stat.) 
+relaxed light 4e 1Jet_Pt4l_0_60_b2 5.99 +- 1.6% (stat.) 
+relaxed light 4e 1Jet_Pt4l_60_120_b1 2.26 +- 1.13% (stat.) 
+relaxed light 4e 1Jet_Pt4l_60_120_b2 9.8 +- 3.22% (stat.) 
+relaxed light 4e 1Jet_Pt4l_120_200 1.41 +- 0.359% (stat.) 
+relaxed light 4e 1Jet_Pt4l_GE200 0.39 +- 0.0872% (stat.) 
+relaxed light 4e 2Jet_b1 0.953 +- 0.115% (stat.) 
+relaxed light 4e 2Jet_b2 7.51 +- 2.43% (stat.) 
+relaxed light 4e 2Jet_VBF_ptGE200 20 +- 3.15% (stat.) 
+relaxed light 4e VHLep 1.43 +- 0.0903% (stat.) 
+relaxed light 4e ttH_leptonic 0.433 +- 0.106% (stat.) 
+relaxed light 4e ttH_hadronic_b1 0.577 +- 0.133% (stat.) 
+relaxed light 4e ttH_hadronic_b2 1.38 +- 0.316% (stat.) 
+relaxed light 4e SB_0jet 1.69e+03 +- 30% (stat.) 
+relaxed light 4e SB_1jet 1.41e+03 +- 27.5% (stat.) 
+relaxed light 4e SB_2jet 1.55e+03 +- 28.7% (stat.) 
+relaxed light 4e SB_ttH 213 +- 10.7% (stat.) 
+relaxed light 4e SB_VHLep 88.9 +- 6.85% (stat.) 
+relaxed light 4e incl 139 +- 20.5% (stat.) 
+relaxed light 2mu2e 0Jet_Pt4l_0_10 110 +- 7.74% (stat.) 
+relaxed light 2mu2e 0Jet_Pt4l_10_100 1.48e+03 +- 28.1% (stat.) 
+relaxed light 2mu2e 0Jet_Pt4l_GE100 185 +- 9.85% (stat.) 
+relaxed light 2mu2e 1Jet_Pt4l_0_60_b1 107 +- 7.59% (stat.) 
+relaxed light 2mu2e 1Jet_Pt4l_0_60_b2 584 +- 17.6% (stat.) 
+relaxed light 2mu2e 1Jet_Pt4l_60_120_b1 84.2 +- 6.71% (stat.) 
+relaxed light 2mu2e 1Jet_Pt4l_60_120_b2 477 +- 15.9% (stat.) 
+relaxed light 2mu2e 1Jet_Pt4l_120_200 192 +- 10.1% (stat.) 
+relaxed light 2mu2e 1Jet_Pt4l_GE200 82.2 +- 6.58% (stat.) 
+relaxed light 2mu2e 2Jet_b1 143 +- 8.75% (stat.) 
+relaxed light 2mu2e 2Jet_b2 327 +- 13.2% (stat.) 
+relaxed light 2mu2e 2Jet_VBF_ptGE200 1.18e+03 +- 25% (stat.) 
+relaxed light 2mu2e VHLep 348 +- 13.6% (stat.) 
+relaxed light 2mu2e ttH_leptonic 59.8 +- 5.65% (stat.) 
+relaxed light 2mu2e ttH_hadronic_b1 33.4 +- 4.22% (stat.) 
+relaxed light 2mu2e ttH_hadronic_b2 75.6 +- 6.35% (stat.) 
+relaxed light 2mu2e SB_0jet 1.77e+03 +- 30.8% (stat.) 
+relaxed light 2mu2e SB_1jet 1.53e+03 +- 28.5% (stat.) 
+relaxed light 2mu2e SB_2jet 1.68e+03 +- 29.9% (stat.) 
+relaxed light 2mu2e SB_ttH 370 +- 14% (stat.) 
+relaxed light 2mu2e SB_VHLep 115 +- 7.74% (stat.) 
+relaxed light 2mu2e incl 5.46e+03 +- 53.9% (stat.) 
+relaxed light 2l2e 0Jet_Pt4l_0_10 210 +- 10.7% (stat.) 
+relaxed light 2l2e 0Jet_Pt4l_10_100 2.92e+03 +- 39.5% (stat.) 
+relaxed light 2l2e 0Jet_Pt4l_GE100 325 +- 13.1% (stat.) 
+relaxed light 2l2e 1Jet_Pt4l_0_60_b1 217 +- 10.8% (stat.) 
+relaxed light 2l2e 1Jet_Pt4l_0_60_b2 1.15e+03 +- 24.8% (stat.) 
+relaxed light 2l2e 1Jet_Pt4l_60_120_b1 172 +- 9.6% (stat.) 
+relaxed light 2l2e 1Jet_Pt4l_60_120_b2 891 +- 21.8% (stat.) 
+relaxed light 2l2e 1Jet_Pt4l_120_200 365 +- 14% (stat.) 
+relaxed light 2l2e 1Jet_Pt4l_GE200 137 +- 8.52% (stat.) 
+relaxed light 2l2e 2Jet_b1 296 +- 12.5% (stat.) 
+relaxed light 2l2e 2Jet_b2 603 +- 17.9% (stat.) 
+relaxed light 2l2e 2Jet_VBF_ptGE200 2.27e+03 +- 34.7% (stat.) 
+relaxed light 2l2e VHLep 544 +- 17% (stat.) 
+relaxed light 2l2e ttH_leptonic 100 +- 7.3% (stat.) 
+relaxed light 2l2e ttH_hadronic_b1 67.5 +- 5.95% (stat.) 
+relaxed light 2l2e ttH_hadronic_b2 138 +- 8.59% (stat.) 
+relaxed light 2l2e SB_0jet 3.46e+03 +- 43% (stat.) 
+relaxed light 2l2e SB_1jet 2.94e+03 +- 39.6% (stat.) 
+relaxed light 2l2e SB_2jet 3.23e+03 +- 41.5% (stat.) 
+relaxed light 2l2e SB_ttH 583 +- 17.6% (stat.) 
+relaxed light 2l2e SB_VHLep 204 +- 10.3% (stat.) 
+relaxed light 2l2e incl 1.04e+04 +- 74.5% (stat.) 
+relaxed gamma 4e 0Jet_Pt4l_0_10 22.2 +- 15.2% (stat.) 
+relaxed gamma 4e 0Jet_Pt4l_10_100 22.7 +- 9.68% (stat.) 
+relaxed gamma 4e 0Jet_Pt4l_GE100 0.215 +- 0.0859% (stat.) 
+relaxed gamma 4e 1Jet_Pt4l_0_60_b1 0.251 +- 0.0966% (stat.) 
+relaxed gamma 4e 1Jet_Pt4l_0_60_b2 5.6 +- 2.57% (stat.) 
+relaxed gamma 4e 1Jet_Pt4l_60_120_b1 0.0435 +- 0.0238% (stat.) 
+relaxed gamma 4e 1Jet_Pt4l_60_120_b2 5.52 +- 2.32% (stat.) 
+relaxed gamma 4e 1Jet_Pt4l_120_200 0.51 +- 0.147% (stat.) 
+relaxed gamma 4e 1Jet_Pt4l_GE200 0.0954 +- 0.0543% (stat.) 
+relaxed gamma 4e 2Jet_b1 0.362 +- 0.145% (stat.) 
+relaxed gamma 4e 2Jet_b2 3.19 +- 1.56% (stat.) 
+relaxed gamma 4e 2Jet_VBF_ptGE200 4.2 +- 0.692% (stat.) 
+relaxed gamma 4e VHLep 0.294 +- 0.0799% (stat.) 
+relaxed gamma 4e ttH_leptonic 0.223 +- 0.154% (stat.) 
+relaxed gamma 4e ttH_hadronic_b1 -0.0279 +- 0.0166% (stat.) 
+relaxed gamma 4e ttH_hadronic_b2 0.607 +- 0.396% (stat.) 
+relaxed gamma 4e SB_0jet 127 +- 10% (stat.) 
+relaxed gamma 4e SB_1jet 111 +- 9.35% (stat.) 
+relaxed gamma 4e SB_2jet 107 +- 9.25% (stat.) 
+relaxed gamma 4e SB_ttH 17.1 +- 3.66% (stat.) 
+relaxed gamma 4e SB_VHLep 4.17 +- 1.89% (stat.) 
+relaxed gamma 4e incl 66 +- 18.4% (stat.) 
+relaxed gamma 2mu2e 0Jet_Pt4l_0_10 15.7 +- 3.4% (stat.) 
+relaxed gamma 2mu2e 0Jet_Pt4l_10_100 123 +- 9.81% (stat.) 
+relaxed gamma 2mu2e 0Jet_Pt4l_GE100 4.32 +- 2.11% (stat.) 
+relaxed gamma 2mu2e 1Jet_Pt4l_0_60_b1 10.5 +- 2.83% (stat.) 
+relaxed gamma 2mu2e 1Jet_Pt4l_0_60_b2 38.8 +- 5.59% (stat.) 
+relaxed gamma 2mu2e 1Jet_Pt4l_60_120_b1 6.84 +- 2.31% (stat.) 
+relaxed gamma 2mu2e 1Jet_Pt4l_60_120_b2 34.8 +- 5.26% (stat.) 
+relaxed gamma 2mu2e 1Jet_Pt4l_120_200 17.3 +- 3.66% (stat.) 
+relaxed gamma 2mu2e 1Jet_Pt4l_GE200 2.91 +- 1.64% (stat.) 
+relaxed gamma 2mu2e 2Jet_b1 12.7 +- 3.13% (stat.) 
+relaxed gamma 2mu2e 2Jet_b2 19.6 +- 4.01% (stat.) 
+relaxed gamma 2mu2e 2Jet_VBF_ptGE200 72.1 +- 7.67% (stat.) 
+relaxed gamma 2mu2e VHLep 18.1 +- 3.89% (stat.) 
+relaxed gamma 2mu2e ttH_leptonic 4.52 +- 1.89% (stat.) 
+relaxed gamma 2mu2e ttH_hadronic_b1 2.21 +- 1.34% (stat.) 
+relaxed gamma 2mu2e ttH_hadronic_b2 5.63 +- 2.11% (stat.) 
+relaxed gamma 2mu2e SB_0jet 143 +- 10.6% (stat.) 
+relaxed gamma 2mu2e SB_1jet 111 +- 9.39% (stat.) 
+relaxed gamma 2mu2e SB_2jet 114 +- 9.58% (stat.) 
+relaxed gamma 2mu2e SB_ttH 19.1 +- 4.01% (stat.) 
+relaxed gamma 2mu2e SB_VHLep 1.21 +- 1.34% (stat.) 
+relaxed gamma 2mu2e incl 389 +- 17.6% (stat.) 
+relaxed gamma 2l2e 0Jet_Pt4l_0_10 28.9 +- 4.62% (stat.) 
+relaxed gamma 2l2e 0Jet_Pt4l_10_100 225 +- 13.3% (stat.) 
+relaxed gamma 2l2e 0Jet_Pt4l_GE100 17 +- 3.78% (stat.) 
+relaxed gamma 2l2e 1Jet_Pt4l_0_60_b1 27.5 +- 4.53% (stat.) 
+relaxed gamma 2l2e 1Jet_Pt4l_0_60_b2 82.9 +- 8.12% (stat.) 
+relaxed gamma 2l2e 1Jet_Pt4l_60_120_b1 13.6 +- 3.27% (stat.) 
+relaxed gamma 2l2e 1Jet_Pt4l_60_120_b2 61.1 +- 7% (stat.) 
+relaxed gamma 2l2e 1Jet_Pt4l_120_200 30.9 +- 4.91% (stat.) 
+relaxed gamma 2l2e 1Jet_Pt4l_GE200 6.18 +- 2.31% (stat.) 
+relaxed gamma 2l2e 2Jet_b1 19.9 +- 4.01% (stat.) 
+relaxed gamma 2l2e 2Jet_b2 39.8 +- 5.67% (stat.) 
+relaxed gamma 2l2e 2Jet_VBF_ptGE200 149 +- 11% (stat.) 
+relaxed gamma 2l2e VHLep 35.3 +- 5.34% (stat.) 
+relaxed gamma 2l2e ttH_leptonic 6.65 +- 2.31% (stat.) 
+relaxed gamma 2l2e ttH_hadronic_b1 1.81 +- 1.34% (stat.) 
+relaxed gamma 2l2e ttH_hadronic_b2 10.1 +- 2.83% (stat.) 
+relaxed gamma 2l2e SB_0jet 271 +- 14.6% (stat.) 
+relaxed gamma 2l2e SB_1jet 222 +- 13.3% (stat.) 
+relaxed gamma 2l2e SB_2jet 221 +- 13.3% (stat.) 
+relaxed gamma 2l2e SB_ttH 36.2 +- 5.42% (stat.) 
+relaxed gamma 2l2e SB_VHLep 5.38 +- 2.31% (stat.) 
+relaxed gamma 2l2e incl 756 +- 24.5% (stat.) 
+relaxed HF 4e 0Jet_Pt4l_0_10 0.299 +- 0.0267% (stat.) 
+relaxed HF 4e 0Jet_Pt4l_10_100 2.33 +- 0.23% (stat.) 
+relaxed HF 4e 0Jet_Pt4l_GE100 0.0325 +- 0.0131% (stat.) 
+relaxed HF 4e 1Jet_Pt4l_0_60_b1 0.164 +- 0.0209% (stat.) 
+relaxed HF 4e 1Jet_Pt4l_0_60_b2 0.698 +- 0.0501% (stat.) 
+relaxed HF 4e 1Jet_Pt4l_60_120_b1 0.0587 +- 0.0144% (stat.) 
+relaxed HF 4e 1Jet_Pt4l_60_120_b2 0.306 +- 0.035% (stat.) 
+relaxed HF 4e 1Jet_Pt4l_120_200 0.0816 +- 0.0171% (stat.) 
+relaxed HF 4e 1Jet_Pt4l_GE200 0.00258 +- 0.00186% (stat.) 
+relaxed HF 4e 2Jet_b1 0.0178 +- 0.00666% (stat.) 
+relaxed HF 4e 2Jet_b2 0.248 +- 0.0286% (stat.) 
+relaxed HF 4e 2Jet_VBF_ptGE200 0.544 +- 0.0541% (stat.) 
+relaxed HF 4e VHLep 0.0094 +- 0.00541% (stat.) 
+relaxed HF 4e ttH_leptonic 0.0442 +- 0.0137% (stat.) 
+WARNING Did not find normalization
+relaxed HF 4e ttH_hadronic_b1 0 +- 0% (stat.) 
+relaxed HF 4e ttH_hadronic_b2 0.0288 +- 0.014% (stat.) 
+relaxed HF 4e SB_0jet 2.66 +- 0.232% (stat.) 
+relaxed HF 4e SB_1jet 1.31 +- 0.0684% (stat.) 
+relaxed HF 4e SB_2jet 0.841 +- 0.064% (stat.) 
+relaxed HF 4e SB_ttH 0.0094 +- 0.00541% (stat.) 
+relaxed HF 4e SB_VHLep 0.0425 +- 0.00865% (stat.) 
+relaxed HF 4e incl 4.86 +- 0.25% (stat.) 
+relaxed HF 2mu2e 0Jet_Pt4l_0_10 0.476 +- 0.0425% (stat.) 
+relaxed HF 2mu2e 0Jet_Pt4l_10_100 3.7 +- 0.365% (stat.) 
+relaxed HF 2mu2e 0Jet_Pt4l_GE100 0.0516 +- 0.0208% (stat.) 
+relaxed HF 2mu2e 1Jet_Pt4l_0_60_b1 0.261 +- 0.0332% (stat.) 
+relaxed HF 2mu2e 1Jet_Pt4l_0_60_b2 1.11 +- 0.0796% (stat.) 
+relaxed HF 2mu2e 1Jet_Pt4l_60_120_b1 0.0933 +- 0.0229% (stat.) 
+relaxed HF 2mu2e 1Jet_Pt4l_60_120_b2 0.486 +- 0.0557% (stat.) 
+relaxed HF 2mu2e 1Jet_Pt4l_120_200 0.13 +- 0.0272% (stat.) 
+relaxed HF 2mu2e 1Jet_Pt4l_GE200 0.0041 +- 0.00295% (stat.) 
+relaxed HF 2mu2e 2Jet_b1 0.0282 +- 0.0106% (stat.) 
+relaxed HF 2mu2e 2Jet_b2 0.394 +- 0.0454% (stat.) 
+relaxed HF 2mu2e 2Jet_VBF_ptGE200 0.865 +- 0.0859% (stat.) 
+relaxed HF 2mu2e VHLep 0.0149 +- 0.00859% (stat.) 
+relaxed HF 2mu2e ttH_leptonic 0.0702 +- 0.0218% (stat.) 
+WARNING Did not find normalization
+relaxed HF 2mu2e ttH_hadronic_b1 0 +- 0% (stat.) 
+relaxed HF 2mu2e ttH_hadronic_b2 0.0458 +- 0.0222% (stat.) 
+relaxed HF 2mu2e SB_0jet 4.23 +- 0.368% (stat.) 
+relaxed HF 2mu2e SB_1jet 2.08 +- 0.109% (stat.) 
+relaxed HF 2mu2e SB_2jet 1.34 +- 0.102% (stat.) 
+relaxed HF 2mu2e SB_ttH 0.0149 +- 0.00859% (stat.) 
+relaxed HF 2mu2e SB_VHLep 0.0676 +- 0.0137% (stat.) 
+relaxed HF 2mu2e incl 7.73 +- 0.397% (stat.) 
+relaxed HF 2l2e 0Jet_Pt4l_0_10 0.775 +- 0.0692% (stat.) 
+relaxed HF 2l2e 0Jet_Pt4l_10_100 6.03 +- 0.594% (stat.) 
+relaxed HF 2l2e 0Jet_Pt4l_GE100 0.0841 +- 0.0339% (stat.) 
+relaxed HF 2l2e 1Jet_Pt4l_0_60_b1 0.424 +- 0.054% (stat.) 
+relaxed HF 2l2e 1Jet_Pt4l_0_60_b2 1.81 +- 0.13% (stat.) 
+relaxed HF 2l2e 1Jet_Pt4l_60_120_b1 0.152 +- 0.0373% (stat.) 
+relaxed HF 2l2e 1Jet_Pt4l_60_120_b2 0.792 +- 0.0907% (stat.) 
+relaxed HF 2l2e 1Jet_Pt4l_120_200 0.211 +- 0.0443% (stat.) 
+relaxed HF 2l2e 1Jet_Pt4l_GE200 0.00668 +- 0.00481% (stat.) 
+relaxed HF 2l2e 2Jet_b1 0.046 +- 0.0172% (stat.) 
+relaxed HF 2l2e 2Jet_b2 0.643 +- 0.074% (stat.) 
+relaxed HF 2l2e 2Jet_VBF_ptGE200 1.41 +- 0.14% (stat.) 
+relaxed HF 2l2e VHLep 0.0243 +- 0.014% (stat.) 
+relaxed HF 2l2e ttH_leptonic 0.114 +- 0.0355% (stat.) 
+WARNING Did not find normalization
+relaxed HF 2l2e ttH_hadronic_b1 0 +- 0% (stat.) 
+relaxed HF 2l2e ttH_hadronic_b2 0.0747 +- 0.0362% (stat.) 
+relaxed HF 2l2e SB_0jet 6.89 +- 0.599% (stat.) 
+relaxed HF 2l2e SB_1jet 3.39 +- 0.177% (stat.) 
+relaxed HF 2l2e SB_2jet 2.18 +- 0.166% (stat.) 
+relaxed HF 2l2e SB_ttH 0.0243 +- 0.014% (stat.) 
+relaxed HF 2l2e SB_VHLep 0.11 +- 0.0224% (stat.) 
+relaxed HF 2l2e incl 12.6 +- 0.647% (stat.) 

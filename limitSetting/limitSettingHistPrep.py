@@ -187,6 +187,98 @@ def addInterpolatedSignalSamples(masterHistDict, channels = None):
                     reportMemUsage.reportMemUsage(startTime = startTimeInterp)
     return None
 
+
+def addDataDrivenReducibleBackground( masterHistDict , reducibleFileName = "dataDrivenBackgroundsFromH4l/allShapes.root" ):
+
+    def useHistAContentWithHistBBinning(histA, histB):
+
+        newHist = histB.Clone( histA.GetName() )
+        newHist.Reset()
+
+        for x in xrange(1,newHist.GetNbinsX()+1):
+
+            currentVal = newHist.GetBinCenter(x)
+
+            sourceBinNr = histA.GetXaxis().FindBin(currentVal) # tells me the bin number for the given x-axis value. Usefull for filling histograms, which have to be filled by bin numbr: hist.SetBinContent( binNumber, binContent)
+            sourceContent = histA.GetBinContent(sourceBinNr)
+
+            newHist.SetBinContent(x,sourceContent)
+
+        currentNorm = newHist.Integral()
+        targetNorm = histA.Integral()
+        newHist.Scale(targetNorm / currentNorm) 
+        return newHist
+
+    def addRelativeHistError(hist, relError):
+        for n in xrange(0,hist2l2e.GetNbinsX()+2): 
+            hist.SetBinError(n, hist.GetBinContent(n) * relError )
+        return None
+
+
+
+    reducibleTFile = ROOT.TFile(reducibleFileName, "OPEN")
+
+    histName_2l2e  = "h_m34_2l2e"
+    histName_2l2mu = "h_m34_2l2mu"
+
+
+    hist2l2e = reducibleTFile.Get(  histName_2l2e )
+
+    ########### Fix Binning of 2l2mu histogram ########
+
+    # the h_m34_2l2mu hist in the file has a mismatched binning
+    # instead of having some bins in 'm_34 [GeV]', there are just bin numbers
+    # The h_m34_2l2e has the propper binning though, and we will copy that one
+    hist2l2muImproperBins = reducibleTFile.Get( histName_2l2mu )
+
+
+    # copy the bin contents into a new histogram with the proper binning
+    hist2l2mu = hist2l2e.Clone( hist2l2muImproperBins.GetName() )
+    hist2l2mu.Reset()
+
+    for n in xrange(0,hist2l2e.GetNbinsX()+2): hist2l2mu.SetBinContent(n , hist2l2muImproperBins.GetBinContent(n) )
+
+
+    ########## normalize histograms to Target Luminosity ########
+
+    # H4l shapes are normalized to 1 inverse femto barn, we need to scale the up to the target lumi
+    targetLumi = myDSIDHelper.lumiMap[ args.mcCampaign[0] ]
+
+    hist2l2e.Scale(targetLumi)
+    hist2l2mu.Scale(targetLumi)
+
+
+    ########### transform the binnin of the histograms in a crude way
+
+    refHist = masterHistDict.values()[0].values()[0].values()[0].values()[0].Clone("referenceHist")
+
+    hist2l2e = useHistAContentWithHistBBinning( hist2l2e , refHist)
+    hist2l2mu = useHistAContentWithHistBBinning( hist2l2mu , refHist)
+
+    # add 2l2mu hist and 2l2e hist for the 'All' Channel
+    histAll = hist2l2e.Clone(  re.sub('2l2e', 'All', hist2l2e.GetName())  )
+    histAll.Add(hist2l2mu)
+
+    for hist in [hist2l2e, hist2l2mu, histAll]: hist.SetDirectory(0) # to decouple it from the open file directory. Now you can close the file and continue using the histogram. https://root.cern.ch/root/roottalk/roottalk02/2266.html
+
+    addRelativeHistError( hist2l2e  ,  (2.54*(0.0843+0.13  ) + 3.19*(0.0597+0.148 ))/(2.54+3.19)  ) 
+    addRelativeHistError( hist2l2mu ,  (2.29*(0.0152+0.0719) + 2.57*(0.0152+0.0719))/(2.29+2.57) )
+    addRelativeHistError( histAll   , (0.0284 + 0.0822) )
+
+    addRelativeHistError( histAll   , (0.9) )
+
+
+    masterHistDict["ZXSR"]["reducibleDataDriven"]["Nominal"]["2l2e"] = hist2l2e
+    masterHistDict["ZXSR"]["reducibleDataDriven"]["Nominal"]["2l2mu"] = hist2l2mu
+    masterHistDict["ZXSR"]["reducibleDataDriven"]["Nominal"]["All"] = histAll
+
+    reducibleTFile.Close()
+
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    return None
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -277,6 +369,9 @@ if __name__ == '__main__':
         if args.quick and (nRelevantHistsProcessed == 2000): break
 
 
+    addDataDrivenReducibleBackground( masterHistDict  )
+
+
     ######################################################
     # Interpolate signal samples in 1GeV steps and add them to the master hist dict
     ######################################################
@@ -294,7 +389,7 @@ if __name__ == '__main__':
     ##############################################################################
     rootDictAndTDirTools.writeDictTreeToRootFile( masterHistDict, targetFilename = "testoutput.root" )
 
-    integralMorphWrapper.reportMemUsage(startTime = startTime)
+    reportMemUsage.reportMemUsage(startTime = startTime)
 
     ##############################################################################
     # create an overview of the signal samples (regular and interpolated)

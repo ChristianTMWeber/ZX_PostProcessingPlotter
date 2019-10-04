@@ -287,6 +287,23 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile):
     chan.AddSample(backgroundH4l)
 
 
+    # reducible background
+    ### We do a similar thing for our background
+    if "reducibleDataDriven" in templatePaths.keys():
+        reducible = ROOT.RooStats.HistFactory.Sample("reducible", templatePaths["reducibleDataDriven"], inputFileName)
+        reducible.ActivateStatError()# It looks like this setting makes it so that the binerror in the background template is taken into account
+        chan.AddSample(reducible)
+        
+    #backgroundZZ.AddOverallSys("syst2", 0.95, 1.05 )
+    #backgroundZZ.AddNormFactor("ZZNorm", 1, 0, 3) # let's add this to fit the normalization of the background
+    #addSystematicsToSample(backgroundZZ, inputTFile, region = region, eventType = "ZZ", flavor = flavor, finishAfterNSystematics = doNSystematics)
+
+    
+
+
+
+
+
     # Done with this channel
     # Add it to the measurement:
     ### Now that we have fully configured our channel, we add it to the main measurement
@@ -610,10 +627,10 @@ if __name__ == '__main__':
 
             templatePaths["ZZ"]      = getFullTDirPath(masterDict, region, "ZZ" , "Nominal",  flavor)
             templatePaths["H4l"]     = getFullTDirPath(masterDict, region, "H4l" , "Nominal",  flavor)
+            templatePaths["reducibleDataDriven"]     = getFullTDirPath(masterDict, region, "reducibleDataDriven" , "Nominal",  flavor)
 
             templatePaths["Data"]    = dataObj#dataHist
 
-            
             meas = prepMeasurement(templatePaths, region, flavor, inputFileName, inputTFile)
 
             chan = meas.GetChannel("signalRegion")

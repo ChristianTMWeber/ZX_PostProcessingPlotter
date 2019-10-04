@@ -1,6 +1,8 @@
+# ignore picture or figure related files
 *.pdf
 *.png
 *.jpg
+*.eps
 
 # ignore *.txt files
 *.txt
@@ -10,8 +12,14 @@
 # ignore compiled python files, they will be automatically re-created
 *.pyc 
 
+# ignore most root files. The serve as input files
 *.root
+# but 
+
+# ignore outputs from the limit setting
 *.xml
-*.eps
 *.table
 *.out
+
+# but we wanna commit all the files related to the data driven reducible backgrounds
+!limitSetting/dataDrivenBackgroundsFromH4l/*
