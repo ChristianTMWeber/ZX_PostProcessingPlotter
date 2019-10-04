@@ -264,13 +264,14 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile):
     signal = ROOT.RooStats.HistFactory.Sample("signal", templatePaths["Signal"], inputFileName)
     ### Having created this sample, we configure it First, we add the cross-section scaling parameter that we call SigXsecOverSM Then, we add a systematic with a 5% uncertainty Finally, we add it to our channel
     #signal.AddOverallSys("syst1",  0.1, 1.9) # ??? # review what does this exactly do
+    signal.ActivateStatError()
     signal.AddNormFactor("SigXsecOverSM", 0, 0, 10)
     chan.AddSample(signal)
 
     # ZZ background
     ### We do a similar thing for our background
     backgroundZZ = ROOT.RooStats.HistFactory.Sample("backgroundZZ", templatePaths["ZZ"], inputFileName)
-    #backgroundZZ.ActivateStatError()#ActivateStatError("backgroundZZ_statUncert", inputFileName)
+    backgroundZZ.ActivateStatError()#ActivateStatError("backgroundZZ_statUncert", inputFileName)
     #backgroundZZ.AddOverallSys("syst2", 0.95, 1.05 )
     #backgroundZZ.AddNormFactor("ZZNorm", 1, 0, 3) # let's add this to fit the normalization of the background
     addSystematicsToSample(backgroundZZ, inputTFile, region = region, eventType = "ZZ", flavor = flavor, finishAfterNSystematics = doNSystematics)
@@ -280,7 +281,7 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile):
     # H4l Background
     ### And we create a second background for good measure
     backgroundH4l = ROOT.RooStats.HistFactory.Sample("backgroundH4l",templatePaths["H4l"] , inputFileName)
-    # backgroundH4l.ActivateStatError()
+    backgroundH4l.ActivateStatError()
     # backgroundH4l.AddOverallSys("syst3", 0.95, 1.05 )
     backgroundH4l.AddNormFactor("H4lNorm", 1, 0, 3) # let's add this to fit the normalization of the background
     addSystematicsToSample(backgroundH4l, inputTFile, region = region, eventType = "H4l", flavor = flavor, finishAfterNSystematics = doNSystematics)
@@ -529,6 +530,11 @@ if __name__ == '__main__':
         help="number of systematics to process, setting '--nSystematics -1' processes them all " )
     parser.add_argument("--nIterations", type=int, default=1 ,
         help="number of iterations over all the masspoints " )
+    parser.add_argument("--limitType", type=str, default="toys" , choices=["toys","asymptotic","observed"],
+        help = "Determines what kind of limit setting we do. \
+        'observed' provides limtis on the cross section, based on the data provided. \
+        'toys' provides expected limits by sampleing histograms from the 'expected data' but requires many iterations and \
+        'asymptotic' does so too, but in a well defined asymptotic way that only requires one iteration" )
 
     args = parser.parse_args()
 
@@ -555,10 +561,7 @@ if __name__ == '__main__':
     inputTFile = ROOT.TFile(inputFileName,"OPEN")
     masterDict = TDirTools.buildDictTreeFromTDir(inputTFile) # use this dict for an overview of what hists / channels / systematics / flavors are available
 
-
-    #limitType =  "asymptotic"# options: "toys", "asymptotic", "observed"
-    limitType =  "toys"      # options: "toys", "asymptotic", "observed"
-    #limitType =  "observed"  # options: "toys", "asymptotic", "observed"
+    limitType = args.limitType
 
     # deal with the output file
 
