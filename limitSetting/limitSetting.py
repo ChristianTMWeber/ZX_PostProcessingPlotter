@@ -266,6 +266,7 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile):
     #signal.AddOverallSys("syst1",  0.1, 1.9) # ??? # review what does this exactly do
     signal.ActivateStatError()
     signal.AddNormFactor("SigXsecOverSM", 0, 0, 10)
+    addSystematicsToSample(signal, inputTFile, region = region, eventType = templatePaths["Signal"].split("/")[1] , flavor = flavor, finishAfterNSystematics = doNSystematics)
     chan.AddSample(signal)
 
     # H4l Background
