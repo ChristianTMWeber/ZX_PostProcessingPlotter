@@ -268,6 +268,15 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile):
     signal.AddNormFactor("SigXsecOverSM", 0, 0, 10)
     chan.AddSample(signal)
 
+    # H4l Background
+    ### And we create a second background for good measure
+    backgroundH4l = ROOT.RooStats.HistFactory.Sample("backgroundH4l",templatePaths["H4l"] , inputFileName)
+    backgroundH4l.ActivateStatError()
+    # backgroundH4l.AddOverallSys("syst3", 0.95, 1.05 )
+    backgroundH4l.AddNormFactor("H4lNorm", 1, 0, 3) # let's add this to fit the normalization of the background
+    addSystematicsToSample(backgroundH4l, inputTFile, region = region, eventType = "H4l", flavor = flavor, finishAfterNSystematics = doNSystematics)
+    chan.AddSample(backgroundH4l)
+
     # ZZ background
     ### We do a similar thing for our background
     backgroundZZ = ROOT.RooStats.HistFactory.Sample("backgroundZZ", templatePaths["ZZ"], inputFileName)
@@ -278,14 +287,19 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile):
 
     chan.AddSample(backgroundZZ)
 
-    # H4l Background
-    ### And we create a second background for good measure
-    backgroundH4l = ROOT.RooStats.HistFactory.Sample("backgroundH4l",templatePaths["H4l"] , inputFileName)
-    backgroundH4l.ActivateStatError()
-    # backgroundH4l.AddOverallSys("syst3", 0.95, 1.05 )
-    backgroundH4l.AddNormFactor("H4lNorm", 1, 0, 3) # let's add this to fit the normalization of the background
-    addSystematicsToSample(backgroundH4l, inputTFile, region = region, eventType = "H4l", flavor = flavor, finishAfterNSystematics = doNSystematics)
-    chan.AddSample(backgroundH4l)
+    
+    # ZZ background
+    ### We do a similar thing for our background
+    if "VVV_Z+ll" in templatePaths.keys():
+        backgroundVV = ROOT.RooStats.HistFactory.Sample("VVV_Z+ll", templatePaths["VVV_Z+ll"], inputFileName)
+        backgroundVV.ActivateStatError()#ActivateStatError("backgroundVV_statUncert", inputFileName)
+        #backgroundVV.AddOverallSys("syst2", 0.95, 1.05 )
+        #backgroundVV.AddNormFactor("ZZNorm", 1, 0, 3) # let's add this to fit the normalization of the background
+        addSystematicsToSample(backgroundVV, inputTFile, region = region, eventType = "VVV_Z+ll", flavor = flavor, finishAfterNSystematics = doNSystematics)
+
+        chan.AddSample(backgroundVV)
+
+
 
 
     # reducible background
@@ -302,7 +316,7 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile):
     
 
 
-
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
 
     # Done with this channel
@@ -631,6 +645,7 @@ if __name__ == '__main__':
             templatePaths["ZZ"]      = getFullTDirPath(masterDict, region, "ZZ" , "Nominal",  flavor)
             templatePaths["H4l"]     = getFullTDirPath(masterDict, region, "H4l" , "Nominal",  flavor)
             templatePaths["reducibleDataDriven"]     = getFullTDirPath(masterDict, region, "reducibleDataDriven" , "Nominal",  flavor)
+            templatePaths["VVV_Z+ll"]     = getFullTDirPath(masterDict, region, "VVV_Z+ll" , "Nominal",  flavor)
 
             templatePaths["Data"]    = dataObj#dataHist
 

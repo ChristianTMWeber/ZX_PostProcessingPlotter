@@ -98,16 +98,24 @@ def addExpectedData(masterHistDict  ):
 
             H4l = masterHistDict[channel]["H4l"][eventType][flavor]
             ZZ =  masterHistDict[channel]["ZZ"][eventType][flavor]
-            const = masterHistDict[channel]["const"][eventType][flavor]
+            const = masterHistDict[channel]["VVV_Z+ll"][eventType][flavor]
+
+            histList = [ZZ, const]
+
+            # dataDriven estimates are only available in the signal region
+            if "reducibleDataDriven" in masterHistDict[channel]: 
+                if flavor in masterHistDict[channel]["reducibleDataDriven"][eventType]:
+                    histList.append( masterHistDict[channel]["reducibleDataDriven"][eventType][flavor] )
 
             # create the 'expectedData' histogram
             expectedData = H4l.Clone()
-            for hist in [ZZ, const]: expectedData.Add(hist)
             newHistName   = re.sub('H4l', 'expectedData', expectedData.GetName())
             expectedData.SetName(newHistName)
 
+            for hist in histList: expectedData.Add(hist)
+
             # set the bin error for each bin each to the square-root of the content to approximate poisson erros
-            for n in xrange(0,hist.GetNbinsX()+2): expectedData.SetBinError(n, abs(expectedData.GetBinContent(n))**0.5 )
+            #for n in xrange(0,hist.GetNbinsX()+2): expectedData.SetBinError(n, abs(expectedData.GetBinContent(n))**0.5 )
 
             masterHistDict[channel]["expectedData"][eventType][flavor] = expectedData # save the hist to the masterHistDict
 
@@ -370,7 +378,6 @@ if __name__ == '__main__':
 
 
     addDataDrivenReducibleBackground( masterHistDict  )
-
 
     ######################################################
     # Interpolate signal samples in 1GeV steps and add them to the master hist dict
