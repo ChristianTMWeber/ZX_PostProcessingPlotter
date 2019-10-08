@@ -292,6 +292,8 @@ if __name__ == '__main__':
 
     parser.add_argument("input", type=str, help="name or path to the input files")
 
+    parser.add_argument("--outputTo", type=str, default="testoutput.root" ,
+        help="name of the output file" )
 
     parser.add_argument("-c", "--mcCampaign", nargs='*', type=str, choices=["mc16a","mc16d","mc16e","mc16ade"], required=True,
         help="name of the mc campaign, i.e. mc16a or mc16d, need to provide exactly 1 mc-campaign tag for each input file, \
@@ -311,6 +313,9 @@ if __name__ == '__main__':
 
     parser.add_argument("--outputSignalOverview", default=False, action='store_true' ,       # this is the more proper way to affect default booleans
         help = "output overview of signal samples" ) 
+
+    parser.add_argument( "--rebin", type=int, default=1 , 
+    help = "We can rebin the bins. Choose rebin > 1 to rebin #<rebin> bins into 1." ) 
 
     args = parser.parse_args()
 
@@ -368,6 +373,7 @@ if __name__ == '__main__':
 
         if skipTObject(path, myTObject, selectChannels = channelMapping.keys() ): continue # skip non-relevant histograms
 
+        if args.rebin > 1: myTObject.Rebin( args.rebin )
         masterHistDict = fillHistDict(path, myTObject , args.mcCampaign[0], myDSIDHelper, channelMap = channelMapping ) 
 
         nRelevantHistsProcessed += 1
@@ -393,7 +399,7 @@ if __name__ == '__main__':
     ##############################################################################
     # write the histograms in the masterHistDict to file for the limit setting
     ##############################################################################
-    rootDictAndTDirTools.writeDictTreeToRootFile( masterHistDict, targetFilename = "testoutput.root" )
+    rootDictAndTDirTools.writeDictTreeToRootFile( masterHistDict, targetFilename = args.outputTo )
 
     reportMemUsage.reportMemUsage(startTime = startTime)
 
