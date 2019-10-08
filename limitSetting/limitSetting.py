@@ -617,6 +617,8 @@ if __name__ == '__main__':
     bestEstimateDict   = collections.defaultdict(list)
     upperLimits1SigDict = collections.defaultdict(list)
     upperLimits2SigDict = collections.defaultdict(list)
+    lowLimits1SigDict = collections.defaultdict(list)
+    lowLimits2SigDict = collections.defaultdict(list)
     timingDict = collections.defaultdict(list)
 
     myHistSampler = sampleTH1FromTH1.histSampler()
@@ -703,6 +705,8 @@ if __name__ == '__main__':
             bestEstimateDict[signalSample].append( likelihoodLimit.getVal() )
             upperLimits1SigDict[signalSample].append(likelihoodLimit.getMax())
             upperLimits2SigDict[signalSample].append(likelihoodLimit_2Sig.getMax())
+            lowLimits1SigDict[signalSample].append(likelihoodLimit.getMin())
+            lowLimits2SigDict[signalSample].append(likelihoodLimit_2Sig.getMin())
 
             reportMemUsage.reportMemUsage(startTime = startTime)
             timingDict["timePerMassPoint_Minutes"].append(  (time.time() - massPointTime)/60 )
@@ -750,6 +754,10 @@ if __name__ == '__main__':
         bestEstimatesTTree   = fillTTreeWithDictOfList(bestEstimateDict, treeName = "bestEstimates_"+limitType)
         upperLimits1SigTTree = fillTTreeWithDictOfList(upperLimits1SigDict, treeName = "upperLimits1Sig_"+limitType)
         upperLimits2SigTTree = fillTTreeWithDictOfList(upperLimits2SigDict, treeName = "upperLimits2Sig_"+limitType)
+
+        lowLimits1SigTTree = fillTTreeWithDictOfList(lowLimits1SigDict, treeName = "lowLimits1Sig_"+limitType)
+        lowLimits2SigTTree = fillTTreeWithDictOfList(lowLimits2SigDict, treeName = "lowLimits2Sig_"+limitType)
+
         calculationTimeTTree = fillTTreeWithDictOfList(timingDict, treeName = "calclationTime")
 
         
