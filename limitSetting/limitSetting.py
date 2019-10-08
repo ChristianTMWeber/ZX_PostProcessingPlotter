@@ -228,7 +228,7 @@ def prepHistoSys(eventDict, flavor = "All"):
 
     return allTheHistoSys
 
-def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile):
+def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, doStatError = False):
 
 
     ### Create the measurement object ### This is the top node of the structure  ### We do some minor configuration as well
@@ -263,40 +263,41 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile):
     # Create the signal sample Now that we have a channel and have attached data to it, we will start creating our Samples These describe the various processes that we use to model the data. Here, they just consist of a signal process and a single background process.
     signal = ROOT.RooStats.HistFactory.Sample("signal", templatePaths["Signal"], inputFileName)
     ### Having created this sample, we configure it First, we add the cross-section scaling parameter that we call SigXsecOverSM Then, we add a systematic with a 5% uncertainty Finally, we add it to our channel
-    #signal.AddOverallSys("syst1",  0.1, 1.9) # ??? # review what does this exactly do
-    signal.ActivateStatError()
-    signal.AddNormFactor("SigXsecOverSM", 0, 0, 10)
+    signal.AddNormFactor("SigXsecOverSM", 0, -10, 10)
     addSystematicsToSample(signal, inputTFile, region = region, eventType = templatePaths["Signal"].split("/")[1] , flavor = flavor, finishAfterNSystematics = doNSystematics)
+    if doStatError: signal.ActivateStatError()
+    #signal.AddOverallSys("Signal_TheoryUncertainty", 0.95, 1.05)
     chan.AddSample(signal)
 
     # H4l Background
-    ### And we create a second background for good measure
-    backgroundH4l = ROOT.RooStats.HistFactory.Sample("backgroundH4l",templatePaths["H4l"] , inputFileName)
-    backgroundH4l.ActivateStatError()
-    # backgroundH4l.AddOverallSys("syst3", 0.95, 1.05 )
-    backgroundH4l.AddNormFactor("H4lNorm", 1, 0, 3) # let's add this to fit the normalization of the background
-    addSystematicsToSample(backgroundH4l, inputTFile, region = region, eventType = "H4l", flavor = flavor, finishAfterNSystematics = doNSystematics)
-    chan.AddSample(backgroundH4l)
+    if "H4l" in templatePaths.keys():
+        ### And we create a second background for good measure
+        backgroundH4l = ROOT.RooStats.HistFactory.Sample("backgroundH4l",templatePaths["H4l"] , inputFileName)
+        backgroundH4l.AddNormFactor("H4lNorm", 1, 0, 3) # let's add this to fit the normalization of the background
+        addSystematicsToSample(backgroundH4l, inputTFile, region = region, eventType = "H4l", flavor = flavor, finishAfterNSystematics = doNSystematics)
+        if doStatError: backgroundH4l.ActivateStatError()
+        #backgroundH4l.AddOverallSys("H4l_TheoryUncertainty", 0.1, 1.9)
+
+        chan.AddSample(backgroundH4l)
 
     # ZZ background
-    ### We do a similar thing for our background
-    backgroundZZ = ROOT.RooStats.HistFactory.Sample("backgroundZZ", templatePaths["ZZ"], inputFileName)
-    backgroundZZ.ActivateStatError()#ActivateStatError("backgroundZZ_statUncert", inputFileName)
-    #backgroundZZ.AddOverallSys("syst2", 0.95, 1.05 )
-    #backgroundZZ.AddNormFactor("ZZNorm", 1, 0, 3) # let's add this to fit the normalization of the background
-    addSystematicsToSample(backgroundZZ, inputTFile, region = region, eventType = "ZZ", flavor = flavor, finishAfterNSystematics = doNSystematics)
+    if "ZZ" in templatePaths.keys():
+        ### We do a similar thing for our background
+        backgroundZZ = ROOT.RooStats.HistFactory.Sample("backgroundZZ", templatePaths["ZZ"], inputFileName)
+        addSystematicsToSample(backgroundZZ, inputTFile, region = region, eventType = "ZZ", flavor = flavor, finishAfterNSystematics = doNSystematics)
+        if doStatError: backgroundZZ.ActivateStatError()#ActivateStatError("backgroundZZ_statUncert", inputFileName)
+        backgroundZZ.AddOverallSys("syst2", 0.95, 1.05 )
 
-    chan.AddSample(backgroundZZ)
+        chan.AddSample(backgroundZZ)
 
     
-    # ZZ background
+    # Triboson and Z+ll background
     ### We do a similar thing for our background
     if "VVV_Z+ll" in templatePaths.keys():
         backgroundVV = ROOT.RooStats.HistFactory.Sample("VVV_Z+ll", templatePaths["VVV_Z+ll"], inputFileName)
-        backgroundVV.ActivateStatError()#ActivateStatError("backgroundVV_statUncert", inputFileName)
-        #backgroundVV.AddOverallSys("syst2", 0.95, 1.05 )
-        #backgroundVV.AddNormFactor("ZZNorm", 1, 0, 3) # let's add this to fit the normalization of the background
         addSystematicsToSample(backgroundVV, inputTFile, region = region, eventType = "VVV_Z+ll", flavor = flavor, finishAfterNSystematics = doNSystematics)
+        if doStatError: backgroundVV.ActivateStatError()#ActivateStatError("backgroundVV_statUncert", inputFileName)
+        #backgroundVV.AddOverallSys("syst2", 0.95, 1.05 )
 
         chan.AddSample(backgroundVV)
 
@@ -307,7 +308,8 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile):
     ### We do a similar thing for our background
     if "reducibleDataDriven" in templatePaths.keys():
         reducible = ROOT.RooStats.HistFactory.Sample("reducible", templatePaths["reducibleDataDriven"], inputFileName)
-        reducible.ActivateStatError()# It looks like this setting makes it so that the binerror in the background template is taken into account
+        if doStatError: reducible.ActivateStatError()# It looks like this setting makes it so that the binerror in the background template is taken into account
+        
         chan.AddSample(reducible)
         
     #backgroundZZ.AddOverallSys("syst2", 0.95, 1.05 )
@@ -539,12 +541,16 @@ if __name__ == '__main__':
 
     parser.add_argument("--outputDir", type=str, default=None ,
         help="directory of where to save the output. Default is the direcotry of the .py file" )
+
     parser.add_argument("--outputFileName", type=str, default=None ,
         help="name of the output file. We'll add .root if necessary" )
+
     parser.add_argument("--nSystematics", type=int, default=-1 ,
         help="number of systematics to process, setting '--nSystematics -1' processes them all " )
+
     parser.add_argument("--nIterations", type=int, default=1 ,
         help="number of iterations over all the masspoints " )
+
     parser.add_argument("--limitType", type=str, default="toys" , choices=["toys","asymptotic","observed"],
         help = "Determines what kind of limit setting we do. \
         'observed' provides limtis on the cross section, based on the data provided. \
