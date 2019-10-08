@@ -222,8 +222,6 @@ def addDataDrivenReducibleBackground( masterHistDict , reducibleFileName = "data
             hist.SetBinError(n, hist.GetBinContent(n) * relError )
         return None
 
-
-
     reducibleTFile = ROOT.TFile(reducibleFileName, "OPEN")
 
     histName_2l2e  = "h_m34_2l2e"
@@ -269,11 +267,10 @@ def addDataDrivenReducibleBackground( masterHistDict , reducibleFileName = "data
 
     for hist in [hist2l2e, hist2l2mu, histAll]: hist.SetDirectory(0) # to decouple it from the open file directory. Now you can close the file and continue using the histogram. https://root.cern.ch/root/roottalk/roottalk02/2266.html
 
-    addRelativeHistError( hist2l2e  ,  (2.54*(0.0843+0.13  ) + 3.19*(0.0597+0.148 ))/(2.54+3.19)  ) 
-    addRelativeHistError( hist2l2mu ,  (2.29*(0.0152+0.0719) + 2.57*(0.0152+0.0719))/(2.29+2.57) )
-    addRelativeHistError( histAll   , (0.0284 + 0.0822) )
-
-    addRelativeHistError( histAll   , (0.9) )
+    #                                  #add stat error only. Add syst error to limitSetting.py instead
+    addRelativeHistError( hist2l2e  ,  (2.54*0.0843 + 3.19*0.0597)/(2.54+3.19)  ) 
+    addRelativeHistError( hist2l2mu ,  (2.29*0.0152 + 2.57*0.0152)/(2.29+2.57) )
+    addRelativeHistError( histAll   , 0.0284 )
 
 
     masterHistDict["ZXSR"]["reducibleDataDriven"]["Nominal"]["2l2e"] = hist2l2e

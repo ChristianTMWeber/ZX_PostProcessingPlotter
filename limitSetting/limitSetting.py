@@ -186,7 +186,7 @@ def drawNominalHists(inputFileName, drawDict, myDrawDSIDHelper = postProcess.DSI
     ratioHist.Draw()
 
     canvas.Update()
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     if writeToFile:
         canvas.Write()
         canvas.Print("overview.pdf")
@@ -228,7 +228,7 @@ def prepHistoSys(eventDict, flavor = "All"):
 
     return allTheHistoSys
 
-def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, doStatError = False):
+def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, doStatError = True, doTheoreticalError = True):
 
 
     ### Create the measurement object ### This is the top node of the structure  ### We do some minor configuration as well
@@ -266,7 +266,8 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, d
     signal.AddNormFactor("SigXsecOverSM", 0, -10, 10)
     addSystematicsToSample(signal, inputTFile, region = region, eventType = templatePaths["Signal"].split("/")[1] , flavor = flavor, finishAfterNSystematics = doNSystematics)
     if doStatError: signal.ActivateStatError()
-    #signal.AddOverallSys("Signal_TheoryUncertainty", 0.95, 1.05)
+    if doTheoreticalError: signal.AddOverallSys("Signal_QCDAndPDFUncert", 1.+0.09, 1.-0.09)
+
     chan.AddSample(signal)
 
     # H4l Background
@@ -276,7 +277,9 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, d
         backgroundH4l.AddNormFactor("H4lNorm", 1, 0, 3) # let's add this to fit the normalization of the background
         addSystematicsToSample(backgroundH4l, inputTFile, region = region, eventType = "H4l", flavor = flavor, finishAfterNSystematics = doNSystematics)
         if doStatError: backgroundH4l.ActivateStatError()
-        #backgroundH4l.AddOverallSys("H4l_TheoryUncertainty", 0.1, 1.9)
+        if doTheoreticalError: backgroundH4l.AddOverallSys("H4l_QCDUncert", 1.+0.0395, 1.-0.0561)
+        if doTheoreticalError: backgroundH4l.AddOverallSys("H4l_PDFUncert", 1.+0.0293, 1.-0.0293)
+        
 
         chan.AddSample(backgroundH4l)
 
@@ -286,7 +289,7 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, d
         backgroundZZ = ROOT.RooStats.HistFactory.Sample("backgroundZZ", templatePaths["ZZ"], inputFileName)
         addSystematicsToSample(backgroundZZ, inputTFile, region = region, eventType = "ZZ", flavor = flavor, finishAfterNSystematics = doNSystematics)
         if doStatError: backgroundZZ.ActivateStatError()#ActivateStatError("backgroundZZ_statUncert", inputFileName)
-        backgroundZZ.AddOverallSys("syst2", 0.95, 1.05 )
+        if doTheoreticalError: backgroundZZ.AddOverallSys("ZZ_QCDAndPDFUncert", 1.+0.05, 1.-0.05)
 
         chan.AddSample(backgroundZZ)
 
@@ -297,7 +300,6 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, d
         backgroundVV = ROOT.RooStats.HistFactory.Sample("VVV_Z+ll", templatePaths["VVV_Z+ll"], inputFileName)
         addSystematicsToSample(backgroundVV, inputTFile, region = region, eventType = "VVV_Z+ll", flavor = flavor, finishAfterNSystematics = doNSystematics)
         if doStatError: backgroundVV.ActivateStatError()#ActivateStatError("backgroundVV_statUncert", inputFileName)
-        #backgroundVV.AddOverallSys("syst2", 0.95, 1.05 )
 
         chan.AddSample(backgroundVV)
 
@@ -309,6 +311,8 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, d
     if "reducibleDataDriven" in templatePaths.keys():
         reducible = ROOT.RooStats.HistFactory.Sample("reducible", templatePaths["reducibleDataDriven"], inputFileName)
         if doStatError: reducible.ActivateStatError()# It looks like this setting makes it so that the binerror in the background template is taken into account
+        if doNSystematics != 0 : reducible.AddOverallSys("reducible_Syst", 1.+0.0822, 1.-0.0822)
+
         
         chan.AddSample(reducible)
         
@@ -671,6 +675,7 @@ if __name__ == '__main__':
             #chan.CollectHistograms() #  see here why this is needed: https://root-forum.cern.ch/t/histfactory-issue-with-makesinglechannelmodel/34201
             workspace = hist2workspace.MakeSingleChannelModel(meas, chan)
 
+            #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
             if limitType == "asymptotic":
                 # from: https://roostatsworkbook.readthedocs.io/en/latest/docs-cls.html
@@ -686,6 +691,7 @@ if __name__ == '__main__':
                 interval = getProfileLikelihoodLimits(workspace , drawLikelihoodIntervalPlot = False)
 
                 likelihoodLimit = translateLimits( interval, nSigmas = 1 )
+                likelihoodLimit.Print()
                 likelihoodLimit_2Sig = translateLimits( interval, nSigmas = 2 )
 
 
@@ -700,6 +706,8 @@ if __name__ == '__main__':
 
             reportMemUsage.reportMemUsage(startTime = startTime)
             timingDict["timePerMassPoint_Minutes"].append(  (time.time() - massPointTime)/60 )
+
+            #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
            
             # let's try delete these objects here to stem the growing memory demand with increasing 'limitIteration' count
             del chan, meas
