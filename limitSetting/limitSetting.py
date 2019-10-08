@@ -263,8 +263,8 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, d
     # Create the signal sample Now that we have a channel and have attached data to it, we will start creating our Samples These describe the various processes that we use to model the data. Here, they just consist of a signal process and a single background process.
     signal = ROOT.RooStats.HistFactory.Sample("signal", templatePaths["Signal"], inputFileName)
     ### Having created this sample, we configure it First, we add the cross-section scaling parameter that we call SigXsecOverSM Then, we add a systematic with a 5% uncertainty Finally, we add it to our channel
-    signal.AddNormFactor("SigXsecOverSM", 0, -10, 10)
-    addSystematicsToSample(signal, inputTFile, region = region, eventType = templatePaths["Signal"].split("/")[1] , flavor = flavor, finishAfterNSystematics = doNSystematics)
+    signal.AddNormFactor("SigXsecOverSM", 0, 0, 10) #  (<parameterName>, <start>, <lowLimit>, <highLimit>) keep the lower limit here at 0, otherwise the norm factor may get negative, which will introduce errors in the optimization routine
+    #addSystematicsToSample(signal, inputTFile, region = region, eventType = templatePaths["Signal"].split("/")[1] , flavor = flavor, finishAfterNSystematics = doNSystematics)
     if doStatError: signal.ActivateStatError()
     if doTheoreticalError: signal.AddOverallSys("Signal_QCDAndPDFUncert", 1.+0.09, 1.-0.09)
 
