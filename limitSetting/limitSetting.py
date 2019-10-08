@@ -256,7 +256,7 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, d
     chan.SetData(templatePaths["Data"] )   # <- this seems to work, everything seems to run ok, but the programm completeres with a segmentation violation.
     #chan.SetData(templatePaths["Data"], inputFileName) # <- this one compleres without a segmentation vialation. Switch to this one if necessary
     
-    chan.SetStatErrorConfig(0.05, "Poisson") # ??? # this seems to be not part of the C++ exsample
+    #chan.SetStatErrorConfig(0.05, "Poisson") # I cont discern what this does. So let's not use it. It was also not in the reference I used
 
     # Now, create some samples
 
