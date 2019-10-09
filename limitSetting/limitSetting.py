@@ -31,7 +31,6 @@ import functions.tGraphHelpers as graphHelper
 
 import limitFunctions.reportMemUsage as reportMemUsage
 
-import plotXSLimits
 
 def activateATLASPlotStyle():
     # runs the root macro that defines the ATLAS style, and checks that it is active
@@ -760,14 +759,20 @@ if __name__ == '__main__':
 
         calculationTimeTTree = fillTTreeWithDictOfList(timingDict, treeName = "calclationTime")
 
+        observedLimitGraph.Write()
+        expectedLimitsGraph_1Sigma.Write()
+        expectedLimitsGraph_2Sigma.Write()
+
         
+        writeTFile.Write()
 
         if limitType != "toys":
+            import plotXSLimits
             graphOverviewCanvas = plotXSLimits.makeGraphOverview( graphHelper.getTGraphWithoutError( observedLimitGraph , ySetpoint = "yHigh"), 
                                              expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = writeTFile)
 
 
-        writeTFile.Write()
+        
         writeTFile.Close()
 
 
