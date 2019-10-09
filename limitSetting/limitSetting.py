@@ -10,7 +10,7 @@ import collections # so we can use collections.defaultdict to more easily constr
 import re
 import difflib # so I can be a bit lazier with identification of signal region masspoints via 'difflib.get_close_matches'
 import warnings # to warn about things that might not have gone right
-import resource # print 'Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+import resource # print 'Memory usage: %s (kB)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 import time # for measuring execution time
 import datetime # to convert seconds to hours:minutes:seconds
 import argparse # to parse command line options
@@ -619,6 +619,7 @@ if __name__ == '__main__':
     lowLimits1SigDict = collections.defaultdict(list)
     lowLimits2SigDict = collections.defaultdict(list)
     timingDict = collections.defaultdict(list)
+    memoryDict = collections.defaultdict(list)
 
     myHistSampler = sampleTH1FromTH1.histSampler()
 
@@ -748,6 +749,7 @@ if __name__ == '__main__':
         ###############################################
 
         reportMemUsage.reportMemUsage(startTime = startTime)
+
         writeTFile = ROOT.TFile( outputFileName,  "RECREATE")# "UPDATE")
         writeTFile.cd()
         bestEstimatesTTree   = fillTTreeWithDictOfList(bestEstimateDict, treeName = "bestEstimates_"+limitType)
@@ -758,6 +760,10 @@ if __name__ == '__main__':
         lowLimits2SigTTree = fillTTreeWithDictOfList(lowLimits2SigDict, treeName = "lowLimits2Sig_"+limitType)
 
         calculationTimeTTree = fillTTreeWithDictOfList(timingDict, treeName = "calclationTime")
+
+        memoryDict["RAM_Used_MiB"].append(float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)/1024 )
+        memoryUsageTTree = fillTTreeWithDictOfList(memoryDict, treeName = "memoryUsage")
+
 
         observedLimitGraph.Write()
         expectedLimitsGraph_1Sigma.Write()

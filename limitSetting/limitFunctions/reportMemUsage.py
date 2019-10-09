@@ -1,4 +1,4 @@
-import resource # print 'Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+import resource # print 'Memory usage: %s (kB)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 import time # for measuring execution time
 import datetime # to convert seconds to hours:minutes:seconds
 
