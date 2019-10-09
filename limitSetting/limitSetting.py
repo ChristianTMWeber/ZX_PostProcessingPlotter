@@ -540,7 +540,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--inputFileName", type=str, default="preppedHists_mc16a_sqrtErros_0.5GeVBins.root" ,
+    parser.add_argument("--inputFileName", type=str, default="preppedHistsV2_mc16ade_1GeVBins.root" ,
         help="name of the .root file that has the input histograms for the limist setting" )
 
     parser.add_argument("--outputDir", type=str, default=None ,
