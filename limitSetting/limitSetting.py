@@ -560,6 +560,9 @@ if __name__ == '__main__':
         'toys' provides expected limits by sampleing histograms from the 'expected data' but requires many iterations and \
         'asymptotic' does so too, but in a well defined asymptotic way that only requires one iteration" )
 
+    parser.add_argument("--flavor", type=str, default="All" , choices=["All", "4e", "2mu2e", "2l2e", "4mu", "2e2mu", "2l2mu"],
+        help="name of the output file. We'll add .root if necessary" )
+
     args = parser.parse_args()
 
 
@@ -603,7 +606,7 @@ if __name__ == '__main__':
 
 
     region = "ZXSR"
-    flavor = "All"
+    flavor = args.flavor
 
     massesToProcess =  range(15,56,1)#[30]#range(15,56,5)
     # setup some output datastructures
