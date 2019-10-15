@@ -30,6 +30,7 @@ import functions.histHelper as histHelper # to help me fill some histograms
 
 import limitFunctions.RooIntegralMorphWrapper as integralMorphWrapper
 import limitFunctions.reportMemUsage as reportMemUsage
+from limitFunctions.visualizeSignalOverview import getMasspointDict
 
 
 def skipTObject(path, baseHist, requiredRootType = ROOT.TH1, selectChannels = ["ZXSR", "ZXVR1"], 
@@ -121,41 +122,7 @@ def addExpectedData(masterHistDict  ):
 
     return None
 
-def getMasspointDict(masterHistDict , channel = None ):
-    # returns a dict of the available masspoints: masspointDict[ int ] = <name of event type with that mass>
-    # e.g.: masspointDict[20] = 'ZZd, m_{Zd} = 20GeV'
-    if channel is None: channel = masterHistDict.keys()[0]
-    
-    masspointDict = {}
-    for eventType in masterHistDict['ZXSR'].keys(): 
-        reObject = re.search("\d{2}", eventType)
-        if reObject: # True if we found something
-            # do some checks that the 'All' and 'Nominal' are in the dict, and that the TH1 in the dict is actually in there
-            # these are mostly settings for development
-            #if masterHistDict[channel][eventType]['Nominal']['All'] is not None:
-            #    print(masterHistDict[channel][eventType]['Nominal']['All'])
-                #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-            masspointDict[ int(reObject.group()) ] = eventType
-    return masspointDict
 
-def prepareSignalSampleOverviewTH2(masterHistDict, channel = None):
-    if channel is None: channel = masterHistDict.keys()[0]
-
-    masspoints = getMasspointDict(masterHistDict , channel = channel )
-
-    hist = masterHistDict[channel][masspoints.values()[0]]['Nominal']['All']
-    nBinsX = hist.GetNbinsX()
-    lowLimitX  = hist.GetBinLowEdge(1)
-    highLimitX = hist.GetBinLowEdge(nBinsX+1)
-
-    lowLimitY = min(masspoints.keys())
-    highLimitY = max(masspoints.keys())+1
-    nBinsY = highLimitY - lowLimitY
-
-    signalOverviewTH2 = ROOT.TH2D("signalOverviewTH2", "signalOverviewTH2", nBinsX, lowLimitX, highLimitX, nBinsY , lowLimitY, highLimitY )
-
-
-    return signalOverviewTH2
 
 def addInterpolatedSignalSamples(masterHistDict, channels = None):
     startTimeInterp = time.time()
@@ -408,46 +375,15 @@ if __name__ == '__main__':
     ##############################################################################
 
     if args.outputSignalOverview:
-        signalOverviewTH2 = prepareSignalSampleOverviewTH2(masterHistDict, channel = "ZXSR")
-        signalOverviewTH2Interpolated = signalOverviewTH2.Clone( signalOverviewTH2.GetName()+"Interpolated" )
+
+        import limitFunctions.visualizeSignalOverview as visualizeSignalOverview
+
+        signalSampleStack, canvasSignalOverview3  = visualizeSignalOverview.make3dOverview(masterHistDict, masspointsBeforeInterpolation = masspointDictBeforeInterpolation )
+
+
+        
 
         masspoints = getMasspointDict(masterHistDict , channel = "ZXSR" ) # This will be used later in plotting the signal samples
-
-        # sort things into the two overviewTH2s
-        for mass in masspoints:
-            hist = masterHistDict["ZXSR"][ masspoints[mass] ]['Nominal']['All']
-            if mass in masspointDictBeforeInterpolation: histHelper.fillTH2SliceWithTH1(signalOverviewTH2,             hist, mass )
-            else:                                        histHelper.fillTH2SliceWithTH1(signalOverviewTH2Interpolated, hist, mass )
-
-
-
-
-        signalOverviewTH2.SetLineColor(ROOT.kBlack)
-        signalOverviewTH2.SetFillColor(ROOT.kBlue)
-        signalOverviewTH2Interpolated.SetLineColor(ROOT.kBlack)
-        signalOverviewTH2Interpolated.SetFillColor(ROOT.kRed)
-
-        signalSampleStack = ROOT.THStack("signalSamples","signalSamples")
-        signalSampleStack.Add(signalOverviewTH2)
-        signalSampleStack.Add(signalOverviewTH2Interpolated)
-        canvasSignalOverview3 = ROOT.TCanvas( "signalOverview3", "signalOverview3" ,1300/2,1300/2)
-        signalSampleStack.Draw("LEGO1")
-        # the following works only after calling signalSampleStack.Draw() once
-        signalSampleStack.GetXaxis().SetRange(signalOverviewTH2.GetXaxis().FindBin(10),signalOverviewTH2.GetXaxis().FindBin(61))
-
-        signalSampleStack.GetXaxis().SetTitle("m_{34} , " + str(signalSampleStack.GetXaxis().GetBinWidth(1) )+" GeV bin-width" )
-        #signalSampleStack.GetXaxis().SetTitleSize(0.05)
-        signalSampleStack.GetXaxis().SetTitleOffset(2.)
-        signalSampleStack.GetXaxis().CenterTitle()
-
-        signalSampleStack.GetYaxis().SetTitle("signal sample masspoint [GeV]" )
-        signalSampleStack.GetYaxis().SetTitleOffset(2.)
-        signalSampleStack.GetYaxis().CenterTitle()
-
-
-
-        signalSampleStack.Draw("LEGO1")
-        canvasSignalOverview3.Update()
        
         massesSorted = masspoints.keys();   massesSorted.sort()
 
@@ -455,8 +391,8 @@ if __name__ == '__main__':
         for mass in massesSorted: signalTH1List.append(masterHistDict["ZXSR"][ masspoints[mass] ]['Nominal']['All'])
 
         signalOverviewFile = ROOT.TFile("signalOverview.root","RECREATE")
-        signalOverviewTH2.Write()
-        signalOverviewTH2Interpolated.Write()
+
+
         signalSampleStack.Write()
         canvasSignalOverview3.Write()
         for hist in signalTH1List: hist.Write()
