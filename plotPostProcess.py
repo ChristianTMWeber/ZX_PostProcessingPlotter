@@ -37,8 +37,10 @@ class DSIDHelper:
                                                           364104, 364105, 364106, 364107, 364108, 364109, 364110, 364111, 364112, 
                                                           364113, 364128, 364129, 364130, 364131, 364132, 364133, 364134, 364135, 
                                                           364136, 364137, 364138, 364139, 364140, 364141, 361601, 410472],
-                       "VVV/VBS" : [364248, 364247, 364245, 364243, 364364],
-                       "Z+(ttbar/J/Psi/Upsilon)" : [410142]
+                       #"VVV/VBS" : [364248, 364247, 364245, 364243, 364364],
+                       #"Z+(ttbar/J/Psi/Upsilon)" : [410142],
+                       "VVV, tt+Z": [364248, 364247, 364245, 364243, 364364,
+                                     410142]
                     }
 
     physicsProcessSignal = {"ZZd, m_{Zd} = 15GeV" : [343234],
@@ -68,7 +70,7 @@ class DSIDHelper:
 
     colorMap = {"H->ZZ*->4l" : ROOT.kRed  , "ZZ*->4l" :   ROOT.kAzure+1 ,
                       "Reducible (Z+Jets, WZ, ttbar)"  : ROOT.kYellow , "VVV/VBS" : ROOT.kCyan,
-                       "Z+(ttbar/J/Psi/Upsilon)" : ROOT.kGreen,
+                       "Z+(ttbar/J/Psi/Upsilon)" : ROOT.kGreen, "VVV, tt+Z" : ROOT.kGreen , 
                        "H4l"  : ROOT.kRed  , "ZZ" :   ROOT.kAzure+1,   "const" : ROOT.kYellow} # colors for the analysisMapping
 
     physicsSubProcess = {"ggH" : [345060], "VBFH":[341488], "WH" : [341964], "ZH" : [341947],
