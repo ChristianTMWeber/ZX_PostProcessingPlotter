@@ -60,7 +60,7 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
     expectedLimitMedian.SetLineColor(colorScheme)
     expectedLimitMedian.Draw("same")
 
-    extractedLimit.SetLineStyle(1) # https://root.cern.ch/doc/master/classTAttLine.html#L3
+    extractedLimit.SetLineStyle(2) # https://root.cern.ch/doc/master/classTAttLine.html#L3
     extractedLimit.SetLineWidth(2)
     extractedLimit.SetLineColor(colorScheme)
     extractedLimit.Draw("same")
@@ -160,14 +160,27 @@ def getToyLimits( filename , TTreeName = "upperLimits1Sig_toys", graphName = "to
 
 if __name__ == '__main__':
 
-    testFile = ROOT.TFile("../allCombinedMC16a_1895.root")
+    #testFile = ROOT.TFile("../allCombinedMC16a_1895.root")
+    #upperLimitTree1Sig = testFile.Get("upperLimits1Sig_toys")
 
-    upperLimitTree1Sig = testFile.Get("upperLimits1Sig_toys")
+    filename = "allcombV2_all_mc16ade_5138.root"
 
-    toyLimitTGrapah1Sigma = getToyLimits( "../allCombinedMC16a_1895.root" , TTreeName = "upperLimits1Sig_toys", graphName = "toyLimit_1sigma", nSigma = 1, intervalType = "confInterval")
-    toyLimitTGrapah2Sigma = getToyLimits( "../allCombinedMC16a_1895.root" , TTreeName = "upperLimits1Sig_toys", graphName = "toyLimit_2sigma", nSigma = 2, intervalType = "confInterval")
+    #filename = "allcombV1_all_mc16ade_5203Entries.root"
 
-    canvas = makeGraphOverview( toyLimitTGrapah1Sigma,  toyLimitTGrapah1Sigma, toyLimitTGrapah2Sigma , colorScheme = ROOT.kRed, writeTo = False)
+    
+
+    toyLimitTGrapah1Sigma = getToyLimits( filename , TTreeName = "upperLimits1Sig_toys", graphName = "toyLimit_1sigma", nSigma = 1, intervalType = "confInterval")
+    toyLimitTGrapah2Sigma = getToyLimits( filename , TTreeName = "upperLimits1Sig_toys", graphName = "toyLimit_2sigma", nSigma = 2, intervalType = "confInterval")
+
+
+    expectedLimit = graphHelper.getTGraphWithoutError( toyLimitTGrapah1Sigma )
+
+
+    outputTFile = ROOT.TFile("XSLimitPlot.root", "RECREATE")
+
+    canvas = makeGraphOverview( expectedLimit,  toyLimitTGrapah1Sigma, toyLimitTGrapah2Sigma , colorScheme = ROOT.kRed, writeTo = outputTFile)
+
+    outputTFile.Close()
 
     import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
