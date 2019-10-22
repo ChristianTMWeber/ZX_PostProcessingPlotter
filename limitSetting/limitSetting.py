@@ -263,7 +263,7 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, d
     signal = ROOT.RooStats.HistFactory.Sample("signal", templatePaths["Signal"], inputFileName)
     ### Having created this sample, we configure it First, we add the cross-section scaling parameter that we call SigXsecOverSM Then, we add a systematic with a 5% uncertainty Finally, we add it to our channel
     signal.AddNormFactor("SigXsecOverSM", 0, 0, 10) #  (<parameterName>, <start>, <lowLimit>, <highLimit>) keep the lower limit here at 0, otherwise the norm factor may get negative, which will introduce errors in the optimization routine
-    #addSystematicsToSample(signal, inputTFile, region = region, eventType = templatePaths["Signal"].split("/")[1] , flavor = flavor, finishAfterNSystematics = doNSystematics)
+    addSystematicsToSample(signal, inputTFile, region = region, eventType = templatePaths["Signal"].split("/")[1] , flavor = flavor, finishAfterNSystematics = doNSystematics)
     if doStatError: signal.ActivateStatError()
     if doTheoreticalError: signal.AddOverallSys("Signal_QCDAndPDFUncert", 1.+0.09, 1.-0.09)
 
@@ -363,12 +363,13 @@ def addSystematicsToSample(histFactorySample, inputFileOrName, region = "ZXSR", 
     # systematicsDict[ name of systematis][up or down variation][  ] = <aString>
     systematicsDict = collections.defaultdict(lambda: collections.defaultdict(dict))
 
+    eventTDir = inputTFile.Get(region).Get(eventType)
+
     # let's parste all the contents of the root file and select the relevant information
-    for path, myTObject  in TDirTools.generateTDirPathAndContentsRecursive(inputTFile, newOwnership = None):  
-
-        if not all([x in path for x in [region,eventType,flavor] ]): continue # ignore the regions, etc. that we are not concerned with are right now
+    for path, myTObject  in TDirTools.generateTDirPathAndContentsRecursive(eventTDir, newOwnership = None):  
+        if not all([x in path for x in [flavor] ]): continue # ignore the regions, etc. that we are not concerned with are right now
         if "Nominal" in path: continue # nominal is not a systematic
-
+        
         # determine the systematics name
         filenameUpToSystematic = re.search("(?:(?!(1down|1up)).)*", path).group() # systematics ends with 1up or 1down, find the string parts beforehand
         systematicsName = filenameUpToSystematic.split("/")[-1] # we split at the slash to get the systematics name (and we do it this way because regex is hard :-/ )
@@ -378,16 +379,20 @@ def addSystematicsToSample(histFactorySample, inputFileOrName, region = "ZXSR", 
         assert variationType == '1down' or variationType == "1up"
 
         # discern the fineName, the path to the histogram within the TFile, and the name of the histogram
-        fileName = re.search("(.*?).root", path).group() # grab everything up to and including the word '.root' (in a lazy way due to the '?') 
-        tDirPath = re.search("(?<=.root/)(.*)\/", path).group() # find everyting between '.root' and the last slash
+        fileName = inputTFile.GetName()
+        #fileName = re.search("(.*?).root", path).group() # grab everything up to and including the word '.root' (in a lazy way due to the '?') 
+        tDirPathLast = re.search("(.*)\/", path).group() # find everyting up to the last slash,  if we wanted to look after the '.root', add '(?<=.root/)'
+        tDirPath = os.path.join(region, tDirPathLast)
         histName = re.search("[^\/]+$", path).group() # find everything after last slash 
 
         # store the information we just discerned        
         systematicsDict[systematicsName][variationType]['histName'] = histName
         systematicsDict[systematicsName][variationType]['fileName'] = fileName
         systematicsDict[systematicsName][variationType]['tDirPath'] = tDirPath
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
     if isinstance(inputFileOrName, str): inputTFile.Close() # close the file if we had opened it
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
     # add the histograms to the histFactory sample
     sysCounter = 0 # but remember how many systematics we added, so that we can limit that number
