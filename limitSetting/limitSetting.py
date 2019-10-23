@@ -780,14 +780,16 @@ if __name__ == '__main__':
         
         writeTFile.Write()
 
-        if limitType != "toys":
-            import plotXSLimits
-            graphOverviewCanvas = plotXSLimits.makeGraphOverview( graphHelper.getTGraphWithoutError( observedLimitGraph , ySetpoint = "yHigh"), 
-                                             expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = writeTFile)
+        writeTFile.Close()
+
+        #if limitType != "toys":
+        #    import plotXSLimits
+        #    graphOverviewCanvas = plotXSLimits.makeGraphOverview( graphHelper.getTGraphWithoutError( observedLimitGraph , ySetpoint = "yHigh"), 
+        #                                     expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = writeTFile)
 
 
         
-        writeTFile.Close()
+
 
 
     ###############################################
