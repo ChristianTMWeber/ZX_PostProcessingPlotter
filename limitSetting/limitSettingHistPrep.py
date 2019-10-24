@@ -370,6 +370,14 @@ if __name__ == '__main__':
 
         if skipTObject(path, myTObject, selectChannels = channelMapping.keys() ): continue # skip non-relevant histograms
 
+        if myTObject.GetBinWidth(1) != 1.0:
+            if myTObject.GetBinWidth(1) == 0.5: myTObject.Rebin(2)
+            else: raise ValueError('Bin size is neither 1 nor 0.5. Check the binwidth, and decide which binwidth you want.')
+
+
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+
         if args.rebin > 1: myTObject.Rebin( args.rebin )
         masterHistDict = fillHistDict(path, myTObject , args.mcCampaign[0], myDSIDHelper, channelMap = channelMapping ) 
 

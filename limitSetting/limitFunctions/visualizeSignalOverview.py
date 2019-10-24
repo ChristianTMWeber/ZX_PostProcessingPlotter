@@ -110,6 +110,13 @@ if __name__ == '__main__':
 
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    ###############################################################################
+    ## write the histograms in the masterHistDict to file for the limit setting
+    ###############################################################################
+    #rootDictAndTDirTools.writeDictTreeToRootFile( masterHistDict, targetFilename = "test.root" )
+
 
     signalSampleStack, canvasSignalOverview3 = make3dOverview(masterHistDict, masspointsBeforeInterpolation = range(15,56,5) )
 
