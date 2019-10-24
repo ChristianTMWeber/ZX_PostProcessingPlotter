@@ -622,17 +622,23 @@ if __name__ == '__main__':
 
         ROOT.SetOwnership(baseHist, False)  # if we pass irrelevantTObject the histogram is relevant, so we change the ownership here to False in the attempt to prevent deletion
 
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
         # discern DSID and plotTitle to use them when sorting into a tree structure
         DSID = myDSIDHelper.idDSID(path)
 
         # 15GeV , 20GeV , 25GeV , 30GeV , 35GeV , 40GeV , 45GeV , 50GeV , 55GeV
         # 343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242
 
-        #                                          343237, #
-        if int(DSID) in [ 343234, 343235, 343236,         343238, 343239, 343240, 343241, 343242]: continue # skip ZZd samples, except the 30 GeV one
+        #                343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242
+        if int(DSID) in [343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242]: continue # skip ZZd samples, except the 30 GeV one
         if int(DSID) in [302073, 302074, 302075, 302076, 302077, 302078, 302079, 302080, 302081, 302082, 
                          302083, 302084, 302085, 302086, 302087, 302088, 302089, 302090, 309475, 309476, 
-                         309477, 309478, 309479, 309480, 309481, 309482, 309483, 309484, 309485, 309709]: continue # non ZZd signal sample DSIDS, i.e. ZdZd signal sample DSIDs
+                         309477, 309478, 309479, 309480, 309481, 309482, 309483, 309484, 309485, 309709]: continue # skip other, non-ZZd signal sample DSIDS, i.e. ZdZd signal sample DSIDs
+        # higgs only
+        #if int(DSID) not in [341964, 341947, 345060, 341488, 345046, 345047, 345048, 345066, 344973, 344974]: continue
+        #if int(DSID) == 0: continue #skip data
+
         plotTitle = idPlotTitle(path, myDSIDHelper, DSID=DSID)
 
         # build my tree structure here to house the relevant histograms, pre-sorted for plotting
