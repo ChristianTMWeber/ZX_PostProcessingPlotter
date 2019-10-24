@@ -8,6 +8,7 @@ sys.path.append( path.dirname( path.dirname( path.dirname( path.abspath(__file__
 
 from functions.rootDictAndTDirTools import buildDictTreeFromTDir
 import functions.histHelper as histHelper # to help me fill some histograms
+import functions.rootDictAndTDirTools as rootDictAndTDirTools
 
 
 def prepareSignalSampleOverviewTH2(masterHistDict, channel = None):

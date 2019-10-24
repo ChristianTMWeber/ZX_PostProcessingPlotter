@@ -60,7 +60,7 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
     expectedLimitMedian.SetLineColor(colorScheme)
     expectedLimitMedian.Draw("same")
 
-    extractedLimit.SetLineStyle(2) # https://root.cern.ch/doc/master/classTAttLine.html#L3
+    extractedLimit.SetLineStyle(1) # https://root.cern.ch/doc/master/classTAttLine.html#L3
     extractedLimit.SetLineWidth(2)
     extractedLimit.SetLineColor(colorScheme)
     extractedLimit.Draw("same")
@@ -155,10 +155,39 @@ def getToyLimits( filename , TTreeName = "upperLimits1Sig_toys", graphName = "to
     return toyLimitTGrapah
 
 
+def getAsymptoticTGraphs(filename):
+    expectedLimitTFile = ROOT.TFile(filename, "OPEN")
 
+    observedLimitGraph         = expectedLimitTFile.Get("observedLimitGraph")
+    expectedLimitsGraph_1Sigma = expectedLimitTFile.Get("expectedLimits_1Sigma")
+    expectedLimitsGraph_2Sigma = expectedLimitTFile.Get("expectedLimits_2Sigma")
+
+    return 
 
 
 if __name__ == '__main__':
+
+    ###################### get limits
+
+    observedLimitTGraph =  getToyLimits( "unblindedObservedLimits.root" , TTreeName = "upperLimits2Sig_observed", graphName = "observedLimits_upperLimit" ,nSigma = 1, intervalType = "standardDeviation")
+
+    observedLimitTGraphNoErrors = graphHelper.getTGraphWithoutError( observedLimitTGraph )
+
+    ########  plotExpectedLimitsFromTGraph   ### specifically just asymptotic case
+    expectedLimitTFile = ROOT.TFile("asymptoticLimitsV2.root", "OPEN")
+
+    observedLimitGraph         = expectedLimitTFile.Get("observedLimitGraph")
+    expectedLimitsGraph_1Sigma = expectedLimitTFile.Get("expectedLimits_1Sigma")
+    expectedLimitsGraph_2Sigma = expectedLimitTFile.Get("expectedLimits_2Sigma")
+
+
+    outputTFile = ROOT.TFile("XSLimitPlot.root", "RECREATE")
+    makeGraphOverview( observedLimitTGraphNoErrors , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile)
+    outputTFile.Close()
+
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    ################# plot expected limits from TTree    
 
     #testFile = ROOT.TFile("../allCombinedMC16a_1895.root")
     #upperLimitTree1Sig = testFile.Get("upperLimits1Sig_toys")
@@ -167,7 +196,7 @@ if __name__ == '__main__':
 
     #filename = "allcombV1_all_mc16ade_5203Entries.root"
 
-    
+
 
     toyLimitTGrapah1Sigma = getToyLimits( filename , TTreeName = "upperLimits1Sig_toys", graphName = "toyLimit_1sigma", nSigma = 1, intervalType = "confInterval")
     toyLimitTGrapah2Sigma = getToyLimits( filename , TTreeName = "upperLimits1Sig_toys", graphName = "toyLimit_2sigma", nSigma = 2, intervalType = "confInterval")
@@ -186,4 +215,4 @@ if __name__ == '__main__':
 
 
 
-
+                                   
