@@ -61,3 +61,49 @@ def fillTH2SliceWithTH1( TH2, TH1, sliceAtYVal ):
         TH2.SetBinError(xBinNr, yBinNumer, TH1.GetBinError(xBinNr) )
 
     return TH2
+
+def getMaxBin(TH1 , useError = False, factor = 1. ):
+    # switch factor to -1. to infer the minimum
+
+    nBins = TH1.GetNbinsX()
+
+    binContentList = []
+
+
+    for n in xrange(1,nBins+1): 
+        binContent = (TH1.GetBinContent(n) * factor)
+        if useError: binContent += (TH1.GetBinError(n) )
+
+        binContentList.append(binContent)
+
+    maxBinVal = max(binContentList)
+    maxBin    = binContentList.index( maxBinVal )
+
+    maxBinVal *= factor # correct the -1 factor in the case of us looking for a minimum
+
+    return maxBinVal, maxBin
+
+def getMinBin(TH1 , useError = False):
+
+    return getMaxBin(TH1 , useError = useError, factor = -1. )
+
+
+if __name__ == '__main__':
+
+    testHist = ROOT.TH1D("testHist","testHist", 10,0,10)
+    nBins = testHist.GetNbinsX()
+
+    for n in xrange(1,nBins+1): 
+        testHist.SetBinContent(n, n**2)
+        testHist.SetBinError(n, float(n)/2)
+
+    testHist.Draw()
+    print getMaxBin(testHist , useError = False)
+    print getMaxBin(testHist , useError = True)
+
+    print getMinBin(testHist , useError = False)
+    print getMinBin(testHist , useError = True)
+
+
+
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
