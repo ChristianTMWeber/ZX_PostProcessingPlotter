@@ -31,10 +31,10 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
         TLegend.SetBorderSize(0); # and remove its border without a border
         return TLegend
 
-    canv = ROOT.TCanvas("GraphOverview", "GraphOverview")
+    canv = ROOT.TCanvas("GraphOverview", "GraphOverview",1920, 1080)
  
 
-    expectedLimit2Sig.GetYaxis().SetTitle("95% CL on #sigma_{ZZ_{d}} [fb] ")
+    expectedLimit2Sig.GetYaxis().SetTitle("Upper 95% CL on #sigma_{ZZ_{d}} [fb] ")
     expectedLimit2Sig.GetYaxis().SetTitleSize(0.06)
     expectedLimit2Sig.GetYaxis().SetTitleOffset(0.6)
     expectedLimit2Sig.GetYaxis().CenterTitle()
@@ -60,20 +60,26 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
     expectedLimitMedian.SetLineColor(colorScheme)
     expectedLimitMedian.Draw("same")
 
-    extractedLimit.SetLineStyle(1) # https://root.cern.ch/doc/master/classTAttLine.html#L3
-    extractedLimit.SetLineWidth(2)
-    extractedLimit.SetLineColor(colorScheme)
-    extractedLimit.Draw("same")
+    if extractedLimit is not None:
+
+        extractedLimit.SetLineStyle(1) # https://root.cern.ch/doc/master/classTAttLine.html#L3
+        extractedLimit.SetLineWidth(2)
+        extractedLimit.SetLineColor(colorScheme)
+        extractedLimit.Draw("same")
 
     legend = setupTLegend()
-    legend.AddEntry(extractedLimit , "observed Limit"  , "l");
+    if extractedLimit is not None: legend.AddEntry(extractedLimit , "observed Limit"  , "l");
     legend.AddEntry(expectedLimitMedian , "expected limit"  , "l");
     legend.AddEntry(expectedLimit1Sig , "#pm1#sigma expected limit"  , "f");
     legend.AddEntry(expectedLimit2Sig , "#pm2#sigma expected limit"  , "f");    
 
     legend.Draw()
 
+    #canv.SetLogy()
+
     canv.Update() #"a3" also seems to work https://root.cern/doc/master/classTGraphPainter
+
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
     if writeTo: writeTo.cd(); canv.Write()
 
