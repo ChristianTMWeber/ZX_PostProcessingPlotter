@@ -21,5 +21,8 @@
 *.table
 *.out
 
+# ignore compressed folders that I might have
+*.zip
+
 # but we wanna commit all the files related to the data driven reducible backgrounds
 !limitSetting/dataDrivenBackgroundsFromH4l/*
