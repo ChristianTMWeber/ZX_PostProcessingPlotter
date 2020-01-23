@@ -510,11 +510,13 @@ def addRegionAndChannelToStatsText(shortName):
 
     outList += ", "
 
-    if "4m" in shortName:     outList += "4#mu"
-    elif "2e2m" in shortName: outList += "2e2#mu"
-    elif "2m2e" in shortName: outList += "2#mu2e"
-    elif "4e" in shortName:   outList += "4e"
-    else:     outList += "4#mu, 2e2#mu, 2#mu2e, 4e"
+    if "4m"      in shortName:  outList += "4#mu"
+    elif "2e2m"  in shortName:  outList += "2e2#mu"
+    elif "2e2mu" in shortName:  outList += "2e2#mu"
+    elif "2m2e"  in shortName:  outList += "2#mu2e"
+    elif "2mu2e" in shortName:  outList += "2#mu2e"
+    elif "4e"    in shortName:  outList += "4e"
+    else:                       outList += "4#mu, 2e2#mu, 2#mu2e, 4e"
 
     return outList
 
