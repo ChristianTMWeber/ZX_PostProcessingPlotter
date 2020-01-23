@@ -26,3 +26,5 @@
 
 # but we wanna commit all the files related to the data driven reducible backgrounds
 !limitSetting/dataDrivenBackgroundsFromH4l/*
+# aswell files I use to demonstrate the impact on the ZZd cross section estimates from changing reducible background norms
+!limitSetting/reducibleNormImpact/*
