@@ -106,20 +106,23 @@ def yieldBranchAndContent(TTree, cutAt = 10):
 def getMeanAndStdDictFromTTree(TTree, nSigma = 1, cutAt = 10):
 
     meanDict = {}
-    stdDict = {}
+    lowLimitDict = {}
+    upLimitDict = {}
 
     for mass, npArray in yieldBranchAndContent(TTree, cutAt = cutAt):
 
         meanDict[mass] =  np.mean( npArray )
-        stdDict[mass]  =  np.std( npArray  ) * nSigma
 
-    return meanDict, stdDict, stdDict
+        lowLimitDict[mass] = np.mean( npArray ) - ( np.std( npArray  ) * nSigma)
+        upLimitDict[mass]  = np.mean( npArray ) + ( np.std( npArray  ) * nSigma)
+
+    return meanDict, lowLimitDict, upLimitDict
 
 def getconfInterval(TTree,  nSigma = 1. , cutAt = 10):
 
     meanDict = {}
-    errorLow = {}
-    errorHigh = {}
+    lowLimitDict = {}
+    upLimitDict = {}
 
     confidenceSetpoint = math.erf( float(nSigma) / 2.**0.5)
 
@@ -130,10 +133,12 @@ def getconfInterval(TTree,  nSigma = 1. , cutAt = 10):
 
         lowLimit , highLimit = getArrayConfInterval( npArray, confidenceValue = confidenceSetpoint,  intervalCenter = arrayMean)
         meanDict[mass]   =  arrayMean
-        errorLow[mass]   =  arrayMean - lowLimit
-        errorHigh[mass]  =  highLimit - arrayMean
+        #errorLow[mass]   =  arrayMean - lowLimit
+        #errorHigh[mass]  =  highLimit - arrayMean
+        lowLimitDict[mass] = lowLimit
+        upLimitDict[mass]  = highLimit
 
-    return meanDict, errorLow, errorHigh
+    return meanDict, lowLimitDict, upLimitDict
 
 
 
@@ -145,18 +150,32 @@ def getToyLimits( filename , TTreeName = "upperLimits1Sig_toys", graphName = "to
 
     
     if intervalType == "confInterval":
-        mean, errorLow, errorHigh = getconfInterval(upperLimitTree1Sig, nSigma = nSigma , cutAt = 10)
+        mean, lowLimit, highLimit = getconfInterval(upperLimitTree1Sig, nSigma = nSigma , cutAt = 10)
     elif intervalType == "standardDeviation":
-        mean, errorLow, errorHigh = getMeanAndStdDictFromTTree(upperLimitTree1Sig, nSigma = nSigma, cutAt = 10)
+        mean, lowLimit, highLimit = getMeanAndStdDictFromTTree(upperLimitTree1Sig, nSigma = nSigma, cutAt = 10)
 
 
     toyLimitTGrapah = graphHelper.createNamedTGraphAsymmErrors("toyLimit_1sigma")
 
     for mass in sorted(mean.keys()):
+
         pointNr = toyLimitTGrapah.GetN()
 
-        toyLimitTGrapah.SetPoint( pointNr, mass, mean[mass] )
-        toyLimitTGrapah.SetPointError( pointNr, 0,0, errorLow[mass] , errorHigh[mass] )
+
+
+        meanVal = mean[mass]
+
+        lowVal = lowLimit[mass]
+        highVal = highLimit[mass] 
+
+
+        
+        errorLow = meanVal -lowVal
+        errorHigh = highVal - meanVal
+
+
+        toyLimitTGrapah.SetPoint( pointNr, mass, meanVal )
+        toyLimitTGrapah.SetPointError( pointNr, 0,0, errorLow , errorHigh )
 
     return toyLimitTGrapah
 
