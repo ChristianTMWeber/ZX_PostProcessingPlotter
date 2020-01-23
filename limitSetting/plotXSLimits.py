@@ -210,51 +210,63 @@ def getAsymptoticTGraphs(filename):
 
 if __name__ == '__main__':
 
-    ###################### get limits
-
-    observedLimitTGraph =  getToyLimits( "unblindedObservedLimits.root" , TTreeName = "upperLimits2Sig_observed", graphName = "observedLimits_upperLimit" ,nSigma = 1, intervalType = "standardDeviation")
-
-    observedLimitTGraphNoErrors = graphHelper.getTGraphWithoutError( observedLimitTGraph )
-
-    ########  plotExpectedLimitsFromTGraph   ### specifically just asymptotic case
-    expectedLimitTFile = ROOT.TFile("asymptoticLimitsV2.root", "OPEN")
-
-    observedLimitGraph         = expectedLimitTFile.Get("observedLimitGraph")
-    expectedLimitsGraph_1Sigma = expectedLimitTFile.Get("expectedLimits_1Sigma")
-    expectedLimitsGraph_2Sigma = expectedLimitTFile.Get("expectedLimits_2Sigma")
+    typeOfLimits = "asymptotic" # "toyBased"
 
 
-    outputTFile = ROOT.TFile("XSLimitPlot.root", "RECREATE")
-    makeGraphOverview( observedLimitTGraphNoErrors , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile)
-    outputTFile.Close()
+    if typeOfLimits == "asyptotic"
 
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+        ###################### get limits (from asymptotics)
 
-    ################# plot expected limits from TTree    
+        observedLimitTGraph =  getToyLimits( "unblinded/observedLimit_2l2mu.root" , TTreeName = "upperLimits2Sig_observed", graphName = "observedLimits_upperLimit" ,nSigma = 1, intervalType = "standardDeviation")
 
-    #testFile = ROOT.TFile("../allCombinedMC16a_1895.root")
-    #upperLimitTree1Sig = testFile.Get("upperLimits1Sig_toys")
+        observedLimitTGraphNoErrors = graphHelper.getTGraphWithoutError( observedLimitTGraph )
 
-    filename = "allcombV2_all_mc16ade_5138.root"
+        #########  plotExpectedLimitsFromTGraph   ### specifically just asymptotic case
+        expectedLimitTFile = ROOT.TFile("unblinded/asyptoticLimit_2l2mu.root", "OPEN")
 
-    #filename = "allcombV1_all_mc16ade_5203Entries.root"
-
-
-
-    toyLimitTGrapah1Sigma = getToyLimits( filename , TTreeName = "upperLimits1Sig_toys", graphName = "toyLimit_1sigma", nSigma = 1, intervalType = "confInterval")
-    toyLimitTGrapah2Sigma = getToyLimits( filename , TTreeName = "upperLimits1Sig_toys", graphName = "toyLimit_2sigma", nSigma = 2, intervalType = "confInterval")
+        ###observedLimitGraph         = expectedLimitTFile.Get("observedLimitGraph")
+        expectedLimitsGraph_1Sigma = expectedLimitTFile.Get("expectedLimits_1Sigma")
+        expectedLimitsGraph_2Sigma = expectedLimitTFile.Get("expectedLimits_2Sigma")
 
 
-    expectedLimit = graphHelper.getTGraphWithoutError( toyLimitTGrapah1Sigma )
+        outputTFile = ROOT.TFile("XSLimitPlot.root", "RECREATE")
+        #makeGraphOverview( observedLimitTGraphNoErrors , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile)
+        makeGraphOverview(                 None         , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile)
+        outputTFile.Close()
+
+        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    elif typeOfLimits == "toyBased"
+
+        ################# plot expected limits from TTree    
+
+        #testFile = ROOT.TFile("../allCombinedMC16a_1895.root")
+        #upperLimitTree1Sig = testFile.Get("upperLimits1Sig_toys")
+
+        filename = "all_ToysV2_5109.root"
+
+        #filename = "allcombV1_all_mc16ade_5203Entries.root"
 
 
-    outputTFile = ROOT.TFile("XSLimitPlot.root", "RECREATE")
 
-    canvas = makeGraphOverview( expectedLimit,  toyLimitTGrapah1Sigma, toyLimitTGrapah2Sigma , colorScheme = ROOT.kRed, writeTo = outputTFile)
+        toyLimitTGrapah1Sigma = getToyLimits( filename , TTreeName = "upperLimits1Sig_toys", graphName = "toyLimit_1sigma", nSigma = 1, intervalType = "confInterval")
+        toyLimitTGrapah2Sigma = getToyLimits( filename , TTreeName = "upperLimits1Sig_toys", graphName = "toyLimit_2sigma", nSigma = 2, intervalType = "confInterval")
 
-    outputTFile.Close()
 
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+        expectedLimit = graphHelper.getTGraphWithoutError( toyLimitTGrapah1Sigma )
+
+        observedLimitTGraph =  getToyLimits( "unblindedObservedLimits.root" , TTreeName = "upperLimits2Sig_observed", graphName = "observedLimits_upperLimit" ,nSigma = 1, intervalType = "standardDeviation")
+        observedLimitTGraphNoErrors = graphHelper.getTGraphWithoutError( observedLimitTGraph )
+        
+
+
+        outputTFile = ROOT.TFile("XSLimitPlot.root", "RECREATE")
+
+        canvas = makeGraphOverview( observedLimitTGraphNoErrors,  toyLimitTGrapah1Sigma, toyLimitTGrapah2Sigma , colorScheme = ROOT.kRed, writeTo = outputTFile)
+
+        outputTFile.Close()
+
+        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
 
 
