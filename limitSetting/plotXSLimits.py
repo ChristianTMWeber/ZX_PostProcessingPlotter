@@ -144,6 +144,13 @@ def getconfInterval(TTree,  nSigma = 1. , cutAt = 10):
 
 def getToyLimits( filename , TTreeName = "upperLimits1Sig_toys", graphName = "toyLimit_1sigma" ,nSigma = 1, intervalType = "confInterval"):
 
+    makeMixingParameters = False
+
+    # mixing dict taken from "Illuminating dark photons with high-energy colliders", arXiv:1412.0018, Table 2
+    mixingDict =  { 14 : 0.00252 , 15 : 0.00295 , 16 : 0.00338 , 17 : 0.003885 , 18 : 0.00439 , 19 : 0.00497 , 20 : 0.00555 , 21 : 0.00618 , 22 : 0.00681 , 23 : 0.007475 , 24 : 0.00814 , 25 : 0.00877 , 26 : 0.0094 , 27 : 0.0099 , 28 : 0.0104 , 29 : 0.0106 , 30 : 0.0108 , 31 : 0.010205 , 32 : 0.00961 , 33 : 0.0078 , 34 : 0.00599 , 35 : 0.004895 , 36 : 0.0038 , 37 : 0.00346 , 38 : 0.00312 , 39 : 0.00296 , 40 : 0.0028 , 41 : 0.002715 , 42 : 0.00263 , 43 : 0.00258 , 44 : 0.00253 , 45 : 0.0025 , 46 : 0.00247 , 47 : 0.002445 , 48 : 0.00242 , 49 : 0.0024 , 50 : 0.00238 , 51 : 0.002365 , 52 : 0.00235 , 53 : 0.002335 , 54 : 0.00232 , 55 : 0.002305 , 56 : 0.00229 }
+    higgsXS = 4.858E+04 # femot barn
+
+
     testFile = ROOT.TFile(filename)
 
     upperLimitTree1Sig = testFile.Get(TTreeName)
@@ -168,8 +175,19 @@ def getToyLimits( filename , TTreeName = "upperLimits1Sig_toys", graphName = "to
         lowVal = lowLimit[mass]
         highVal = highLimit[mass] 
 
+        if makeMixingParameters: 
+            mixingFactor =  1./(higgsXS * mixingDict[mass])
+            meanVal *= mixingFactor
+            lowVal *= mixingFactor
+            highVal *= mixingFactor
 
+            meanVal = np.sqrt(meanVal)
+            lowVal  = np.sqrt(lowVal)
+            highVal = np.sqrt(highVal)
         
+
+
+
         errorLow = meanVal -lowVal
         errorHigh = highVal - meanVal
 
