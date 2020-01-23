@@ -763,7 +763,7 @@ if __name__ == '__main__':
                 else:                                  backgroundTallyTH1.Add(sortedSamples[key])
 
             # create a pad for the CrystalBall fit + data
-            if gotDataSample and not args.skipRatioHist: histPadYStart = 3./13
+            if gotDataSample and not args.skipRatioHist: histPadYStart = 3.5/13
             else:  histPadYStart = 0
             histPad = ROOT.TPad("histPad", "histPad", 0, histPadYStart, 1, 1);
             ROOT.SetOwnership(histPad, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
@@ -772,6 +772,8 @@ if __name__ == '__main__':
             #histPad.SetGridx();          # Vertical grid
             histPad.Draw();              # Draw the upper pad: pad1
             histPad.cd();                # pad1 becomes the current pad
+
+            backgroundTHStack.SetTitle("")
 
             backgroundTHStack.Draw("Hist")
 
@@ -826,7 +828,7 @@ if __name__ == '__main__':
             backgroundTHStack.GetXaxis().SetRange(axRangeLow,axRangeHigh)
 
             #statsOffset = (0.6,0.55), statsWidths = (0.3,0.32)
-            statsTPave=ROOT.TPaveText(0.55,0.55,0.9,0.87,"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
+            statsTPave=ROOT.TPaveText(0.4,0.40,0.9,0.87,"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
             for stats in statsTexts:   statsTPave.AddText(stats);
             statsTPave.Draw();
             legend.Draw(); # do legend things
@@ -864,9 +866,24 @@ if __name__ == '__main__':
                 ratioHist.GetYaxis().SetTitleOffset(0.4)
                 ratioHist.GetYaxis().CenterTitle()
 
+                # ratioHist.GetMaximum() , ratioHist.GetMinimum()
+                if ratioHist.GetMaximum() > 5: ratioHist.GetYaxis().SetRangeUser(ratioHist.GetMinimum(), 5)
+                maxRatioVal , _ = histHelper.getMaxBin(ratioHist , useError = True, skipZeroBins = True)
+                minRatioVal , _ = histHelper.getMinBin(ratioHist , useError = True, skipZeroBins = True)
+
+                #if minRatioVal is None: import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+                if maxRatioVal > 5.5: maxRatioVal = 5
+
+                if maxRatioVal is not None and minRatioVal is not None:
+                    ratioHist.GetYaxis().SetRangeUser(minRatioVal * 0.9, maxRatioVal * 1.1)
+
+
+
                 ratioHist.GetXaxis().SetLabelSize(0.12)
                 ratioHist.GetXaxis().SetTitleSize(0.13)
                 ratioHist.GetXaxis().SetTitleOffset(1.0)
+
                 ratioHist.Draw()
             else: backgroundTHStack.GetXaxis().SetTitle( sortedSamples.values()[0].GetXaxis().GetTitle()  )
 
