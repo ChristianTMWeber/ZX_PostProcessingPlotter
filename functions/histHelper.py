@@ -62,7 +62,7 @@ def fillTH2SliceWithTH1( TH2, TH1, sliceAtYVal ):
 
     return TH2
 
-def getMaxBin(TH1 , useError = False, factor = 1. ):
+def getMaxBin(TH1 , useError = False, skipZeroBins = False, factor = 1. ):
     # switch factor to -1. to infer the minimum
 
     nBins = TH1.GetNbinsX()
@@ -71,10 +71,15 @@ def getMaxBin(TH1 , useError = False, factor = 1. ):
 
 
     for n in xrange(1,nBins+1): 
+
+        if skipZeroBins and TH1.GetBinContent(n) == 0 and TH1.GetBinError(n) == 0: continue
+
         binContent = (TH1.GetBinContent(n) * factor)
         if useError: binContent += (TH1.GetBinError(n) )
 
         binContentList.append(binContent)
+
+    if len(binContentList) == 0 : return None, None
 
     maxBinVal = max(binContentList)
     maxBin    = binContentList.index( maxBinVal )
@@ -83,9 +88,9 @@ def getMaxBin(TH1 , useError = False, factor = 1. ):
 
     return maxBinVal, maxBin
 
-def getMinBin(TH1 , useError = False):
+def getMinBin(TH1 , useError = False , skipZeroBins = False):
 
-    return getMaxBin(TH1 , useError = useError, factor = -1. )
+    return getMaxBin(TH1 , useError = useError, skipZeroBins = skipZeroBins, factor = -1. )
 
 
 if __name__ == '__main__':
@@ -93,7 +98,7 @@ if __name__ == '__main__':
     testHist = ROOT.TH1D("testHist","testHist", 10,0,10)
     nBins = testHist.GetNbinsX()
 
-    for n in xrange(1,nBins+1): 
+    for n in xrange(2,nBins+1): 
         testHist.SetBinContent(n, n**2)
         testHist.SetBinError(n, float(n)/2)
 
@@ -104,6 +109,8 @@ if __name__ == '__main__':
     print getMinBin(testHist , useError = False)
     print getMinBin(testHist , useError = True)
 
+    print getMinBin(testHist , useError = False, skipZeroBins = True)
+    print getMinBin(testHist , useError = True, skipZeroBins = True)
 
 
     import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
