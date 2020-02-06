@@ -839,7 +839,7 @@ if __name__ == '__main__':
             statsTexts.append( "  " )       
             #statsTexts.append( "Background + Signal: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(backgroundMergedTH1)) )
             statsTexts.append( "Background : %.2f #pm %.2f" %( getHistIntegralWithUnertainty(backgroundTallyTH1)) )
-            statsTexts.append( "Signal: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(signalTallyTH1)) )
+            if signalTallyTH1.Integral() >0 : statsTexts.append( "Signal: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(signalTallyTH1)) )
 
 
 
@@ -854,7 +854,7 @@ if __name__ == '__main__':
 
                 legend.AddEntry(currentTH1, "data", "l")
 
-                statsTexts.append("Data: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(dataTH1) ) )  
+                if dataTH1.Integral >0: statsTexts.append("Data: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(dataTH1) ) )  
 
             # rescale Y-axis
             largestYValue = [max(getBinContentsPlusError(backgroundMergedTH1) )]
