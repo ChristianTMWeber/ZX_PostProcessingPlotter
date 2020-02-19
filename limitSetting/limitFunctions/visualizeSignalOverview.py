@@ -33,18 +33,19 @@ def prepareSignalSampleOverviewTH2(masterHistDict, channel = None):
 def getMasspointDict(masterHistDict , channel = None ):
     # returns a dict of the available masspoints: masspointDict[ int ] = <name of event type with that mass>
     # e.g.: masspointDict[20] = 'ZZd, m_{Zd} = 20GeV'
-    if channel is None: channel = masterHistDict.keys()[0]
+    #if channel is None: channel = masterHistDict.keys()[0]
     
     masspointDict = {}
-    for eventType in masterHistDict['ZXSR'].keys(): 
-        reObject = re.search("\d{2}", eventType)
-        if reObject: # True if we found something
-            # do some checks that the 'All' and 'Nominal' are in the dict, and that the TH1 in the dict is actually in there
-            # these are mostly settings for development
-            #if masterHistDict[channel][eventType]['Nominal']['All'] is not None:
-            #    print(masterHistDict[channel][eventType]['Nominal']['All'])
-                #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-            masspointDict[ int(reObject.group()) ] = eventType
+    for channel in masterHistDict.keys(): 
+        for eventType in masterHistDict[channel].keys(): 
+            reObject = re.search("\d{2}", eventType)
+            if reObject: # True if we found something
+                # do some checks that the 'All' and 'Nominal' are in the dict, and that the TH1 in the dict is actually in there
+                # these are mostly settings for development
+                #if masterHistDict[channel][eventType]['Nominal']['All'] is not None:
+                #    print(masterHistDict[channel][eventType]['Nominal']['All'])
+                    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+                masspointDict[ int(reObject.group()) ] = eventType
     return masspointDict
 
 

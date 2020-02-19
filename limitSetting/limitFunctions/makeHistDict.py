@@ -46,7 +46,10 @@ def fillHistDict( path, currentTH1 , mcTag, aDSIDHelper , channelMap = { "ZXSR" 
 
     # channel options are the 'keys' in the channelMap dict
     channels = [channelMap[x] for x in channelMap.keys() if x in currentTH1.GetName() ]
-    assert len(channels)==1
+
+    if len(channels) == 0:  return masterHistDict
+    else: assert len(channels) == 1
+    
     channel = channels[0]
     systematicVariation = path.split("/")[2]
 
