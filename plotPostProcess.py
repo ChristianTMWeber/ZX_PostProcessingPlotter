@@ -78,12 +78,18 @@ class DSIDHelper:
                      "qq->ZZ*->4l" : [364250, 364251, 364252], "gg->ZZ*->4l" : [345708, 345709],
                      "ZZZ" : [364248, 364247], "WZZ" : [364245], "WWZ" : [364243], 
                      "lllljj" : [364364], "ttll" : [410142], "WZ" : [361601], "ttbar" : [410472],
-                     "Z+Jets (Sherpa)" : [364114, 364115, 364116, 364117, 364118, 364119, 364120, 
-                                          364121, 364122, 364123, 364124, 364125, 364126, 364127, 
-                                          364100, 364101, 364102, 364103, 364104, 364105, 364106, 
-                                          364107, 364108, 364109, 364110, 364111, 364112, 364113, 
-                                          364128, 364129, 364130, 364131, 364132, 364133, 364134, 
-                                          364135, 364136, 364137, 364138, 364139, 364140, 364141]
+                     "Z+Jets (Z->ee, CVetoBVeto)"      : [364114, 364117, 364120, 364123] ,
+                     "Z+Jets (Z->mumu, CVetoBVeto)"    : [364100, 364103, 364106, 364109] ,
+                     "Z+Jets (Z->tautau, CVetoBVeto)"  : [364128, 364131, 364134, 364137] ,
+                     "Z+Jets (Z->ee, CFilterBVeto)"    : [364115, 364118, 364121, 364124] ,
+                     "Z+Jets (Z->mumu, CFilterBVeto)"  : [364101, 364104, 364107, 364110] ,
+                     "Z+Jets (Z->tautau, CFilterBVeto)": [364129, 364132, 364135, 364138] ,
+                     "Z+Jets (Z->ee, BFilter)"         : [364116, 364119, 364122, 364125] ,
+                     "Z+Jets (Z->mumu, BFilter)"       : [364102, 364105, 364108, 364111] ,
+                     "Z+Jets (Z->tautau, BFilter)"     : [364130, 364133, 364136, 364139] ,
+                     "Z+Jets (Z->ee, hight pT, no filters)"       : [364126, 364127] ,
+                     "Z+Jets (Z->mumu, hight pT, no filters)"     : [364112, 364113] ,
+                     "Z+Jets (Z->tautau, hight pT, no filters)"   : [364140, 364141] 
                      }
 
     analysisMapping =   {   "H4l"    : [341964, 341947, 345060, 341488, 345046, 345047, 345048, 345066, 344973, 344974],
@@ -141,6 +147,8 @@ class DSIDHelper:
         return None
 
     def isSignalSample(self , KeyOrDSID ):
+
+        if isinstance(KeyOrDSID,str) and re.match("\d{6}", KeyOrDSID ): KeyOrDSID = int(KeyOrDSID)
 
         if KeyOrDSID in self.physicsProcessSignalByDSID: return True
         elif KeyOrDSID in self.physicsProcessSignal: return True
