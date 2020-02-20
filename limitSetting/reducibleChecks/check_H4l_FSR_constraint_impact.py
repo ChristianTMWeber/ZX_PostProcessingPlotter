@@ -205,7 +205,8 @@ if __name__ == '__main__':
     if os.path.isfile(pathToRootFiles): fileList.append(pathToRootFiles)
     else:
         for file in  os.listdir(pathToRootFiles): 
-            if os.path.isfile(file) and file.endswith(".root"): fileList.append(file)
+            fileAndPath = os.path.join(pathToRootFiles,file)
+            if os.path.isfile(fileAndPath) and fileAndPath.endswith(".root"): fileList.append(fileAndPath)
 
 
     for file in  fileList: 
