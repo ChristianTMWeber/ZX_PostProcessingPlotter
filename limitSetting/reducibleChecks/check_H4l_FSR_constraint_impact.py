@@ -5,6 +5,9 @@
 import ROOT
 
 import re
+import os
+import argparse # to parse command line options
+
 
 import sys 
 from os import path
@@ -15,10 +18,10 @@ import functions.histHelper as histHelper # to help me with histograms
 
 def setupTLegend():
     # set up a TLegend, still need to add the different entries
-    TLegend = ROOT.TLegend(0.10,0.70,0.65,0.90)
+    TLegend = ROOT.TLegend(0.10,0.77,0.95, 0.98)
     TLegend.SetFillColor(ROOT.kWhite)
     TLegend.SetLineColor(ROOT.kWhite)
-    TLegend.SetNColumns(1);
+    TLegend.SetNColumns(2);
     TLegend.SetFillStyle(0);  # make legend background transparent
     TLegend.SetBorderSize(0); # and remove its border without a border
 
@@ -30,18 +33,26 @@ def fillMZ2HistPair(aTTree, uncorrectedHist, ZConstrFSRHist, cutOn = ""):
     aTTree.Draw("mZ2_unconstrained >>" + uncorrectedHist.GetName(), cutOn)
     aTTree.Draw("mZ2_constrained   >>" + ZConstrFSRHist.GetName(), cutOn)
 
+    #rescale X-axis
+
+    for hist in [uncorrectedHist, ZConstrFSRHist]:
+        axRangeLow, axRangeHigh = histHelper.getFirstAndLastNonEmptyBinInHist(hist, offset = 2)
+        hist.GetXaxis().SetRange(axRangeLow,axRangeHigh)
+
     return None
 
-def getDSIDStr(sampleName): return re.search("\d{6}",sampleName ).group()
+def getDSIDStr(sampleName): return re.search("(\d{6})|(data\d{2}(\w{2}\d{2})*)",sampleName ).group()
+    #   find six digits OR
+    #   the word "data" plus two digits, with zero or one times the following (i.e. it is optional) two text characters with two difits after it
 
-def prepHistograms(miniTreeName):
+def setupHistograms(miniTreeName):
 
     if isinstance(miniTreeName, ROOT.TObject): miniTreeName = miniTreeName.GetName()
 
     DSID = getDSIDStr(miniTreeName)
 
-    uncorrectedHist = ROOT.TH1D("uncorrectedHist_"+DSID, "uncorrectedHist_"+DSID, 100,0,10)
-    uncorrectedHist.SetCanExtend(ROOT.TH1.kAllAxes)
+    uncorrectedHist = ROOT.TH1D("uncorrectedHist_"+DSID, "uncorrectedHist_"+DSID, 1000,0,1000)
+    #uncorrectedHist.SetCanExtend(ROOT.TH1.kAllAxes)
 
     ZConstrFSRHist = uncorrectedHist.Clone("ZConstrFSRHist_"+DSID)
 
@@ -57,6 +68,10 @@ def prepHistOptics(hist):
         for element in hist: prepHistOptics(element)
         return None
 
+    maxVal , _ = histHelper.getMaxBin(hist , useError = False, skipZeroBins = True)
+
+    if maxVal is not None: hist.GetYaxis().SetRangeUser(0, maxVal * 1.1)
+
     #uncorrectedHist.SetFillStyle(3244)
     hist.SetMarkerColor(1)
     hist.GetYaxis().SetTitle("Events / " + str(hist.GetBinWidth(1) )+" GeV" )
@@ -64,7 +79,21 @@ def prepHistOptics(hist):
     hist.GetYaxis().SetTitleOffset(1.)
     hist.GetYaxis().CenterTitle()
     hist.SetStats( False)
+
     hist.GetXaxis().SetTitle("m_{34} [GeV]")
+    hist.GetXaxis().SetTitleSize(0.045)
+    hist.GetXaxis().SetTitleOffset(0.8)
+
+    return None
+
+def setAlternateHistColorScheme(hist):
+
+    if isinstance(hist,list): 
+        for element in hist: setAlternateHistColorScheme(element)
+        return None
+
+    hist.SetMarkerStyle(5)
+    hist.SetMarkerColor(2)
 
     return None
 
@@ -76,16 +105,19 @@ def prepRatioHistOptics(ratioHist):
     maxRatioVal , _ = histHelper.getMaxBin(ratioHist , useError = False, skipZeroBins = True)
     minRatioVal , _ = histHelper.getMinBin(ratioHist , useError = False, skipZeroBins = True)
 
-    ratioHist.GetYaxis().SetRangeUser(minRatioVal * 0.99, maxRatioVal * 1.01)
+    if maxRatioVal is not None: ratioHist.GetYaxis().SetRangeUser(minRatioVal * 0.99, maxRatioVal * 1.01)
 
     ratioHist.SetTitle("")
     
     ratioHist.GetYaxis().SetNdivisions( 506, True)  # XYY x minor divisions YY major ones, optimizing around these values = TRUE
     ratioHist.GetYaxis().SetLabelSize(0.1)
 
-    ratioHist.GetYaxis().SetTitle("FSR_ZConstrained / reference ")
-    ratioHist.GetYaxis().SetTitleSize(0.08)
-    ratioHist.GetYaxis().SetTitleOffset(0.6)
+    ratioHist.GetYaxis().SetTitle("ratio")
+    #ratioHist.GetYaxis().SetTitle("#splitline{FSR_Z-Constr. / }{uncorrected}")
+
+    #splitline{aaa}{bbb}
+    ratioHist.GetYaxis().SetTitleSize(0.12)
+    ratioHist.GetYaxis().SetTitleOffset(0.4)
     ratioHist.GetYaxis().CenterTitle()
 
     ratioHist.SetMarkerStyle(8)
@@ -101,7 +133,7 @@ def prepRatioHistOptics(ratioHist):
 
 def makeCanvasWithHistograms(uncorrectedHist, ZConstrFSRHist, canvasName = "canv"):
 
-    canvas = ROOT.TCanvas(canvasName, canvasName,720,720)
+    canvas = ROOT.TCanvas(canvasName, canvasName,2560/2, 1080)
 
     histPadYStart = 3.5/13
     histPad = ROOT.TPad("histPad", "histPad", 0, histPadYStart, 1, 1);
@@ -146,31 +178,98 @@ def makeCanvasWithHistograms(uncorrectedHist, ZConstrFSRHist, canvasName = "canv
 
 if __name__ == '__main__':
 
-    #miniTreeFile = ROOT.TFile("data15to16_13TeV.root","OPEN")
-    miniTreeFile = ROOT.TFile("mc16_13TeV.345706.Sherpa_222_NNPDF30NNLO_ggllll_130M4l.root","OPEN")
+    parser = argparse.ArgumentParser()
 
-    miniTree = miniTreeFile.Get("tree_incl_all")
+    parser.add_argument("--input",  "-i", type=str, default=os.getcwd(), help="path to the input files")
+    parser.add_argument("--output", "-o", type=str, default="output.root", help="name of the output file")
 
-    cutOn = "m4l_constrained >115 && m4l_constrained<130"
+    parser.add_argument( "--batch", default=False, action='store_true' , 
+    help = "If run with '--batch' we will activate root batch mode and suppress all creation of graphics." ) 
+
+    args = parser.parse_args()
+
+    if args.batch : ROOT.gROOT.SetBatch(True)
+
+    outputFileName = args.output
 
 
-    uncorrectedHist, ZConstrFSRHist, uncorrectedHist_m4lAll, ZConstrFSRHist_m4lAll = prepHistograms(miniTreeFile)
-
-
-    fillMZ2HistPair(miniTree, uncorrectedHist       , ZConstrFSRHist       , cutOn = cutOn)
-    fillMZ2HistPair(miniTree, uncorrectedHist_m4lAll, ZConstrFSRHist_m4lAll, cutOn = "")
-
-    DSID = getDSIDStr( miniTreeFile.GetName() )
-    #uncorrectedHist.SetTitle("full m4l range")
-    uncorrectedHist.SetTitle("m4l in Higgs Window, sample # "+ DSID )
-
-    prepHistOptics([uncorrectedHist, ZConstrFSRHist])
-
-    ZConstrFSRHist.SetMarkerStyle(5)
-    ZConstrFSRHist.SetMarkerColor(2)
-
-    outDict = makeCanvasWithHistograms(uncorrectedHist, ZConstrFSRHist, canvasName = "canv_"+DSID)
+    # delet the outputFile, so that we can write to it later on successively with the "update" option of the ROOT.TFile
+    if os.path.isfile(outputFileName): os.remove(outputFileName)
 
 
 
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    pathToRootFiles = args.input
+
+    for file in  os.listdir(pathToRootFiles): 
+        if not os.path.isfile(file) or not file.endswith(".root"): continue # skip directories or non-root files
+
+
+        #miniTreeFile = ROOT.TFile("data15to16_13TeV.root","OPEN")
+        miniTreeFile = ROOT.TFile(file,"OPEN")
+
+        miniTree = miniTreeFile.Get("tree_incl_all")
+
+
+        ############## Prep and Fill Histograms ##############
+
+        uncorrectedHist, ZConstrFSRHist, uncorrectedHist_m4lAll, ZConstrFSRHist_m4lAll = setupHistograms(miniTreeFile)
+
+        DSID = getDSIDStr( miniTreeFile.GetName() )
+
+
+        higgsWindowCut = "m4l_constrained >115 && m4l_constrained<130"
+        m4lAllCut = ""
+
+        if "data" in DSID:
+            higgsWindowCut += " && m4l_constrained < 115 && m4l_constrained>130" # maybe find another way to exlcute the Higgs Window here
+            m4lAllCut += "m4l_constrained < 115 || m4l_constrained>130"
+
+
+
+
+        fillMZ2HistPair(miniTree, uncorrectedHist       , ZConstrFSRHist       , cutOn = higgsWindowCut)
+        fillMZ2HistPair(miniTree, uncorrectedHist_m4lAll, ZConstrFSRHist_m4lAll, cutOn = "")
+
+        #uncorrectedHist.SetTitle("full m4l range")
+        uncorrectedHist.SetTitle("m4l in Higgs Window, # "+ DSID )
+        uncorrectedHist_m4lAll.SetTitle("m4l unconstrained, # "+ DSID )
+
+        prepHistOptics([uncorrectedHist, ZConstrFSRHist,uncorrectedHist_m4lAll, ZConstrFSRHist_m4lAll])
+
+        setAlternateHistColorScheme( [ZConstrFSRHist, ZConstrFSRHist_m4lAll] )
+
+
+        outDict = makeCanvasWithHistograms(uncorrectedHist, ZConstrFSRHist, canvasName = "canv_"+DSID)
+        outDictAll_m4lAll = makeCanvasWithHistograms(uncorrectedHist_m4lAll, ZConstrFSRHist_m4lAll, canvasName = "canv_"+DSID+"_m4lAll")
+
+        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+        ############## Save Results ##############
+
+
+        outputTFile = ROOT.TFile(outputFileName, "UPDATE")
+        outputTFile.mkdir(DSID)
+        TDir=outputTFile.Get(DSID)
+        TDir.cd()
+
+        uncorrectedHist.Write()
+        ZConstrFSRHist.Write()
+        outDict["canvas"].Write()
+
+        uncorrectedHist_m4lAll.Write()
+        ZConstrFSRHist_m4lAll.Write()
+        outDictAll_m4lAll["canvas"].Write()
+        outputTFile.Close()
+
+        for ending in [".png",".pdf"]:
+            outDict["canvas"].Print(outDict["canvas"].GetName() + ending)
+            outDictAll_m4lAll["canvas"].Print(outDictAll_m4lAll["canvas"].GetName() + ending)
+
+        outDict["canvas"].Close()
+        outDictAll_m4lAll["canvas"].Close()
+
+
+    print( "\tAdd Done! \n\toutputs saved to " + outputFileName)
+
+
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
