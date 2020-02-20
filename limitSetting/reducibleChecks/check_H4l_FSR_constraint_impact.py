@@ -200,9 +200,15 @@ if __name__ == '__main__':
 
     pathToRootFiles = args.input
 
-    for file in  os.listdir(pathToRootFiles): 
-        if not os.path.isfile(file) or not file.endswith(".root"): continue # skip directories or non-root files
+    fileList = []
 
+    if os.path.isfile(pathToRootFiles): fileList.append(pathToRootFiles)
+    else:
+        for file in  os.listdir(pathToRootFiles): 
+            if os.path.isfile(file) and file.endswith(".root"): fileList.append(file)
+
+
+    for file in  fileList: 
 
         #miniTreeFile = ROOT.TFile("data15to16_13TeV.root","OPEN")
         miniTreeFile = ROOT.TFile(file,"OPEN")
@@ -241,8 +247,6 @@ if __name__ == '__main__':
 
         outDict = makeCanvasWithHistograms(uncorrectedHist, ZConstrFSRHist, canvasName = "canv_"+DSID)
         outDictAll_m4lAll = makeCanvasWithHistograms(uncorrectedHist_m4lAll, ZConstrFSRHist_m4lAll, canvasName = "canv_"+DSID+"_m4lAll")
-
-        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
         ############## Save Results ##############
 
