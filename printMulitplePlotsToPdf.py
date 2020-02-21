@@ -38,17 +38,42 @@ def generateTDirPathAndContentsRecursive(TDir, baseString = "" , newOwnership = 
             yield baseString + TObject.GetName() , TObject
 
 
+def scaleCanvas(tCanvas, scale = 2, newHeight = None):
+    # if "newHeight" is not None, interpret "scale" as "newWidth"
+    # tCanvas needs to have been drawn
+
+    old_width  = tCanvas.GetWindowWidth()
+    old_height = tCanvas.GetWindowHeight()
+
+    if newHeight is None:
+        newWidth  = int(old_width*scale)
+        newHeight = int(old_height*scale)
+    else:
+        newWidth  = int(scale)
+        newHeight = int(newHeight)
+
+    temp_canvas = ROOT.TCanvas("temp", "", newWidth , newHeight )
+    tCanvas.DrawClonePad()
+
+    temp_canvas.Update()
+
+    temp_canvas.SetName(tCanvas.GetName())
+    temp_canvas.SetTitle(tCanvas.GetTitle())
+
+    return temp_canvas
+
 
 if __name__ == '__main__':
 
-    fileNameList = ["post_20191114_173904_mc16a_ZX_BckgSignalData_NoSyst_mc16a_.root",
-                    "post_20191114_174147_mc16d_ZX_BckgSignalData_NoSyst_mc16d_.root",
-                    "post_20191114_174252_mc16e_ZX_BckgSignalData_NoSyst_mc16e_.root",
-                    "post_20191114_17_mc16ade_ZX_BckgSignalData_NoSyst_mc16ade_.root"]
+    fileNameList = ["post_20200219_204021__ZX_Run2_AllReducibles_May_mc16ade_.root"]
 
-    figureNameList = ["ZXVR1_4mu_LowMassSidebands_m34", "ZXVR1_2e2mu_LowMassSidebands_m34", "ZXVR1_2mu2e_LowMassSidebands_m34", "ZXVR1_4e_LowMassSidebands_m34", "ZXVR1_All_LowMassSidebands_m34"]
+    #figureNameList = ["ZXVR2_4mu_HighMassSideBand1_m4l", "ZXVR2_2e2mu_HighMassSideBand1_m4l", "ZXVR2_2mu2e_HighMassSideBand1_m4l", "ZXVR2_4e_HighMassSideBand1_m4l", "ZXVR2_All_HighMassSideBand1_m4l"]
+    #figureNameList = ["ZXSR_4mu_HWindow_m4l", "ZXSR_2e2mu_HWindow_m4l", "ZXSR_2mu2e_HWindow_m4l", "ZXSR_4e_HWindow_m4l", "ZXSR_All_HWindow_m4l"]
+    figureNameList = ["ZXSR_4mu_HWindow_m34", "ZXSR_2e2mu_HWindow_m34", "ZXSR_2mu2e_HWindow_m34", "ZXSR_4e_HWindow_m34", "ZXSR_All_HWindow_m34"]
 
-    outputEnding = ".pdf"
+    outputEnding = ".png"
+
+    ROOT.gROOT.SetBatch(True)
 
     for fileName in fileNameList:
         file = ROOT.TFile(fileName,"READ")
@@ -65,6 +90,10 @@ if __name__ == '__main__':
                     newFilename = prefix +"_" + figureName + outputEnding
 
                     tCanvas.Draw()
+                    # increase resolution for non-vector formats
+                    
+                    tCanvas = scaleCanvas(tCanvas, scale = 2)
+                    #tCanvas.Draw()
                     tCanvas.Print(newFilename)
 
         file.Close()
