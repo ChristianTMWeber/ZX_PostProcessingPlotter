@@ -106,7 +106,7 @@ def setupTLegend():
     return TLegend
 
 
-def getContinousSubsetOfHist(histIn, okRange):
+def getContiguousSubsetOfHist(histIn, okRange):
 
     histOut = histIn.Clone( histIn.GetName()+"_subset")
 
@@ -229,8 +229,8 @@ if __name__ == '__main__':
 
         #simHist.KolmogorovTest(interpHist,"M")
 
-        #simHistShort = getContinousSubsetOfHist(simHist, [xMin,xMax])
-        #interpHistShort = getContinousSubsetOfHist(interpHist, [xMin,xMax])
+        #simHistShort = getContiguousSubsetOfHist(simHist, [xMin,xMax])
+        #interpHistShort = getContiguousSubsetOfHist(interpHist, [xMin,xMax])
         #ksResult = simHistShort.KolmogorovTest(interpHistShort)
 
         
