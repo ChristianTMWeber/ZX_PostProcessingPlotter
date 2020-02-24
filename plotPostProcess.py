@@ -2,7 +2,7 @@
 #   
 # python programm to make plotsout of the post processing outputs   
 #
-# run as:       python plotPostProcess.py ZZdPostProcessOutput.root --mcCampaign mc16a 
+# run as:       python plotPostProcess.py exampleZdZdPostProcessOutput.root --mcCampaign mc16ade
 #
 # to run debugger: python -m pdb
 #
@@ -687,11 +687,7 @@ if __name__ == '__main__':
                                        364124, 364125, 364126, 364127, 364100, 364101, 364102, 364103, 364104, 364105, 
                                        364106, 364107, 364108, 364109, 364110, 364111, 364112, 364113]: continue
 
-        if skipReducible and int(DSID) in [364114, 364115, 364116, 364117, 364118, 364119, 364120, 364121, 364122, 
-                                           364123, 364124, 364125, 364126, 364127, 364100, 364101, 364102, 364103, 
-                                           364104, 364105, 364106, 364107, 364108, 364109, 364110, 364111, 364112, 
-                                           364113, 364128, 364129, 364130, 364131, 364132, 364133, 364134, 364135, 
-                                           364136, 364137, 364138, 364139, 364140, 364141, 361601, 410472]: continue
+        if skipReducible and int(DSID) in myDSIDHelper.analysisMapping["Reducible"]: continue
 
          
 
