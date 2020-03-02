@@ -140,8 +140,8 @@ def makeCanvasWithHistograms(uncorrectedHist, ZConstrFSRHist, canvasName = "canv
     histPad.Draw();              # Draw the upper pad: pad1
     histPad.cd();                # pad1 becomes the current pad
 
-    uncorrectedHist.Draw("")
-    ZConstrFSRHist.Draw("same P")
+    uncorrectedHist.Draw("HIST")
+    ZConstrFSRHist.Draw("same P HIST")
 
 
     legend = setupTLegend()
@@ -167,7 +167,7 @@ def makeCanvasWithHistograms(uncorrectedHist, ZConstrFSRHist, canvasName = "canv
 
     prepRatioHistOptics(ratioHist)
 
-    ratioHist.Draw("P")
+    ratioHist.Draw("P HIST")
 
     canvas.Update()
 
@@ -224,7 +224,7 @@ if __name__ == '__main__':
         DSID = getDSIDStr( miniTreeFile.GetName() )
 
 
-        higgsWindowCut = "m4l_constrained >115 && m4l_constrained<130"
+        higgsWindowCut = "(m4l_constrained >115 && m4l_constrained<130)"
         m4lAllCut = ""
 
         if "data" in DSID:
@@ -234,8 +234,8 @@ if __name__ == '__main__':
 
 
 
-        fillMZ2HistPair(miniTree, uncorrectedHist       , ZConstrFSRHist       , cutOn = higgsWindowCut)
-        fillMZ2HistPair(miniTree, uncorrectedHist_m4lAll, ZConstrFSRHist_m4lAll, cutOn = "")
+        fillMZ2HistPair(miniTree, uncorrectedHist       , ZConstrFSRHist       , cutOn = "weight_corr *" +higgsWindowCut)
+        fillMZ2HistPair(miniTree, uncorrectedHist_m4lAll, ZConstrFSRHist_m4lAll, cutOn = "weight_corr")
 
         #uncorrectedHist.SetTitle("full m4l range")
         uncorrectedHist.SetTitle("m4l in Higgs Window, # "+ DSID )
