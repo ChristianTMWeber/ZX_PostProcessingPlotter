@@ -725,16 +725,6 @@ if __name__ == '__main__':
         legend = setupTLegend()
 
 
-        # define fill colors, use itertools to cycle through them, access via fillColors.next()
-        fillColors = itertools.cycle([ROOT.kBlue,   ROOT.kViolet,   ROOT.kMagenta,   ROOT.kPink,   ROOT.kRed,   ROOT.kOrange,   ROOT.kYellow,   ROOT.kSpring,   ROOT.kGreen,   ROOT.kTeal,   ROOT.kCyan,   ROOT.kAzure,
-                                      ROOT.kBlue-6, ROOT.kViolet-6, ROOT.kMagenta-6, ROOT.kPink-6, ROOT.kRed-6, ROOT.kOrange-6, ROOT.kYellow-6, ROOT.kSpring-6, ROOT.kGreen-6, ROOT.kTeal-6, ROOT.kCyan-6, ROOT.kAzure-6,
-                                      ROOT.kBlue+2, ROOT.kViolet+2, ROOT.kMagenta+2, ROOT.kPink+2, ROOT.kRed+2, ROOT.kOrange+2, ROOT.kYellow+2, ROOT.kSpring+2, ROOT.kGreen+2, ROOT.kTeal+2, ROOT.kCyan+2, ROOT.kAzure+2]) 
-        #ROOT.kBlue, ROOT.kViolet, ROOT.kMagenta, ROOT.kPink, ROOT.kRed, ROOT.kOrange, ROOT.kYellow, ROOT.kSpring, ROOT.kGreen, ROOT.kTeal, ROOT.kCyan, ROOT.kAzure
-        #ROOT.kBlue-6, ROOT.kViolet-6, ROOT.kMagenta-6, ROOT.kPink-6, ROOT.kRed-6, ROOT.kOrange-6, ROOT.kYellow-6, ROOT.kSpring-6, ROOT.kGreen-6, ROOT.kTeal-6, ROOT.kCyan-6, ROOT.kAzure-6
-        #ROOT.kBlue+2, ROOT.kViolet+2, ROOT.kMagenta+2, ROOT.kPink+2, ROOT.kRed+2, ROOT.kOrange+2, ROOT.kYellow+2, ROOT.kSpring+2, ROOT.kGreen+2, ROOT.kTeal+2, ROOT.kCyan+2, ROOT.kAzure+2
-
-
-
         gotDataSample = False # change this to true later if we do have data samples
 
         assert len( combinedMCTagHistDict[histEnding].keys() ) == 1, "We ended up with more than MC tag after the comining the masterHistDict. That shouldn't be the case"
