@@ -16,7 +16,7 @@ def setupIndependentVar(hist):
 def TH1ToRooHistPDF( inputTH1, indepVar = None):
     # convert a ROOT.TH1 to a RooDataHist (a RooFit data format)
     # better provide a RooRealVar that can serve as the independent variable in the RooDataHist and RooAbsPDF 
-    if indepVar is None: indepVar = setupIndependentVar(hist) # prepare an indepdentend variable if none is given
+    if indepVar is None: indepVar = setupIndependentVar(inputTH1) # prepare an indepdentend variable if none is given
 
     aRooDataHist = ROOT.RooDataHist( inputTH1.GetName()+"RDH", inputTH1.GetTitle()+"RDH", ROOT.RooArgList(indepVar), inputTH1,1)
     aRooAbsPdf   = ROOT.RooHistPdf(  inputTH1.GetName()+"PDF", inputTH1.GetTitle()+"PDF", ROOT.RooArgSet(indepVar) , aRooDataHist )
