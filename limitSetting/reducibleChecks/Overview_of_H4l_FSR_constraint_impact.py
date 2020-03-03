@@ -16,9 +16,22 @@ import functions.rootDictAndTDirTools as rootDictAndTDirTools
 import functions.histHelper as histHelper # to help me with histograms
 
 
+def setupTLegend():
+    # set up a TLegend, still need to add the different entries
+    TLegend = ROOT.TLegend(0.50,0.65,0.90,0.90)
+    TLegend.SetFillColor(ROOT.kWhite)
+    TLegend.SetLineColor(ROOT.kWhite)
+    TLegend.SetNColumns(2);
+    TLegend.SetFillStyle(0);  # make legend background transparent
+    TLegend.SetBorderSize(0); # and remove its border without a border
+
+    return TLegend
+
+
+
 if __name__ == '__main__':
 
-    inputFileName = "Prod_v21_mc16a_Nominal.root"
+    inputFileName = "Prod_v20_mc16e_Nominal.root"
 
     inputTFile = ROOT.TFile(inputFileName,"OPEN")
 
@@ -29,9 +42,12 @@ if __name__ == '__main__':
     myDSIDHelper = plotPostProcess.DSIDHelper()
 
     masterHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) 
-    # masterHistDict[ HistEnding ][ mcCampaign ][ DSID ][ ROOT.TH1 ] 
+    # masterHistDict[ HistEnding ][ mcCampaign ][ DSID ][ ROOT.TH1 ] +
 
-    for path, baseHist  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive(inputTFile):#, newOwnership = ownershipSetpoint): 
+    ownershipSetpoint = False
+
+
+    for path, baseHist  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive(inputTFile, newOwnership = ownershipSetpoint): 
 
         if not isinstance(baseHist,ROOT.TH1): continue
 
@@ -39,6 +55,7 @@ if __name__ == '__main__':
         DSID = myDSIDHelper.idDSID(path)
 
         if int(DSID) not in myDSIDHelper.physicsProcessByDSID: continue
+        #if int(DSID) not in myDSIDHelper.analysisMapping["Reducible"]: continue
 
         baseHist.GetName()
 
@@ -65,7 +82,7 @@ if __name__ == '__main__':
         #backgroundTHStack.SetMaximum(25.)
         canvas = ROOT.TCanvas(histEnding,histEnding,1300/2,1300/2);
         ROOT.SetOwnership(canvas, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
-        legend = plotPostProcess.setupTLegend()
+        legend = setupTLegend()
 
 
         gotDataSample = False # change this to true later if we do have data samples
@@ -156,9 +173,9 @@ if __name__ == '__main__':
             #if "eta"   in backgroundMergedTH1.getTitle: yAxisUnit = ""
             #elif "phi" in backgroundMergedTH1.getTitle: yAxisUnit = " radians"
 
-            backgroundTHStack.GetYaxis().SetTitle("Events / " + str(backgroundMergedTH1.GetBinWidth(1) )+" GeV" )
+            backgroundTHStack.GetYaxis().SetTitle("Unweighted Events / " + str(backgroundMergedTH1.GetBinWidth(1) )+" GeV" )
             backgroundTHStack.GetYaxis().SetTitleSize(0.05)
-            backgroundTHStack.GetYaxis().SetTitleOffset(1.1)
+            backgroundTHStack.GetYaxis().SetTitleOffset(0.9)
             backgroundTHStack.GetYaxis().CenterTitle()
             
             #backgroundTHStack.GetXaxis().SetTitleSize(0.12)
@@ -214,77 +231,106 @@ if __name__ == '__main__':
 
     #ZConstrFSRHist = histHelper.mergeTHStackHists( stackDict[histEnding] )
 
-    uncorrectedHist = stackDict["uncorrectedHist_"]
-    ZConstrFSRHist = stackDict["ZConstrFSRHist_"]
+    overviewOutput = ROOT.TFile("OverviewOutput.root", "UPDATE")
+
+    overviewOutput.cd()
+
+    for suffix in ["", "_m4lAll"]:
+
+        uncorrectedHist = stackDict["uncorrectedHist_"+suffix]
+        ZConstrFSRHist = stackDict["ZConstrFSRHist_"+suffix]
 
 
-    legendDict["uncorrectedHist_"]
-
-    canvasName = "m4l in Higgs Window"
-
-
-    canvas = ROOT.TCanvas(canvasName, canvasName,2560/2, 1080)
-
-    histPadYStart = 3.5/13
-    histPad = ROOT.TPad("histPad", "histPad", 0, histPadYStart, 1, 1);
-    histPad.Draw();              # Draw the upper pad: pad1
-    histPad.cd();                # pad1 becomes the current pad
-
-    uncorrectedHist.SetTitle(canvasName)
-    uncorrectedHist.GetXaxis().SetTitle("m_{34} [GeV]")
-
-    uncorrectedHist.Draw("")
-
-    ZConstrFSRHist.Draw("same P")
-
-    uncorrectedHistMergedTH1 = histHelper.mergeTHStackHists(uncorrectedHist) # get a merged background to draw uncertainty bars on the total backgroun
-    ZConstrFSRHistMergedTH1 = histHelper.mergeTHStackHists(ZConstrFSRHist) # get a merged background to draw uncertainty bars on the total backgroun
+        if suffix == "": canvasName = "115 GeV < m4l < 130 GeV"
+        else:            canvasName = "m4l unconstrained"
 
 
-    legendDict["uncorrectedHist_"].AddEntry(ZConstrFSRHistMergedTH1 , "FSR recovered and Z constrained" , "p");
-    legendDict["uncorrectedHist_"].Draw()
+        canvas = ROOT.TCanvas(canvasName, canvasName,2560/2, 1080)
 
-    #ZConstrFSRHistMergedTH1 = histHelper.mergeTHStackHists(ZConstrFSRHist) # get a merged background to draw uncertainty bars on the total backgroun
-    #ZConstrFSRHistMergedTH1.Draw("same P")
+        histPadYStart = 3.5/13
+        histPad = ROOT.TPad("histPad", "histPad", 0, histPadYStart, 1, 1);
+        histPad.Draw();              # Draw the upper pad: pad1
+        histPad.cd();                # pad1 becomes the current pad
 
-    canvas.cd()
-    canvas.Update()
+        uncorrectedHist.SetTitle(canvasName)
+        uncorrectedHist.GetXaxis().SetTitle("m_{34} [GeV]")
 
+        uncorrectedHist.Draw("HIST")
 
-    ratioPad = ROOT.TPad("ratioPad", "ratioPad", 0, 0, 1, histPadYStart);
+        uncorrectedHistMergedTH1 = histHelper.mergeTHStackHists(uncorrectedHist) # get a merged background to draw uncertainty bars on the total backgroun
+        ZConstrFSRHistMergedTH1 = histHelper.mergeTHStackHists(ZConstrFSRHist) # get a merged background to draw uncertainty bars on the total backgroun
 
-    ratioPad.SetTopMargin(0.)
-    ratioPad.SetBottomMargin(0.3)
-    ratioPad.SetGridy(); #ratioPad.SetGridx(); 
-    ratioPad.Draw();              # Draw the upper pad: pad1
-    ratioPad.cd();                # pad1 becomes the current pad
+        #ZConstrFSRHist.Draw("same P")
 
-
-
-
-    ratioHist = ZConstrFSRHistMergedTH1.Clone( ZConstrFSRHistMergedTH1.GetName()+"_Clone" )#ZConstrFSRHist.Clone( ZConstrFSRHist.GetName()+"_Clone" )
-    ratioHist.Divide(uncorrectedHistMergedTH1)
+        ZConstrFSRHistMergedTH1.SetMarkerColor(1)
+        ZConstrFSRHistMergedTH1.SetMarkerSize(2)
+        ZConstrFSRHistMergedTH1.SetMarkerStyle(33)
+        ZConstrFSRHistMergedTH1.Draw("same P HIST")
 
 
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-    ratioHist.SetTitle("")
-    ratioHist.GetYaxis().SetTitle("ratio")
-    ratioHist.Draw("P")
+        legendDict["uncorrectedHist_"+suffix].AddEntry(ZConstrFSRHistMergedTH1 , "FSR recovered and Z constrained" , "p");
+        legendDict["uncorrectedHist_"+suffix].Draw()
+
+        #ZConstrFSRHistMergedTH1 = histHelper.mergeTHStackHists(ZConstrFSRHist) # get a merged background to draw uncertainty bars on the total backgroun
+        #ZConstrFSRHistMergedTH1.Draw("same P")
+
+        canvas.cd()
+        canvas.Update()
 
 
-    canvas.Update()
+        ratioPad = ROOT.TPad("ratioPad", "ratioPad", 0, 0, 1, histPadYStart);
+
+        ratioPad.SetTopMargin(0.)
+        ratioPad.SetBottomMargin(0.3)
+        ratioPad.SetGridy(); #ratioPad.SetGridx(); 
+        ratioPad.Draw();              # Draw the upper pad: pad1
+        ratioPad.cd();                # pad1 becomes the current pad
 
 
 
 
-    import check_H4l_FSR_constraint_impact
-
-    #outDict = check_H4l_FSR_constraint_impact.makeCanvasWithHistograms(uncorrectedHist,ZConstrFSRHist)
-
+        ratioHist = ZConstrFSRHistMergedTH1.Clone( ZConstrFSRHistMergedTH1.GetName()+"_Clone" )#ZConstrFSRHist.Clone( ZConstrFSRHist.GetName()+"_Clone" )
+        ratioHist.Divide(uncorrectedHistMergedTH1)
 
 
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+        ratioHist.SetTitle("")
+
+        ratioHist.GetYaxis().SetNdivisions( 506, True)  # XYY x minor divisions YY major ones, optimizing around these values = TRUE
+        ratioHist.GetYaxis().SetLabelSize(0.1)
+        
+        ratioHist.GetYaxis().SetTitleSize(0.12)
+        ratioHist.GetYaxis().SetTitleOffset(0.3)
+        ratioHist.GetYaxis().CenterTitle()
+
+        ratioHist.GetXaxis().SetLabelSize(0.12)
+        ratioHist.GetXaxis().SetTitleSize(0.13)
+        ratioHist.GetXaxis().SetTitleOffset(1.0)
+        ratioHist.GetXaxis().SetTitle("m_{34} [GeV]")
+
+        #ratioHist.SetMarkerStyle(8)
+
+        ratioHist.GetYaxis().SetTitle("ratio")
+        ratioHist.Draw("P HIST")
 
 
+        maxRatioVal , _ = histHelper.getMaxBin(ratioHist , useError = False, skipZeroBins = True)
+        minRatioVal , _ = histHelper.getMinBin(ratioHist , useError = False, skipZeroBins = True)
+
+        if maxRatioVal is not None: ratioHist.GetYaxis().SetRangeUser(minRatioVal * 0.99, maxRatioVal * 1.01)
+
+
+
+        canvas.Update()
+
+
+        printStr = inputFileName.split(".")[0]+suffix+ ".pdf"
+
+        canvas.Print( printStr )
+        canvas.Write()
+        canvas.Clear()
+
+    overviewOutput.Close()
 
     import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here

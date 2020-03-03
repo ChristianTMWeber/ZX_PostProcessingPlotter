@@ -186,6 +186,9 @@ if __name__ == '__main__':
     parser.add_argument( "--batch", default=False, action='store_true' , 
     help = "If run with '--batch' we will activate root batch mode and suppress all creation of graphics." ) 
 
+    parser.add_argument( "--printAs", nargs='*', type=str,
+    help = "Add file endings that we can print the figures to, e.g. .png, .pdf, etc" ) 
+
     args = parser.parse_args()
 
     if args.batch : ROOT.gROOT.SetBatch(True)
@@ -195,8 +198,6 @@ if __name__ == '__main__':
 
     # delet the outputFile, so that we can write to it later on successively with the "update" option of the ROOT.TFile
     if os.path.isfile(outputFileName): os.remove(outputFileName)
-
-
 
     pathToRootFiles = args.input
 
@@ -266,9 +267,11 @@ if __name__ == '__main__':
         outDictAll_m4lAll["canvas"].Write()
         outputTFile.Close()
 
-        for ending in [".png",".pdf"]:
-            outDict["canvas"].Print(outDict["canvas"].GetName() + ending)
-            outDictAll_m4lAll["canvas"].Print(outDictAll_m4lAll["canvas"].GetName() + ending)
+
+        if args.printAs: 
+            for ending in args.printAs :
+                outDict["canvas"].Print(outDict["canvas"].GetName() + ending)
+                outDictAll_m4lAll["canvas"].Print(outDictAll_m4lAll["canvas"].GetName() + ending)
 
         outDict["canvas"].Close()
         outDictAll_m4lAll["canvas"].Close()
