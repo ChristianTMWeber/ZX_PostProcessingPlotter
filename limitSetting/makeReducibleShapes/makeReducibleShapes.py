@@ -4,6 +4,19 @@ import copy
 import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
 import re
 
+
+#   Use getReducibleTH1s() to get a dict of shapes for the reducible estimates
+#   
+#   
+#   
+#   
+#   
+#   
+#   
+
+
+
+
 def getRooRealVarFromTree( branchName, relevantTTree ):
     return ROOT.RooRealVar(branchName,branchName, math.floor(relevantTTree.GetMinimum(branchName)), math.ceil(relevantTTree.GetMaximum(branchName)))
 
@@ -107,7 +120,7 @@ def addPDFs(pdf1, pdf2, pdf1Weight, addPDFName = "addPdf"):
     return addPDF
 
 
-def makeRooKeysPDFs():
+def makeRooKeysPDFs( m34Min = 12000, m34Max = 115000):
 
     ## llmumu shapes are from Z+HeavyFlavor and ttbar MC 
     ## llee   shapes are from Z+HeavyFlavor MC and 3l+X 
@@ -120,7 +133,7 @@ def makeRooKeysPDFs():
 
 
     # we need a common independentVariable for all PDFs, so that we can add them etc. That's why we define it here
-    m34 = ROOT.RooRealVar( "llll_m34", "llll_m34", 12000 , 115000 )
+    m34 = ROOT.RooRealVar( "llll_m34", "llll_m34", m34Min , m34Max )
 
     shapeSourceFiles = getTTreeLocations()
 
@@ -143,12 +156,20 @@ def makeRooKeysPDFs():
     return pdfDict, m34
 
 
+def addRelativeHistError(hist, relError):
+    for n in xrange(0,hist.GetNbinsX()+2): 
+        hist.SetBinError(n, hist.GetBinContent(n) * relError )
+    return None
 
-def getReducibleTH1s():
 
-    nBins = 100
+def getReducibleTH1s(TH1Template = None , convertXAxisFromMeVToGeV = False):
 
-    convertXAxisFromMeVToGeV = False
+
+
+
+
+    HFFractionFor_llmumu = 0.5
+    HFFractionFor_llee   = 0.5
 
     # reducible background in final states, 115<m4l<130
     # 4mu: 2.29 +- 1.52% (stat.) +- 7.19% (syst.)
@@ -159,20 +180,42 @@ def getReducibleTH1s():
 
     # make sure that we use the same keys in llNorms and TH1Dict
     llNorms = { "llmumu" : 2.29+2.57 , "llee" : 2.54+3.19, "4l" : 10.6}
+
+    # add stat error only. Add syst error to limitSetting.py instead
+    statErrorDict = { "llmumu" : (2.29*0.0152 + 2.57*0.0152)/(2.29+2.57) , 
+                      "llee"   : (2.54*0.0843 + 3.19*0.0597)/(2.54+3.19), 
+                      "4l"     : 0.0284}
+
+
     TH1Dict = {}
 
 
+    
 
-    # get the all the pdfs
-    pdfDict, m34 = makeRooKeysPDFs()
+    if TH1Template is None:
+        nBins = 100
+        # get the all the pdfs
+        pdfDict, m34 = makeRooKeysPDFs()
     #  pdfDict[finalState][shapeType] = RooKeysPdf
     #   e.g. pdfDict[ "llmumu" ][ "HeavyFlavor" ] = RooKeysPdf
+
+        
+
+    else: 
+
+        nBins = TH1Template.GetNbinsX()
+
+        minM34 = TH1Template.GetBinLowEdge(1)
+        maxM34 = TH1Template.GetBinLowEdge(nBins+1)
+
+        pdfDict, m34 = makeRooKeysPDFs( m34Min = 12000, m34Max = 115000)
+
+
+
 
     ## llmumu shapes are from Z+HeavyFlavor and ttbar MC 
     ## llee   shapes are from Z+HeavyFlavor MC and 3l+X 
 
-    HFFractionFor_llmumu = 0.5
-    HFFractionFor_llee   = 0.5
 
     # let's don't put the things below into a subfunction, so we don't have to be concerned with delted-due-out-of-scope issues
 
@@ -196,27 +239,27 @@ def getReducibleTH1s():
     newName = re.sub("llmumu", "4l", TH1Dict["llmumu"].GetName())
     newTitle = re.sub("llmumu", "4l", TH1Dict["llmumu"].GetTitle())
 
-
-    
-
     
     TH1Dict["4l"] = TH1Dict["llmumu"].Clone(newName)
     TH1Dict["4l"].SetTitle(newTitle)
     TH1Dict["4l"].Add(TH1Dict["llee"])
 
+    for finalState in TH1Dict: addRelativeHistError( TH1Dict[finalState]  ,  statErrorDict[finalState]  )
+
     #for flavor in TH1Dict: TH1Dict[flavor].Integral()
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
-
-
-    return None
+    return TH1Dict
 
 
 
 if __name__ == '__main__':
 
 
-    getReducibleTH1s()
+    testHist = ROOT.TH1D("TEST", "TEST", 200, 10000,150000 )
+
+
+    TH1Dict = getReducibleTH1s(testHist)
 
     ### Plot the pdf together with the data for visualization
 
@@ -263,45 +306,37 @@ if __name__ == '__main__':
             canv.Update()
 
 
-    canvasDict["llmumu"].cd(4)
+        canvasDict[finalState].cd(4)
 
-    xFrameHists = m34.frame() # frame to plot my PDFs on
-
-    for step in range(5,6): 
-
-        weightSetting = float(step)/10
-
-        heavyFlavorWeight = ROOT.RooRealVar("HeavyFlavorWeight", "HeavyFlavorWeight", weightSetting, 0.,1.)
-        llmumuPDF = ROOT.RooAddPdf("llmumuPDF", "llmumuPDF", pdfDict["llmumu"]["HeavyFlavor"] ,   pdfDict["llmumu"]["ttBar" ], heavyFlavorWeight )
+        xFrameHists = m34.frame() # frame to plot my PDFs on
 
         
-        llmumuPDF.plotOn(xFrameHists,ROOT.RooFit.LineColor(ROOT.kAzure+step))
+
+        weightSetting = 0.5;
+
+        heavyFlavorWeight = ROOT.RooRealVar("HeavyFlavorWeight", "HeavyFlavorWeight", weightSetting, 0.,1.)
+
+        if finalState == "llmumu":
+            llPDF = ROOT.RooAddPdf(finalState, finalState, pdfDict[finalState]["HeavyFlavor"] ,   pdfDict[finalState]["ttBar" ], heavyFlavorWeight )
+        elif finalState == "llee" :
+            llPDF = ROOT.RooAddPdf(finalState, finalState, pdfDict[finalState]["HeavyFlavor"] ,   pdfDict["llee"]["3l+X" ], heavyFlavorWeight )
+        
+        llPDF.plotOn(xFrameHists,ROOT.RooFit.LineColor(ROOT.kAzure+1))
 
 
         xFrameHists.Draw()
 
-        canvasDict["llmumu"].Update()
 
 
-    testHist = llmumuPDF.createHistogram("llll_m34",nBins)
 
-    testHist.Draw("same")
+        histFromPDF = TH1Dict[finalState]
 
-    canvasDict["llmumu"].Update()
+        histFromPDF.Scale( 1./histFromPDF.Integral() )
 
-    testHist.GetNbinsX()
+        histFromPDF.Draw("same")
 
-
-    testHistMeV = th1HistMevToGeV(testHist)
-
-    testCanv = ROOT.TCanvas()
-    testCanv.cd()
-    testHistMeV.Draw()
-    testCanv.Update()
-
-    # aTFile.Get()
-
-    # aDataSetWeighted.sumEntries()
-    # aTFile.Get("410472").Get("Nominal").Get("h_ZXSR_All_HWindow_m34").Integral()
+        canvasDict[finalState].Update()
 
     import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+
