@@ -3,7 +3,7 @@ import math
 import copy
 import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
 import re
-
+import os
 
 #   Use getReducibleTH1s() to get a dict of shapes for the reducible estimates
 #   
@@ -26,6 +26,12 @@ def getTTreeLocations():
     shapeSourceFiles = { "HeavyFlavor" : "post_20200228_203930__ZX_Run2_ZJetBFilter_May_Minitree.root", 
                          "ttBar"       : "post_20200228_152824__ZX_Run2_ttbar_May_Minitree.root",
                          "3l+X"        : "post_20200319_122149__ZX_Run2_Data_May_3lX_Minitree.root"      }
+
+
+    # we need to translate the file names to absolute paths, as the working dir is arbitrary when we execute this script as a module
+    absPathToThisScript = os.path.realpath(__file__)
+    absPathToDicretory = os.path.dirname(absPathToThisScript)
+    for key in shapeSourceFiles: shapeSourceFiles[key] =  os.path.join(absPathToDicretory, shapeSourceFiles[key] )
                          
     return shapeSourceFiles
 
@@ -58,7 +64,7 @@ def getShapeRooDataSetAndIndepVar(ZXTTree, finalState, m34 = None):
     m4l = getRooRealVarFromTree( "llll_m4l", ZXTTree )
 
     weight = getRooRealVarFromTree( "weight", ZXTTree )
-    weight.setMin(0)
+    weight.setMin(-1.1) # use this value to ignore one negative datapoint that trip the RooKeysPDF up
 
     decayChannel = getRooRealVarFromTree( "decayChannel", ZXTTree )
 
@@ -149,7 +155,7 @@ def makeRooKeysPDFs( m34Min = 12000, m34Max = 115000):
 
             #kest1 = ROOT.RooKeysPdf("kest1", "kest1", m34, aDataSet)#                        ROOT.RooKeysPdf.MirrorBoth)
             #kest2 = ROOT.RooKeysPdf("kest2", "kest2", m34, aDataSet)#                        ROOT.RooKeysPdf.MirrorBoth)
-            kest3 = ROOT.RooKeysPdf(pdfName, pdfName, m34, aDataSet, ROOT.RooKeysPdf.MirrorBoth)#                        ROOT.RooKeysPdf.MirrorBoth)
+            kest3 = ROOT.RooKeysPdf(pdfName, pdfName, m34, aDataSet)#                        ROOT.RooKeysPdf.MirrorBoth)
 
             pdfDict[finalState][shapeType] = kest3
 
@@ -168,8 +174,8 @@ def getReducibleTH1s(TH1Template = None , convertXAxisFromMeVToGeV = False):
 
 
 
-    HFFractionFor_llmumu = 0.5
-    HFFractionFor_llee   = 0.5
+    HFFractionFor_llmumu = (14.23+4.53)/(14.23+4.53+7.38) #taken from the H4l event selection support note
+    HFFractionFor_llee   = (12.1)/(12.1+4.18+14.79) 
 
     # reducible background in final states, 115<m4l<130
     # 4mu: 2.29 +- 1.52% (stat.) +- 7.19% (syst.)
@@ -179,18 +185,25 @@ def getReducibleTH1s(TH1Template = None , convertXAxisFromMeVToGeV = False):
     # 4l: 10.6 +- 2.84% (stat.) +- 8.22% (syst.)
 
     # make sure that we use the same keys in llNorms and TH1Dict
-    llNorms = { "llmumu" : 2.29+2.57 , "llee" : 2.54+3.19, "4l" : 10.6}
+    llNorms = { "llmumu" : 2.29+2.57 , "llee" : 2.54+3.19, "all" : 10.6}
 
     # add stat error only. Add syst error to limitSetting.py instead
     statErrorDict = { "llmumu" : (2.29*0.0152 + 2.57*0.0152)/(2.29+2.57) , 
                       "llee"   : (2.54*0.0843 + 3.19*0.0597)/(2.54+3.19), 
-                      "4l"     : 0.0284}
+                      "all"     : 0.0284}
 
 
     TH1Dict = {}
 
+    
+
+    m34Min = 12000; m34Max = 115000;
 
     
+    if convertXAxisFromMeVToGeV : GeVScaleFactor = 1e3
+    else:                         GeVScaleFactor = 1.
+
+
 
     if TH1Template is None:
         nBins = 100
@@ -203,12 +216,20 @@ def getReducibleTH1s(TH1Template = None , convertXAxisFromMeVToGeV = False):
 
     else: 
 
-        nBins = TH1Template.GetNbinsX()
+        lowBin = TH1Template.GetXaxis().FindBin( m34Min/GeVScaleFactor)    
 
-        minM34 = TH1Template.GetBinLowEdge(1)
-        maxM34 = TH1Template.GetBinLowEdge(nBins+1)
+        highBin = TH1Template.GetXaxis().FindBin(m34Max/GeVScaleFactor)  
 
-        pdfDict, m34 = makeRooKeysPDFs( m34Min = 12000, m34Max = 115000)
+        # m34 min and max change the limits of the relevant independent variable and implicitly the limits of the TH1 that will be created from the inheriting PDF
+        # thus change it so that the bin edges will match with the TH1Template
+        m34Min = (TH1Template.GetBinLowEdge(lowBin)     ) * GeVScaleFactor
+        m34Max = (TH1Template.GetBinLowEdge(highBin+1)  ) * GeVScaleFactor
+
+        nBins = highBin-lowBin+1
+
+        #testHist = ROOT.TH1D("TEST", "m_{34} [GeV]", nBins, m34Min, m34Max)
+
+        pdfDict, m34 = makeRooKeysPDFs( m34Min = m34Min, m34Max = m34Max)
 
 
 
@@ -229,20 +250,40 @@ def getReducibleTH1s(TH1Template = None , convertXAxisFromMeVToGeV = False):
     TH1Dict["llmumu"] = llmumuPDF.createHistogram(m34.GetName(),nBins)
     TH1Dict["llee"] = lleePDF.createHistogram(m34.GetName(),nBins)
 
-    for flavor in TH1Dict: TH1Dict[flavor].Scale( llNorms[flavor] )
+    
+
+
+    for flavor in TH1Dict: TH1Dict[flavor].Scale( llNorms[flavor] ) # normalize the m34 distribution to the correct event count
 
 
     if convertXAxisFromMeVToGeV: 
         for flavor in TH1Dict: TH1Dict[flavor] = th1HistMevToGeV( TH1Dict[flavor] )
 
 
-    newName = re.sub("llmumu", "4l", TH1Dict["llmumu"].GetName())
-    newTitle = re.sub("llmumu", "4l", TH1Dict["llmumu"].GetTitle())
+    # if a TH1Template was provided we wanna make sure that we output a histogram with the same binning
+    # in that case, the TH1s in the TH1Dict contain a subset of the bins in the template
+    # i.e. same binwidth, same bin edges, but possible for not the same range
+    # here we effective extend the range, such that he binning is identical
 
+    if TH1Template is not None:
+        for flavor in TH1Dict: 
+
+            tempHist = TH1Template.Clone( TH1Dict[flavor].GetName() )
+            tempHist.Reset("ICESM")
+            tempHist.SetTitle( TH1Dict[flavor].GetTitle() )
+
+            for binNr in xrange(1, TH1Dict[flavor].GetNbinsX() +1) :  
+                tempHist.SetBinContent(binNr + lowBin -1, TH1Dict[flavor].GetBinContent(binNr) )
+
+
+# Setup the llmumu + llee, e.g. the 
+
+    newName = re.sub("llmumu", "all", TH1Dict["llmumu"].GetName())
+    newTitle = re.sub("llmumu", "all", TH1Dict["llmumu"].GetTitle())
     
-    TH1Dict["4l"] = TH1Dict["llmumu"].Clone(newName)
-    TH1Dict["4l"].SetTitle(newTitle)
-    TH1Dict["4l"].Add(TH1Dict["llee"])
+    TH1Dict["all"] = TH1Dict["llmumu"].Clone(newName)
+    TH1Dict["all"].SetTitle(newTitle)
+    TH1Dict["all"].Add(TH1Dict["llee"])
 
     for finalState in TH1Dict: addRelativeHistError( TH1Dict[finalState]  ,  statErrorDict[finalState]  )
 
@@ -256,10 +297,14 @@ def getReducibleTH1s(TH1Template = None , convertXAxisFromMeVToGeV = False):
 if __name__ == '__main__':
 
 
-    testHist = ROOT.TH1D("TEST", "TEST", 200, 10000,150000 )
+    #testHist = ROOT.TH1D("TEST", "TEST", 200, 10000,150000 )
+
+    testHist = ROOT.TH1D("TEST", "m_{34} [GeV]", 50, 0, 150)
 
 
-    TH1Dict = getReducibleTH1s(testHist)
+
+
+    TH1Dict = getReducibleTH1s(TH1Template = testHist , convertXAxisFromMeVToGeV = True )
 
     ### Plot the pdf together with the data for visualization
 
