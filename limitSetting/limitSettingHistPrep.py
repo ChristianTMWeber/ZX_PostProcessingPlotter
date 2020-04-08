@@ -34,6 +34,7 @@ from limitFunctions.visualizeSignalOverview import getMasspointDict
 
 import limitFunctions.makeHistDict as makeHistDict # things to fill what I call later the masterHistDict
 
+import makeReducibleShapes.makeReducibleShapes as makeReducibleShapes
 
 
 def addExpectedData(masterHistDict  ):
@@ -198,6 +199,20 @@ def addDataDrivenReducibleBackground( masterHistDict , reducibleFileName = "data
 
     return None
 
+def addDataDrivenReducibleBackground2( masterHistDict ):
+    # this is based on my efforts to create reducible shapes
+
+    referenceHist = masterHistDict["ZXSR"].values()[0]["Nominal"]["All"]
+
+    th1Dict = makeReducibleShapes.getReducibleTH1s(TH1Template = referenceHist , convertXAxisFromMeVToGeV = True)
+
+
+    masterHistDict["ZXSR"]["reducibleDataDriven"]["Nominal"]["All"]   = th1Dict["all"]    
+    masterHistDict["ZXSR"]["reducibleDataDriven"]["Nominal"]["2l2e"]  = th1Dict["llee"]
+    masterHistDict["ZXSR"]["reducibleDataDriven"]["Nominal"]["2l2mu"] = th1Dict["llmumu"]
+
+    return None
+
 def add2l2eAnd2l2muHists(masterHistDict):
 
     for channel in masterHistDict.keys():
@@ -332,7 +347,7 @@ if __name__ == '__main__':
         if nRelevantHistsProcessed %100 == 0:  print( path, myTObject)
         if args.quick and (nRelevantHistsProcessed == 2000): break
 
-    addDataDrivenReducibleBackground( masterHistDict  )
+    addDataDrivenReducibleBackground2( masterHistDict  )
 
     ######################################################
     # Interpolate signal samples in 1GeV steps and add them to the master hist dict
