@@ -27,6 +27,8 @@ from functions.compareVersions import compareVersions # to compare root versions
 import functions.rootDictAndTDirTools as rootDictAndTDirTools
 import functions.histHelper as histHelper # to help me with histograms
 
+import makeReducibleShapes.makeReducibleShapes as makeReducibleShapes
+
 class DSIDHelper:
 
     # define a groupings of DSIDS, e.g. if we wanna group DSIDs by 'physicsProcess', then one of those groups is called "H->ZZ*->4l" and contains the DSIDs 341964, 341947, etc...
@@ -553,6 +555,43 @@ def getDataDrivenReducibleShape(canvasName, sortedSampleKey, rebin):
 
     return False
 
+
+def getDataDrivenReducibleShape2(canvasName, sortedSampleKey, rebin, referenceHist):
+
+    # this is super crude :(
+    # but should work for now
+
+    #makeReducibleShapes.getReducibleTH1s(TH1Template = None , convertXAxisFromMeVToGeV = False)
+
+
+
+    if "ZXSR_All_HWindow_m34" in canvasName  :
+    #for key in sortedSamples.keys(): # add merged samples to the backgroundTHStack
+        if "Reducible" in sortedSampleKey: 
+
+            
+
+            th1Dict = makeReducibleShapes.getReducibleTH1s(TH1Template = referenceHist , convertXAxisFromMeVToGeV = True)
+            mergedHist = th1Dict["all"]
+            #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+
+            #reducibleFile = ROOT.TFile("limitSetting/preppedHistsV2_mc16ade_1GeVBins_unblinded.root" , "OPEN")
+            #mergedHist = reducibleFile.Get("ZXSR").Get("reducibleDataDriven").Get("Nominal").Get("All").Get("h_m34_All")
+
+            return copy.deepcopy(mergedHist) # return a deep copy to protec the hist from getting garbage collected after the TFile here goes out of scope
+
+
+    #if "ZXVR1_All_LowMassSidebands_m4l" in canvasName  : 
+    #    if "Reducible" in sortedSampleKey: 
+    #        reducibleFile = ROOT.TFile("limitSetting/dataDrivenBackgroundsFromH4l/dataDrivenReducible_ZZ_VR_m4l.root" , "OPEN")
+    #        mergedHist = reducibleFile.Get("ZZVR_all_m4l")
+    #        mergedHist.Rebin( rebin )
+    #
+    #        return copy.deepcopy(mergedHist) # return a deep copy to protec the hist from getting garbage collected after the TFile here goes out of scope
+
+    return False
+
 if __name__ == '__main__':
 
 
@@ -602,7 +641,7 @@ if __name__ == '__main__':
 
     if skipReducible: skipZjets = True
 
-    replaceWithDataDriven = False
+    replaceWithDataDriven = True
 
     ######################################################
     # do some checks to make sure the command line options have been provided correctly
@@ -776,12 +815,14 @@ if __name__ == '__main__':
 
 
                 if replaceWithDataDriven: # insert data driven reducible hist if so desided
-                    dataDrivenReducibleHist = getDataDrivenReducibleShape(canvas.GetName(), key, args.rebin)
+                    #dataDrivenReducibleHist = getDataDrivenReducibleShape(canvas.GetName(), key, args.rebin)
+                    dataDrivenReducibleHist = getDataDrivenReducibleShape2(canvas.GetName(), key, args.rebin, sortedSamples[key] )
 
                     if dataDrivenReducibleHist: # false if we didn't find a match
                         dataDrivenReducibleHist.SetFillStyle( 1001 )  
                         dataDrivenReducibleHist.SetFillColor( myDSIDHelper.colorMap[key] )
                         sortedSamples[key] = dataDrivenReducibleHist
+                        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
                 mergedHist = sortedSamples[key]
 
