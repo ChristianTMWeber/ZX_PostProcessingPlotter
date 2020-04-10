@@ -275,6 +275,8 @@ def getReducibleTH1s(TH1Template = None , convertXAxisFromMeVToGeV = False):
             for binNr in xrange(1, TH1Dict[flavor].GetNbinsX() +1) :  
                 tempHist.SetBinContent(binNr + lowBin -1, TH1Dict[flavor].GetBinContent(binNr) )
 
+            TH1Dict[flavor] = tempHist
+
 
 # Setup the llmumu + llee, e.g. the 
 
