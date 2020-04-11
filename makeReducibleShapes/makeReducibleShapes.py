@@ -187,6 +187,9 @@ def getReducibleTH1s(TH1Template = None , convertXAxisFromMeVToGeV = False):
     # make sure that we use the same keys in llNorms and TH1Dict
     llNorms = { "llmumu" : 2.29+2.57 , "llee" : 2.54+3.19, "all" : 10.6}
 
+    # adjust norms to mc16a luminosities
+    #for key in llNorms: llNorms[key]= llNorms[key] * 36.3/139
+
     # add stat error only. Add syst error to limitSetting.py instead
     statErrorDict = { "llmumu" : (2.29*0.0152 + 2.57*0.0152)/(2.29+2.57) , 
                       "llee"   : (2.54*0.0843 + 3.19*0.0597)/(2.54+3.19), 
