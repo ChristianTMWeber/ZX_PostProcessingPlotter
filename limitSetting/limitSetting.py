@@ -310,7 +310,7 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, d
     if "reducibleDataDriven" in templatePaths.keys():
         reducible = ROOT.RooStats.HistFactory.Sample("reducible", templatePaths["reducibleDataDriven"], inputFileName)
         if doStatError: reducible.ActivateStatError()# It looks like this setting makes it so that the binerror in the background template is taken into account
-        if doNSystematics != 0 : reducible.AddOverallSys("reducible_Syst", 1.+0.0822, 1.-0.0822)
+        if doNSystematics != 0 : reducible.AddOverallSys("reducible_Syst", 1.+(0.0822 + 0.1), 1.-(0.0822 + 0.1)) # add extra 10% norm uncertainty for differences between H4l and ZX 
 
         
         chan.AddSample(reducible)
