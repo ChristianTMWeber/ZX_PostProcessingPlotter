@@ -492,6 +492,86 @@ def expectedLimitsAsimov(workspace, confidenceLevel = 0.95, drawLimitPlot = Fals
 
     return result
 
+def toyHypoTestInverter(workspace, confidenceLevel = 0.95, drawLimitPlot = False ):
+    # get expected upper limits on the parameter of interest using the 'AsymptoticCalculator'
+    # provides also +/- n sigma intervals on the expected limits
+    # I don't understand this 'AsymptoticCalculator' fully yet, but the expected limits look reasonable 
+    # I based this here on the following tutorial: https://roostatsworkbook.readthedocs.io/en/latest/docs-cls.html#
+
+
+    modelConfig = workspace.obj("ModelConfig") # modelConfig = modelConfig
+    data = workspace.data("obsData")
+
+    # setup the cloned modelConfig
+    modelConfigClone = modelConfig.Clone( modelConfig.GetName()+"Clone" )
+    mcClonePOI = modelConfigClone.GetParametersOfInterest().first()
+
+    #ROOT.RooStats.SetAllConstant( modelConfigClone.GetNuisanceParameters() );
+    mcClonePOI.setVal(1.0)
+    modelConfigClone.SetSnapshot( ROOT.RooArgSet( mcClonePOI ) )
+
+    #setup the background only model
+    bModel = modelConfig.Clone("BackgroundOnlyModel")
+    bModelPOI = bModel.GetParametersOfInterest().first()
+    bModelPOI.setVal(0)
+    bModel.SetSnapshot( ROOT.RooArgSet( bModelPOI )  )
+
+    # https://roostatsworkbook.readthedocs.io/en/latest/docs-cls_toys.html
+    freqCalculator = ROOT.RooStats.FrequentistCalculator(data, bModel, modelConfigClone);
+
+    profileLikeTestStat = ROOT.RooStats.ProfileLikelihoodTestStat( modelConfigClone.GetPdf() ) # ? do we need the bModel here, or rather the S+B model?
+    profileLikeTestStat.SetOneSided(True);
+    profileLikeTestStat.SetPrintLevel(-1) # higher values provide more output, any value bigger than 3 might apears to give the same result as 3
+    profileLikeTestStat.EnableDetailedOutput()
+
+    aToyMCSampler = freqCalculator.GetTestStatSampler()
+    aToyMCSampler.SetTestStatistic(profileLikeTestStat)
+    #aToyMCSampler.SetNEventsPerToy(1); Usually recommended for counting experiments
+
+
+    freqCalculator.SetToys(20,20) 
+    # ((FrequentistCalculator*) hc)->StoreFitInfo(true);
+    #
+
+
+    #   RooStats::ToyMCSampler* toymcs = (RooStats::ToyMCSampler*) freqCalculator.GetTestStatSampler();
+    #   toymcs->SetTestStatistic(plr);
+
+
+    inverter = ROOT.RooStats.HypoTestInverter(freqCalculator)
+    inverter.SetConfidenceLevel( confidenceLevel );
+    inverter.UseCLs(True);
+    inverter.SetVerbose(True);
+    inverter.SetFixedScan(20,0.,1.); # set number of points , xmin and xmax
+
+    startHypotestInverter = time.time()
+    result =  inverter.GetInterval();
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    reportMemUsage.reportMemUsage(startTime = startHypotestInverter)
+
+    print result.GetExpectedUpperLimit(-2)
+    print result.GetExpectedUpperLimit(-1)
+    print result.GetExpectedUpperLimit(0)
+    print result.GetExpectedUpperLimit(+1)
+    print result.GetExpectedUpperLimit(+2)
+
+
+    drawLimitPlot = True
+
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    if drawLimitPlot: 
+        hypoCanvas = ROOT.TCanvas("hypoCanvas", "hypoCanvas", 1300/2,1300/2)
+        inverterPlot = ROOT.RooStats.HypoTestInverterPlot("HTI_Result_Plot","HypoTest Scan Result",result);
+        inverterPlot.Draw("CLb 2CL");  # plot also CLb and CLs+b
+        hypoCanvas.Update()
+
+        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    return result
+
 def translateLimits( rooStatsObject, nSigmas = 1 ):
     # we assume that there is always only one parameter of interest
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
@@ -559,7 +639,7 @@ if __name__ == '__main__':
     parser.add_argument("--nIterations", type=int, default=1 ,
         help="number of iterations over all the masspoints " )
 
-    parser.add_argument("--limitType", type=str, default="toys" , choices=["toys","asymptotic","observed"],
+    parser.add_argument("--limitType", type=str, default="toys" , choices=["toys","asymptotic","observed", "HypoTestInverter"],
         help = "Determines what kind of limit setting we do. \
         'observed' provides limtis on the cross section, based on the data provided. \
         'toys' provides expected limits by sampleing histograms from the 'expected data' but requires many iterations and \
@@ -641,7 +721,7 @@ if __name__ == '__main__':
 
         # setup data hist
 
-        if limitType == "toys":
+        if limitType == "toys" or limitType == "HypoTestInverter":
             dataHistPath = getFullTDirPath(masterDict, region, "expectedData" , "Nominal",  flavor)
             expectedDataHist = inputTFile.Get( dataHistPath )
 
@@ -697,6 +777,10 @@ if __name__ == '__main__':
 
                 likelihoodLimit = translateLimits(asymptoticResuls, nSigmas = 1)
                 likelihoodLimit_2Sig = translateLimits(asymptoticResuls, nSigmas = 2)
+
+            elif limitType == "HypoTestInverter":
+
+                toyHypoTestInverter( workspace , drawLimitPlot = False)
 
             else :  # profile limits, for actual limits or expected limits from toys 
 
