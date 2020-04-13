@@ -227,7 +227,7 @@ def prepHistoSys(eventDict, flavor = "All"):
 
     return allTheHistoSys
 
-def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, doStatError = True, doTheoreticalError = True):
+def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, doStatError = False, doTheoreticalError = False):
 
 
     ### Create the measurement object ### This is the top node of the structure  ### We do some minor configuration as well
@@ -568,6 +568,9 @@ if __name__ == '__main__':
     parser.add_argument("--flavor", type=str, default="All" , choices=["All", "4e", "2mu2e", "2l2e", "4mu", "2e2mu", "2l2mu"],
         help="name of the output file. We'll add .root if necessary" )
 
+    parser.add_argument( "--skipStatAndTheoryError", default=False, action='store_true' , 
+        help = "If this command line option is invoked, we will skip the inclusion of statistical and theory uncertainties" ) 
+
     args = parser.parse_args()
 
 
@@ -673,7 +676,7 @@ if __name__ == '__main__':
 
             templatePaths["Data"]    = dataObj#dataHist
 
-            meas = prepMeasurement(templatePaths, region, flavor, inputFileName, inputTFile)
+            meas = prepMeasurement(templatePaths, region, flavor, inputFileName, inputTFile, doStatError = not args.skipStatAndTheoryError, doTheoreticalError = not args.skipStatAndTheoryError)
 
             chan = meas.GetChannel("signalRegion")
 
