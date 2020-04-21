@@ -572,6 +572,43 @@ def toyHypoTestInverter(workspace, confidenceLevel = 0.95, drawLimitPlot = False
 
     return result
 
+def writeOutWorkspaces(workspace, masspoint ):
+
+    workspace.SetName("combined") # rename so that the workspace conforms with the expectation of StandardHypoTestInv at 
+    # https://gitlab.cern.ch/atlas_higgs_combination/software/StandardHypoTestInv 
+
+    modelConfig = workspace.obj("ModelConfig") # modelConfig = modelConfig
+
+    #ROOT.RooStats.SetAllConstant( modelConfigClone.GetNuisanceParameters() );
+    mcPOI = modelConfig.GetParametersOfInterest().first()
+    mcPOI.setVal(1.0)
+    modelConfig.SetSnapshot( ROOT.RooArgSet( mcPOI ) )
+
+
+    outputDir = "ZXWorkspaces"
+
+    if not os.path.exists(outputDir): os.mkdir(outputDir)
+
+
+    # tally included datasets, so we can print them out
+    includedDataSets = []
+    for dataSet in workspace.allData(): includedDataSets.append(dataSet.GetName())
+
+
+    outputFileName = "ZX_Workspace_mZd_%iGeV.root"%( masspoint )
+
+
+    outTFile = ROOT.TFile( os.path.join(outputDir,outputFileName) , "RECREATE")
+    workspace.Write()
+    outTFile.Close()
+
+    print "workspace '%s' written to '%s'. Included datasets: %s" %(workspace.GetName(), os.path.join(outputDir,outputFileName), ", ".join(includedDataSets))
+
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    return None
+
+
 def translateLimits( rooStatsObject, nSigmas = 1 ):
     # we assume that there is always only one parameter of interest
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
@@ -639,7 +676,7 @@ if __name__ == '__main__':
     parser.add_argument("--nIterations", type=int, default=1 ,
         help="number of iterations over all the masspoints " )
 
-    parser.add_argument("--limitType", type=str, default="toys" , choices=["toys","asymptotic","observed", "HypoTestInverter"],
+    parser.add_argument("--limitType", type=str, default="toys" , choices=["toys","asymptotic","observed", "HypoTestInverter", "writeOutWorkspaces"],
         help = "Determines what kind of limit setting we do. \
         'observed' provides limtis on the cross section, based on the data provided. \
         'toys' provides expected limits by sampleing histograms from the 'expected data' but requires many iterations and \
@@ -721,7 +758,7 @@ if __name__ == '__main__':
 
         # setup data hist
 
-        if limitType == "toys" or limitType == "HypoTestInverter":
+        if limitType == "toys" or limitType == "HypoTestInverter" or limitType == "writeOutWorkspaces":
             dataHistPath = getFullTDirPath(masterDict, region, "expectedData" , "Nominal",  flavor)
             expectedDataHist = inputTFile.Get( dataHistPath )
 
@@ -781,6 +818,12 @@ if __name__ == '__main__':
             elif limitType == "HypoTestInverter":
 
                 toyHypoTestInverter( workspace , drawLimitPlot = False)
+
+            elif limitType == "writeOutWorkspaces":
+
+                writeOutWorkspaces( workspace, massPoint )
+
+                continue
 
             else :  # profile limits, for actual limits or expected limits from toys 
 
@@ -843,36 +886,38 @@ if __name__ == '__main__':
         # end of "for massPoint in ... "
         ###############################################
 
-        reportMemUsage.reportMemUsage(startTime = startTime)
+        if limitType != "writeOutWorkspaces":
 
-        writeTFile = ROOT.TFile( outputFileName,  "RECREATE")# "UPDATE")
-        writeTFile.cd()
-        bestEstimatesTTree   = fillTTreeWithDictOfList(bestEstimateDict, treeName = "bestEstimates_"+limitType)
-        upperLimits1SigTTree = fillTTreeWithDictOfList(upperLimits1SigDict, treeName = "upperLimits1Sig_"+limitType)
-        upperLimits2SigTTree = fillTTreeWithDictOfList(upperLimits2SigDict, treeName = "upperLimits2Sig_"+limitType)
+            reportMemUsage.reportMemUsage(startTime = startTime)
 
-        lowLimits1SigTTree = fillTTreeWithDictOfList(lowLimits1SigDict, treeName = "lowLimits1Sig_"+limitType)
-        lowLimits2SigTTree = fillTTreeWithDictOfList(lowLimits2SigDict, treeName = "lowLimits2Sig_"+limitType)
+            writeTFile = ROOT.TFile( outputFileName,  "RECREATE")# "UPDATE")
+            writeTFile.cd()
+            bestEstimatesTTree   = fillTTreeWithDictOfList(bestEstimateDict, treeName = "bestEstimates_"+limitType)
+            upperLimits1SigTTree = fillTTreeWithDictOfList(upperLimits1SigDict, treeName = "upperLimits1Sig_"+limitType)
+            upperLimits2SigTTree = fillTTreeWithDictOfList(upperLimits2SigDict, treeName = "upperLimits2Sig_"+limitType)
 
-        calculationTimeTTree = fillTTreeWithDictOfList(timingDict, treeName = "calclationTime")
+            lowLimits1SigTTree = fillTTreeWithDictOfList(lowLimits1SigDict, treeName = "lowLimits1Sig_"+limitType)
+            lowLimits2SigTTree = fillTTreeWithDictOfList(lowLimits2SigDict, treeName = "lowLimits2Sig_"+limitType)
 
-        memoryDict["RAM_Used_MiB"].append(float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)/1024 )
-        memoryUsageTTree = fillTTreeWithDictOfList(memoryDict, treeName = "memoryUsage")
+            calculationTimeTTree = fillTTreeWithDictOfList(timingDict, treeName = "calclationTime")
+
+            memoryDict["RAM_Used_MiB"].append(float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)/1024 )
+            memoryUsageTTree = fillTTreeWithDictOfList(memoryDict, treeName = "memoryUsage")
 
 
-        observedLimitGraph.Write()
-        expectedLimitsGraph_1Sigma.Write()
-        expectedLimitsGraph_2Sigma.Write()
+            observedLimitGraph.Write()
+            expectedLimitsGraph_1Sigma.Write()
+            expectedLimitsGraph_2Sigma.Write()
 
-        
-        writeTFile.Write()
+            
+            writeTFile.Write()
 
-        writeTFile.Close()
+            writeTFile.Close()
 
-        #if limitType != "toys":
-        #    import plotXSLimits
-        #    graphOverviewCanvas = plotXSLimits.makeGraphOverview( graphHelper.getTGraphWithoutError( observedLimitGraph , ySetpoint = "yHigh"), 
-        #                                     expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = writeTFile)
+            #if limitType != "toys":
+            #    import plotXSLimits
+            #    graphOverviewCanvas = plotXSLimits.makeGraphOverview( graphHelper.getTGraphWithoutError( observedLimitGraph , ySetpoint = "yHigh"), 
+            #                                     expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = writeTFile)
 
 
         
