@@ -265,7 +265,8 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, d
     signal.AddNormFactor("SigXsecOverSM", 0, 0, 10) #  (<parameterName>, <start>, <lowLimit>, <highLimit>) keep the lower limit here at 0, otherwise the norm factor may get negative, which will introduce errors in the optimization routine
     addSystematicsToSample(signal, inputTFile, region = region, eventType = templatePaths["Signal"].split("/")[1] , flavor = flavor, finishAfterNSystematics = doNSystematics)
     if doStatError: signal.ActivateStatError()
-    if doTheoreticalError: signal.AddOverallSys("Signal_QCDAndPDFUncert", 1.+0.09, 1.-0.09)
+    if doTheoreticalError: signal.AddOverallSys("Signal_QCDUncert", 1.+0.017, 1.-0.037)
+    if doTheoreticalError: signal.AddOverallSys("Signal_PDFUncert", 1.+0.032, 1.-0.032)
 
     chan.AddSample(signal)
 
@@ -288,7 +289,7 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, d
         backgroundZZ = ROOT.RooStats.HistFactory.Sample("backgroundZZ", templatePaths["ZZ"], inputFileName)
         addSystematicsToSample(backgroundZZ, inputTFile, region = region, eventType = "ZZ", flavor = flavor, finishAfterNSystematics = doNSystematics)
         if doStatError: backgroundZZ.ActivateStatError()#ActivateStatError("backgroundZZ_statUncert", inputFileName)
-        if doTheoreticalError: backgroundZZ.AddOverallSys("ZZ_QCDAndPDFUncert", 1.+0.05, 1.-0.05)
+        if doTheoreticalError: backgroundZZ.AddOverallSys("ZZ_QCDAndPDFUncert", 1.+0.0325, 1.-0.055)
 
         chan.AddSample(backgroundZZ)
 
