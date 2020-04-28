@@ -364,11 +364,16 @@ if __name__ == '__main__':
 
         weightSetting = 0.5;
 
-        heavyFlavorWeight = ROOT.RooRealVar("HeavyFlavorWeight", "HeavyFlavorWeight", weightSetting, 0.,1.)
+        
+
 
         if finalState == "llmumu":
+            HFFractionFor_llmumu = (14.23+4.53)/(14.23+4.53+7.38) #taken from the H4l event selection support note
+            heavyFlavorWeight = ROOT.RooRealVar("HeavyFlavorWeight", "HeavyFlavorWeight", HFFractionFor_llmumu, 0.,1.)
             llPDF = ROOT.RooAddPdf(finalState, finalState, pdfDict[finalState]["HeavyFlavor"] ,   pdfDict[finalState]["ttBar" ], heavyFlavorWeight )
         elif finalState == "llee" :
+            HFFractionFor_llee   = (12.1)/(12.1+4.18+14.79) 
+            heavyFlavorWeight = ROOT.RooRealVar("HeavyFlavorWeight", "HeavyFlavorWeight", HFFractionFor_llee, 0.,1.)
             llPDF = ROOT.RooAddPdf(finalState, finalState, pdfDict[finalState]["HeavyFlavor"] ,   pdfDict["llee"]["3l+X" ], heavyFlavorWeight )
         
         llPDF.plotOn(xFrameHists,ROOT.RooFit.LineColor(ROOT.kAzure+1))
