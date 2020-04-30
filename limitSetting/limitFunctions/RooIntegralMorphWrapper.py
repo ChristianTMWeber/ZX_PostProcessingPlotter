@@ -105,7 +105,8 @@ def momentMorphWrapper( interpolateAt, indepVar, PDFList, parameterList, nBins):
 
     # indepVar should be the independent parameter of the input PDFs 
     # Linear and NonLinear should be equivalent for just two inputs
-    morphMoment = ROOT.RooMomentMorph( "morph", "morph", mu , ROOT.RooArgList(indepVar), listOfMorphs, paramVec, ROOT.RooMomentMorph.NonLinear  )
+    morphMoment = ROOT.RooMomentMorph( "morph", "morph", mu , ROOT.RooArgList(indepVar), listOfMorphs, paramVec, ROOT.RooMomentMorph.Linear  )
+    # Linear, NonLinear, NonLinearPosFractions, NonLinearLinFractions,  SineLinear
 
     return morphMoment.createHistogram( indepVar.GetName(), nBins)
 

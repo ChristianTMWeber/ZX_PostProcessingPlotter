@@ -33,35 +33,36 @@ def makeInterpolatedSignalSamples(masterHistDict, channels = None, flavors = ["A
         sortedMasses = masspointDict.keys(); 
         sortedMasses.sort()
 
-        # build pairs of masspoints to interpolate in between
-        massPairs = []
-        for n in xrange(0, len(sortedMasses)-2): massPairs.append( (sortedMasses[n],sortedMasses[n+2]) )
-
-        
-
         # don't forget to loop over all flavors:
         if flavors is None: flavors = masterHistDict[channel][masspointDict.values()[0]]["Nominal"].keys()
         for systematic in masterHistDict[channel][masspointDict.values()[0]].keys():
             #if systematic != "Nominal": continue
             for flavor in flavors:
-                for lowMass, highMass in massPairs:
-                    # remember: masspointDict[ mass ] gives the event type name  
-                    lowHist  = masterHistDict[channel][ masspointDict[lowMass]  ][systematic][flavor]
-                    highHist = masterHistDict[channel][ masspointDict[highMass] ][systematic][flavor]
+
+                for massToInterpolate in sortedMasses[1:-1]:
+                    # getInterpolatedHistogram takes not as input a list of tuples [(hist,parameter at which hist is realized),...]
+                    # remember to exclude the hist that we want to interpolate at
+                    histsAndMasses = [ (masterHistDict[channel][ masspointDict[mass]  ][systematic][flavor], mass) for mass in masspointDict if  mass != massToInterpolate ]
 
                     # we want to interpolate between lowHist and highHist in 1GeV steps
-                    newMass = (float(highMass) + float(lowMass))/2
+                    newMass = massToInterpolate#(float(highMass) + float(lowMass))/2
                     # do the actual interpolation                                                                                                       #                             errorInterpolation = simulateErrors,  morph1SigmaHists, or morphErrorsToo
-                    newSignalHist = integralMorphWrapper.getInterpolatedHistogram(lowHist, highHist,  paramA = lowMass , paramB = highMass, interpolateAt = newMass, morphType = "momentMorph", errorInterpolation = "morph1SigmaHists", nSimulationRounds = 10)
+                    #newSignalHist = integralMorphWrapper.getInterpolatedHistogram(lowHist, highHist,  paramA = lowMass , paramB = highMass, interpolateAt = newMass, morphType = "momentMorph", errorInterpolation = "morph1SigmaHists", nSimulationRounds = 10)
+                    newSignalHist = integralMorphWrapper.getInterpolatedHistogram(histsAndMasses, interpolateAt = massToInterpolate, errorInterpolation = False , morphType = "momentMorph", nSimulationRounds = 100)
                     # determine new names and eventType
                     newMass = int(newMass)
-                    newEventType = re.sub('\d{2}', str(newMass), masspointDict[lowMass]) # make the new eventType string, by replacing the mass number in a given old one
-                    newTH1Name   = re.sub('\d{2}', str(newMass), lowHist.GetName())+"_Interpolated"
+                    newEventType = re.sub('\d{2}', str(newMass), masspointDict[massToInterpolate]) # make the new eventType string, by replacing the mass number in a given old one
+                    newTH1Name   = re.sub('\d{2}', str(newMass), masterHistDict[channel][ masspointDict[massToInterpolate] ][systematic][flavor].GetName())+"_Interpolated"
                     newSignalHist.SetName(newTH1Name)
                     # add the new histogram to the sample
                     masterHistDict["interpolated"][ newEventType ][systematic][flavor] = newSignalHist
 
+                    print (massToInterpolate,masterHistDict[channel][ masspointDict[massToInterpolate] ][systematic][flavor].Integral(), newSignalHist.Integral() )
+
                     reportMemUsage.reportMemUsage(startTime = startTimeInterp)
+
+                    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
     return None
 
 
@@ -175,7 +176,7 @@ if __name__ == '__main__':
         DSIDList.add(DSID)
         if not myDSIDHelper.isSignalSample( DSID ): continue
 
-        myTObject.Rebin(10)
+        myTObject.Rebin(2)
 
         masterHistDict = makeHistDict.fillHistDict(path, myTObject , "mc16ade", myDSIDHelper ) 
 
@@ -199,8 +200,8 @@ if __name__ == '__main__':
         interpHist = masterHistDict["interpolated"][signalSampleKey]["Nominal"][flavor]
         simHist = masterHistDict["signalRegion"][signalSampleKey]["Nominal"][flavor]
 
-        interpHist.Rebin(2)
-        simHist.Rebin(2)
+        interpHist.Rebin(1)
+        simHist.Rebin(1)
 
         
         # prep the look of the histograms
