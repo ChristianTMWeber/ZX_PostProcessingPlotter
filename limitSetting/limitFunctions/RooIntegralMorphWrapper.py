@@ -57,6 +57,25 @@ def getNewSetNorm( x1, x2, y1, y2, xNew ):
     yNew = slope * (xNew - x1)  + y1
     return yNew
 
+def getNewSetNorm2( parameterList, listOfNorms, interpolateAt ): 
+
+    def listToStdVector(inputList): # the ROOT.Math.Interpolator requires std.vectors as input parameters, let's furnish them
+        stdVector = ROOT.std.vector('double')()
+        for listElement in inputList : stdVector.push_back( float(listElement) )
+        return stdVector
+
+    xVector = listToStdVector(parameterList)
+    yVector = listToStdVector(listOfNorms)
+
+    nData = len(parameterList)
+
+    # interpolation options, see https://root.cern/doc/master/group__Interpolation.html#ga4bce69f94d30b54fbf33940ba11d6630
+    # kLINEAR, kPOLYNOMIAL, kCSPLINE, kCSPLINE_PERIODIC, kAKIMA, kAKIMA_PERIODIC
+    interpolator = ROOT.Math.Interpolator(nData, ROOT.Math.Interpolation.kCSPLINE) # interpolation options: 
+    interpolator.SetData(xVector,yVector)
+
+    return     interpolator.Eval(interpolateAt)
+
 def integralMorphWrapper( interpolateAt, indepVar, PDFLow, parameterLow, PDFHigh, prameterHigh, nBins):
 
     # scale the parameters values to the interval [0,1], RooIntegralMorph assumes it to be that way
@@ -86,7 +105,8 @@ def momentMorphWrapper( interpolateAt, indepVar, PDFList, parameterList, nBins):
 
     # indepVar should be the independent parameter of the input PDFs 
     # Linear and NonLinear should be equivalent for just two inputs
-    morphMoment = ROOT.RooMomentMorph( "morph", "morph", mu , ROOT.RooArgList(indepVar), listOfMorphs, paramVec, ROOT.RooMomentMorph.Linear  )
+    morphMoment = ROOT.RooMomentMorph( "morph", "morph", mu , ROOT.RooArgList(indepVar), listOfMorphs, paramVec, ROOT.RooMomentMorph.NonLinear  )
+
     return morphMoment.createHistogram( indepVar.GetName(), nBins)
 
 
@@ -111,8 +131,6 @@ def TH1toArray(TH1):
 
     return outArray
 
-
-def getInterpolatedHistogram(histA, histB,  paramA = 0 , paramB = 1, interpolateAt = 0.5, errorInterpolation = False , morphType = "momentMorph", nSimulationRounds = 100):
     # Assumine we have two histograms histA and histB that represent slices of a 2d histogram
     # along some axis Y, I.e. histA == hist( Y_A), histB == hist( Y_B)
     # we assume here Y_A < Y_B
@@ -128,8 +146,24 @@ def getInterpolatedHistogram(histA, histB,  paramA = 0 , paramB = 1, interpolate
     #  The shapes f1 and f2 are always taken to be end the end-points of the parameter alpha, 
     #  regardless of what the those numeric values are."
 
-    # check input values
-    assert (paramA < interpolateAt) and (interpolateAt < paramB)
+def getInterpolatedHistogram(histAndParamList, interpolateAt = 0.5, errorInterpolation = False , morphType = "momentMorph", nSimulationRounds = 100):
+    # Assumine we have two histograms histA and histB that represent slices of a 2d histogram
+    # along some axis Y, I.e. histA == hist( Y_A), histB == hist( Y_B)
+    # we assume here Y_A < Y_B
+    # This funtion aims to provide hist( y ) for Y_A < y < Y_B by interpolating between 
+    # 
+    # Create a histogram that is the interpolation of the TH1 histograms histA and histB
+    #
+    #
+    # We will use RooIntegralMorph Class, see here: https://root.cern.ch/doc/master/classRooIntegralMorph.html
+    # From that description there note:
+    # "From a technical point of view class RooIntegralMorph is a p.d.f that takes two input p.d.fs
+    #  f1(x,p) an f2(x,q) and an interpolation parameter to make a p.d.f fbar(x,p,q,alpha). 
+    #  The shapes f1 and f2 are always taken to be end the end-points of the parameter alpha, 
+    #  regardless of what the those numeric values are."
+
+    for hist, parameter in histAndParamList: # make sure that the first element of the tuple is the TH1
+        assert isinstance(hist,ROOT.TH1) and isinstance(parameter, (int, long, float))
 
     # RooFit command to suppress all the Info and Progress message is below
     # the message are ordered by the following enumeration defined in RooGlobalFunc.h
@@ -138,27 +172,48 @@ def getInterpolatedHistogram(histA, histB,  paramA = 0 , paramB = 1, interpolate
     rooMsgServe.setGlobalKillBelow(ROOT.RooFit.PROGRESS)
 
     # independent variable for out RooFit objects (PDFs and rooDatahists [the RDHs] )  
-    x = setupIndependentVar(histA)  # creates independ variable with the limits of the input histogram
+    x = setupIndependentVar(histAndParamList[0][0])  # creates independ variable with the limits of the input histogram
+
+    pdfList       = [] 
+    parameterList = []
+    dataHistList  = []
+
+    listOfNorms = []
+
+    # sort the list of tuples, by the value of the second tuple element, i.e. the parameter. This is important for the ROOT.Math.Interpolator that we might use later
+    histAndParamList.sort(key = lambda x: x[1] ) 
+
+    for hist, parameter in histAndParamList:     # and now that it is sorted, make RooPDFs out of the TH1s and put them and related objects into lists
+        PDF, dataHist = TH1ToRooHistPDF( hist, x)
+        pdfList.append(PDF)
+        dataHistList.append(dataHist)
+        parameterList.append(parameter)
+        listOfNorms.append(hist.Integral())
+
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    paramA = min(parameterList); paramB = max(parameterList)
+    # check input values
+    assert (paramA < interpolateAt) and (interpolateAt < paramB)
+
+    histA = histAndParamList[0][0]
+    histB = histAndParamList[-1][0]
+
 
     histA_PDF, histA_RDH = TH1ToRooHistPDF( histA, x)
     histB_PDF, histB_RDH = TH1ToRooHistPDF( histB, x)
 
-    # scale the parameters values to the interval [0,1], RooIntegralMorph assumes it to be that way
-    delta = float(paramB - paramA)
-    scaledInterpolateTo = float(interpolateAt - paramA)/delta
-    
-    # do the interpolation
-    alpha = ROOT.RooRealVar("alpha", "alpha", scaledInterpolateTo,  0. , 1.) # alpha is here the interpolation paramter, we assume histA and histB represent at at alpha=0, and 1, respectively. At want to interpolate at 0 < scaledInterpolateTo < 1
-    #morphInt = ROOT.RooIntegralMorph('morph','morph',  histB_PDF, histA_PDF , x, alpha) # this is not the sequence of A and B hist I expected, but it gives the expected behavior
-
-    if   morphType == "momentMorph":    morphedHist = momentMorphWrapper( interpolateAt, x, [histA_PDF, histB_PDF], [paramA, paramB], histA.GetNbinsX())
+    if   morphType == "momentMorph":    morphedHist = momentMorphWrapper( interpolateAt, x, pdfList, parameterList, histA.GetNbinsX())
     elif morphType == "integralMorph":  morphedHist = integralMorphWrapper( interpolateAt, x, histA_PDF, paramA, histB_PDF, paramB, histA.GetNbinsX())
     else: raise Exception( "Invalid choice of 'morphType'. Valid choices are 'integralMorph', and 'momentMorph'")
 
     # normalize histogram
 
     newSetNorm = getNewSetNorm( paramA, paramB, histA.Integral(), histB.Integral(), interpolateAt )
+    #newSetNorm = getNewSetNorm2( parameterList, listOfNorms, interpolateAt )
     normMorph = morphedHist.Integral()
+
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
     morphedHist.Scale( newSetNorm/normMorph )
     morphedHist.SetName( histA.GetName() + ("interpAt%2.2f") %(float(interpolateAt)) )
@@ -242,8 +297,8 @@ if __name__ == '__main__':
 
     def setupTLegend():
         # set up a TLegend, still need to add the different entries
-        xOffset = 0.1; yOffset = 0.4
-        xWidth  = 0.4; ywidth = 0.5
+        xOffset = 0.1; yOffset = 0.7
+        xWidth  = 0.4; ywidth = 0.2
         TLegend = ROOT.TLegend(xOffset, yOffset ,xOffset + xWidth, yOffset+ ywidth)
         TLegend.SetFillColor(ROOT.kWhite)
         TLegend.SetLineColor(ROOT.kWhite)
@@ -252,46 +307,68 @@ if __name__ == '__main__':
         TLegend.SetBorderSize(0); # and remove its border without a border
         return TLegend
 
+
+    def makeParametrizedGaussians( listOfGausMeans , sigmaFunction = lambda m: 1 , normFunction = lambda n: 1 ):
+
+        outputHistDict = {}
+
+
+        x = ROOT.RooRealVar("indepVariable","indepVariable",  -100. ,100.)
+        nBins = 2000
+
+        for gaussMean in listOfGausMeans:
+
+            # make gaussian PDF
+
+            mean1  = ROOT.RooRealVar("mean1" , "mean of gaussian" , gaussMean )#, -10. , 10. )
+            sigma1 = ROOT.RooRealVar("sigma1", "width of gaussian", sigmaFunction(gaussMean) )#, -10. , 10. )
+            gaussianPDF1 = ROOT.RooGaussian("Gaussian%f" %gaussMean, "Gaussian%f" %gaussMean, x, mean1, sigma1) 
+
+            # make histogram, and scale it
+            histA = gaussianPDF1.createHistogram("indepVariable",nBins)
+
+            histA.Scale( normFunction(gaussMean) )
+
+            histA.SetLineColor(ROOT.kBlue)
+
+            outputHistDict[gaussMean] = histA
+
+
+            #### How I could add errors to the hist ###
+
+
+            #histAClone = histA.Clone(histA.GetName()+"Clone")
+            #histAClone.Scale(0.1)
+
+            #fillBinErrorWithHist(histA, histAClone) #fill binErrors
+            
+            #constPDF = ROOT.RooPolynomial("RooPolynomial", "RooPolynomial", x, ROOT.RooArgList()) 
+            #histConst = constPDF.createHistogram("indepVariable",nBins)
+
+            #for hist in [histA, histB]: fillBinErrorWithHist(hist, histConst) #fill binErrors
+
+
+
+            #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+
+        return outputHistDict
+
+
     ######################################################################
-    # prepare PDFs that we will turn into TH1s. We will use those TH1s to test the morphing.
+    # prepare TH1s to test the morphing.
     ######################################################################
-    x = ROOT.RooRealVar("indepVariable","indepVariable",  -10. ,10.)
 
-    # gaussian PDF, 
-    mean1  = ROOT.RooRealVar("mean1" , "mean of gaussian" , -5 , -10. , 10. )
-    sigma1 = ROOT.RooRealVar("sigma1", "width of gaussian", 1. , -10. , 10. )
-    gaussianPDF1 = ROOT.RooGaussian("Gaussian1", "Gaussian1", x, mean1, sigma1) 
+    #histDict = makeParametrizedGaussians( [-5,0,5], sigmaFunction = lambda s: float(s)/100 + 1, normFunction = lambda n: 100 - n**2)
+    histDict = makeParametrizedGaussians( range(-5,6,5), sigmaFunction = lambda s: float(s)/10 + 1, normFunction = lambda n: 1 )
 
-    #
-    mean2  = ROOT.RooRealVar("mean2" , "mean of gaussian" , +5., -10. , 10. )
-    sigma2 = ROOT.RooRealVar("sigma2", "width of gaussian", 1. , -10. , 10. )
-    gaussianPDF2 = ROOT.RooGaussian("Gaussian2", "Gaussian2", x, mean2, sigma2) 
-
-    constPDF = ROOT.RooPolynomial("RooPolynomial", "RooPolynomial", x, ROOT.RooArgList()) 
-
-    nBins = 20
-    histA = gaussianPDF1.createHistogram("indepVariable",nBins)
-    histB = gaussianPDF2.createHistogram("indepVariable",nBins)
-    #histConst = gaussianPDFSuperWide.createHistogram("indepVariable",nBins)
-    histConst = constPDF.createHistogram("indepVariable",nBins)
-
-    histAClone = histA.Clone(histA.GetName()+"Clone")
-    histBClone = histB.Clone(histB.GetName()+"Clone")
-
-    histAClone.Scale(0.1)
-    histBClone.Scale(0.1)
+    # getInterpolatedHistogram expects a list of tuples that is like [ (hist1, parameterAtWhichHist1WasRealized), ...]
+    histAndParameters = []
+    for key in histDict: histAndParameters.append((histDict[key], key))
 
 
+    interpolateAtList = np.arange( min(histDict.keys()), max(histDict.keys())-1,1)+1
 
-
-
-    fillBinErrorWithHist(histA, histAClone) #fill binErrors
-    fillBinErrorWithHist(histB, histBClone) #fill binErrors
-
-    #for hist in [histA, histB]: fillBinErrorWithHist(hist, histConst) #fill binErrors
-
-    histA.Scale(3)
-    histB.Scale(1)
 
     ##########################
     # Do the morphing
@@ -299,37 +376,30 @@ if __name__ == '__main__':
     morphedHistList = []
 
     startTime = time.time()
-    for n in np.arange(mean1.getVal(), mean2.getVal(),2)+1: 
+    for interpolateAt in interpolateAtList: 
         #                             errorInterpolation options:        simulateErrors      morph1SigmaHists        morphErrorsToo
-        morphedHist = getInterpolatedHistogram(histA, histB, mean1.getVal(), mean2.getVal(), n , errorInterpolation = "morph1SigmaHists", morphType = "momentMorph", nSimulationRounds = 100)
+        #morphedHist = getInterpolatedHistogram(histA, histB, mean1.getVal(), mean2.getVal(), n , errorInterpolation = "morph1SigmaHists", morphType = "momentMorph", nSimulationRounds = 100)
+        morphedHist = getInterpolatedHistogram(histAndParameters, interpolateAt , errorInterpolation = False, morphType = "momentMorph", nSimulationRounds = 100)
         morphedHist.SetLineColor(ROOT.kGreen)
         morphedHistList.append(morphedHist)
         reportMemUsage.reportMemUsage(startTime = startTime)
-
-    #myFile = ROOT.TFile("morphData.root","OPEN")
-    #histA = myFile.Get("30Gev")
-    #histB = myFile.Get("35Gev")
-    #morphedHist = getInterpolatedHistogram(histA, histB )
 
     ##########################
     # Plot the results of the morphing to investigate them
     ##########################
 
-    histA.SetLineColor(ROOT.kBlue)
-    histB.SetLineColor(ROOT.kRed)
-
-    morphedHistList.extend([histA, histB])
-
+    morphedHistList.extend( histDict.values() )
     
     legend = setupTLegend()
 
     aCanvas1 = drawSetOfHists( morphedHistList , drawOptions = ["HIST"], canvasName = "Morphed Hist plot" )
-    for hist in morphedHistList:   legend.AddEntry(hist)
+    #for hist in morphedHistList:   legend.AddEntry(hist)
+    legend.AddEntry(morphedHistList[0],"Morphed Hists"); legend.AddEntry(morphedHistList[-1],"Input Hists")
     legend.Draw(); # do legend things
     aCanvas1.Update()
 
 
-    aCanvas2 = drawSetOfHists( morphedHistList , drawOptions = ["E1"], canvasName = "Morphed Hist plot, E1" )
+    aCanvas2 = drawSetOfHists( morphedHistList , drawOptions = ["HIST"], canvasName = "Morphed Hist plot, E1" )
     legend.Draw(); # do legend things
     aCanvas2.Update()
 
