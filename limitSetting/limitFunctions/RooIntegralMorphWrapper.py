@@ -1,6 +1,8 @@
 import ROOT
 import numpy as np # to generate randum numbers 
 import time # for measuring execution time
+import bisect # to find locations in lists
+
 
 import reportMemUsage
 
@@ -50,14 +52,8 @@ def drawSetOfHists( histList , drawOptions = [] , canvasName = None):
 
     return canvasPDF
 
-def getNewSetNorm( x1, x2, y1, y2, xNew ): 
-    # let f(x_i)  = y_i
-    # interpolate between x1 and x2 them linearly
-    slope = float(y2-y1)/float(x2-x1) 
-    yNew = slope * (xNew - x1)  + y1
-    return yNew
 
-def getNewSetNorm2( parameterList, listOfNorms, interpolateAt ): 
+def getNewSetNorm( parameterList, listOfNorms, interpolateAt ): 
 
     def listToStdVector(inputList): # the ROOT.Math.Interpolator requires std.vectors as input parameters, let's furnish them
         stdVector = ROOT.std.vector('double')()
@@ -71,7 +67,9 @@ def getNewSetNorm2( parameterList, listOfNorms, interpolateAt ):
 
     # interpolation options, see https://root.cern/doc/master/group__Interpolation.html#ga4bce69f94d30b54fbf33940ba11d6630
     # kLINEAR, kPOLYNOMIAL, kCSPLINE, kCSPLINE_PERIODIC, kAKIMA, kAKIMA_PERIODIC
-    interpolator = ROOT.Math.Interpolator(nData, ROOT.Math.Interpolation.kCSPLINE) # interpolation options: 
+
+    if nData < 3: interpolator = ROOT.Math.Interpolator(nData, ROOT.Math.Interpolation.kLINEAR) # interpolation options: 
+    else:         interpolator = ROOT.Math.Interpolator(nData, ROOT.Math.Interpolation.kCSPLINE) # interpolation options: 
     interpolator.SetData(xVector,yVector)
 
     return     interpolator.Eval(interpolateAt)
@@ -123,6 +121,15 @@ def sampleTH1FromTH1(sourceTH1):
         sampledTH1.SetBinContent(n, np.random.normal(mean, stdDev) )
 
     return sampledTH1
+
+def getIndexOfNearestNeigborsInList(aList, valueOfInterest):
+
+    assert aList == sorted(aList)
+
+    lowNeighborIndex = bisect.bisect_left(aList,valueOfInterest) -1
+    highNeighborIndex = bisect.bisect_right(aList,valueOfInterest)
+
+    return lowNeighborIndex, highNeighborIndex
 
 def TH1toArray(TH1):
     nBins = TH1.GetNbinsX()
@@ -191,33 +198,30 @@ def getInterpolatedHistogram(histAndParamList, interpolateAt = 0.5, errorInterpo
         parameterList.append(parameter)
         listOfNorms.append(hist.Integral())
 
+
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
-    paramA = min(parameterList); paramB = max(parameterList)
-    # check input values
-    assert (paramA < interpolateAt) and (interpolateAt < paramB)
+    leftIndex, rightIndex = getIndexOfNearestNeigborsInList(parameterList, interpolateAt) # get indices of next neighbor parameters, pdfs, etc
 
-    histA = histAndParamList[0][0]
-    histB = histAndParamList[-1][0]
+    referenceHist = histAndParamList[leftIndex][0]
 
+    assert (parameterList[leftIndex] < interpolateAt) and (interpolateAt < parameterList[rightIndex])
 
-    histA_PDF, histA_RDH = TH1ToRooHistPDF( histA, x)
-    histB_PDF, histB_RDH = TH1ToRooHistPDF( histB, x)
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
-    if   morphType == "momentMorph":    morphedHist = momentMorphWrapper( interpolateAt, x, pdfList, parameterList, histA.GetNbinsX())
-    elif morphType == "integralMorph":  morphedHist = integralMorphWrapper( interpolateAt, x, histA_PDF, paramA, histB_PDF, paramB, histA.GetNbinsX())
+    if   morphType == "momentMorph":    morphedHist = momentMorphWrapper( interpolateAt, x, pdfList, parameterList, referenceHist.GetNbinsX())
+    elif morphType == "integralMorph":  morphedHist = integralMorphWrapper( interpolateAt, x, pdfList[leftIndex], parameterList[leftIndex], pdfList[rightIndex], parameterList[rightIndex], referenceHist.GetNbinsX())
     else: raise Exception( "Invalid choice of 'morphType'. Valid choices are 'integralMorph', and 'momentMorph'")
 
     # normalize histogram
 
-    newSetNorm = getNewSetNorm( paramA, paramB, histA.Integral(), histB.Integral(), interpolateAt )
-    #newSetNorm = getNewSetNorm2( parameterList, listOfNorms, interpolateAt )
+    newSetNorm = getNewSetNorm( parameterList, listOfNorms, interpolateAt )
     normMorph = morphedHist.Integral()
 
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
     morphedHist.Scale( newSetNorm/normMorph )
-    morphedHist.SetName( histA.GetName() + ("interpAt%2.2f") %(float(interpolateAt)) )
+    morphedHist.SetName( referenceHist.GetName() + ("interpAt%2.2f") %(float(interpolateAt)) )
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     #canv = ROOT.TCanvas()
     #morphedHist.Draw("HIST")
@@ -233,21 +237,22 @@ def getInterpolatedHistogram(histAndParamList, interpolateAt = 0.5, errorInterpo
         # interpolating these samples multiple times
         # and calculating a binwise standard deviation, that we take to be the error of the morphed histogram
 
-        binValueArray =  np.zeros( (nSimulationRounds, histA.GetNbinsX()) )
+        binValueArray =  np.zeros( (nSimulationRounds, referenceHist.GetNbinsX()) )
 
         for simNr in xrange(nSimulationRounds):
 
-            sampleA = sampleTH1FromTH1(histA) 
-            sampleB = sampleTH1FromTH1(histB) 
+            #sampledHistsAndParam = [ (sampleTH1FromTH1(hist),param) for hist, param in histAndParamList ]
+            sampledHistsAndParam = [ (sampleTH1FromTH1(histAndParamList[leftIndex][0]),histAndParamList[leftIndex][1]) ]
+            sampledHistsAndParam.append((sampleTH1FromTH1(histAndParamList[rightIndex][0]),histAndParamList[rightIndex][1])) 
 
-            sampleMorphed = getInterpolatedHistogram(sampleA, sampleB,  paramA , paramB, interpolateAt, errorInterpolation = False, morphType = morphType)
+            sampleMorphed = getInterpolatedHistogram(sampledHistsAndParam, interpolateAt, errorInterpolation = False, morphType = morphType)
 
             binValueArray[simNr,:] = TH1toArray(sampleMorphed)
             sampleMorphed.Delete() # delete the histogram to eliminate warnings about replacing an existing object 
 
         binStandardDevs = np.std( binValueArray, axis = 0 )
 
-        for n in xrange( histA.GetNbinsX() ): morphedHist.SetBinError(n+1, binStandardDevs[n] )
+        for n in xrange( referenceHist.GetNbinsX() ): morphedHist.SetBinError(n+1, binStandardDevs[n] )
 
     elif errorInterpolation == "morph1SigmaHists": # We'll morph the errors too
         # by calculing histA+histA_Error and histB+histB_Error
@@ -259,11 +264,13 @@ def getInterpolatedHistogram(histAndParamList, interpolateAt = 0.5, errorInterpo
             hist1Sigma.Add(hist)
             return hist1Sigma
 
-        histA1sigma = make1signaHist( histA)
-        histB1sigma = make1signaHist( histB)
+        #histA1sigma = make1signaHist( histA)
+        #histB1sigma = make1signaHist( histB)
+
+        oneSigmaHistsAndParam = [ (make1signaHist(hist),param) for hist, param in histAndParamList ]
 
         # let's morph these errorHists, and remember: the bin contents of the 'morphedErrors' hist, are the bin erros of 'morphedHist' that we are looking for 
-        morphedErrors = getInterpolatedHistogram(histA1sigma, histB1sigma,  paramA , paramB, interpolateAt, errorInterpolation = False, morphType = morphType)
+        morphedErrors = getInterpolatedHistogram(oneSigmaHistsAndParam, interpolateAt, errorInterpolation = False, morphType = morphType)
 
         morphedErrors.Add(morphedHist,-1) # subtraction: morphedErrors-morphedHist
         # transfer the bin errors from 'morphedErrors' to 'morphedHist' 
@@ -277,11 +284,11 @@ def getInterpolatedHistogram(histAndParamList, interpolateAt = 0.5, errorInterpo
 
         # prepare the 'errorHists'
         prepErrorHist = lambda x : makeErrorHistogram( x.Clone(x.GetName()+"Error"), x)
-        errorHistA = prepErrorHist(histA)
-        errorHistB = prepErrorHist(histB)
+
+        errorHistsAndParam = [ (prepErrorHist(hist),param) for hist, param in histAndParamList ]
 
         # let's morph these errorHists, and remember: the bin contents of the 'morphedErrors' hist, are the bin erros of 'morphedHist' that we are looking for 
-        morphedErrors = getInterpolatedHistogram(errorHistA, errorHistB,  paramA , paramB, interpolateAt, errorInterpolation = False, morphType = morphType)
+        morphedErrors = getInterpolatedHistogram(errorHistsAndParam, interpolateAt, errorInterpolation = False, morphType = morphType)
         # transfer the bin errors from 'morphedErrors' to 'morphedHist' 
         for n in xrange(0, morphedHist.GetNbinsX() +2 ): # start at 0 for the underflow, end at +2 to reach also the overflow
             morphedHist.SetBinError(n, morphedErrors.GetBinContent(n) )
@@ -314,8 +321,8 @@ if __name__ == '__main__':
         outputHistDict = {}
 
 
-        x = ROOT.RooRealVar("indepVariable","indepVariable",  -100. ,100.)
-        nBins = 2000
+        x = ROOT.RooRealVar("indepVariable","indepVariable",  -20. ,20.)
+        nBins = 200
 
         for gaussMean in listOfGausMeans:
 
@@ -338,17 +345,16 @@ if __name__ == '__main__':
             #### How I could add errors to the hist ###
 
 
-            #histAClone = histA.Clone(histA.GetName()+"Clone")
-            #histAClone.Scale(0.1)
+            histAClone = histA.Clone(histA.GetName()+"Clone")
+            histAClone.Scale(0.1)
 
-            #fillBinErrorWithHist(histA, histAClone) #fill binErrors
+            fillBinErrorWithHist(histA, histAClone) #fill binErrors
             
             #constPDF = ROOT.RooPolynomial("RooPolynomial", "RooPolynomial", x, ROOT.RooArgList()) 
             #histConst = constPDF.createHistogram("indepVariable",nBins)
+            #fillBinErrorWithHist(histA, histConst) #fill binErrors
 
             #for hist in [histA, histB]: fillBinErrorWithHist(hist, histConst) #fill binErrors
-
-
 
             #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
@@ -368,7 +374,7 @@ if __name__ == '__main__':
     for key in histDict: histAndParameters.append((histDict[key], key))
 
 
-    interpolateAtList = np.arange( min(histDict.keys()), max(histDict.keys())-1,1)+1
+    interpolateAtList = np.arange( min(histDict.keys()), max(histDict.keys())-1,2)+1
 
 
     ##########################
@@ -380,7 +386,7 @@ if __name__ == '__main__':
     for interpolateAt in interpolateAtList: 
         #                             errorInterpolation options:        simulateErrors      morph1SigmaHists        morphErrorsToo
         #morphedHist = getInterpolatedHistogram(histA, histB, mean1.getVal(), mean2.getVal(), n , errorInterpolation = "morph1SigmaHists", morphType = "momentMorph", nSimulationRounds = 100)
-        morphedHist = getInterpolatedHistogram(histAndParameters, interpolateAt , errorInterpolation = False, morphType = "momentMorph", nSimulationRounds = 100)
+        morphedHist = getInterpolatedHistogram(histAndParameters, interpolateAt , errorInterpolation = "morph1SigmaHists", morphType = "momentMorph", nSimulationRounds = 100)
         morphedHist.SetLineColor(ROOT.kGreen)
         morphedHistList.append(morphedHist)
         reportMemUsage.reportMemUsage(startTime = startTime)
@@ -400,7 +406,7 @@ if __name__ == '__main__':
     aCanvas1.Update()
 
 
-    aCanvas2 = drawSetOfHists( morphedHistList , drawOptions = ["HIST"], canvasName = "Morphed Hist plot, E1" )
+    aCanvas2 = drawSetOfHists( morphedHistList , drawOptions = ["E1"], canvasName = "Morphed Hist plot, E1" )
     legend.Draw(); # do legend things
     aCanvas2.Update()
 
