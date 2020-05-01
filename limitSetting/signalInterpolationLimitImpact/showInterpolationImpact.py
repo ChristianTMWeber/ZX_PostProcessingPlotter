@@ -12,9 +12,11 @@
 
 
 import ROOT
+import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
 
 
 import sys 
+import os
 from os import path
 sys.path.append( path.dirname( path.dirname( path.dirname( path.abspath(__file__) ) ) ) ) # need to append the parent directory here explicitly to be able to import plotPostProcess
 
@@ -60,108 +62,153 @@ def setupTLegend():
 
 if __name__ == '__main__':
 
-    refTFile = ROOT.TFile("interpolationClosure_ReferenceResults_asymptotic.root","OPEN")  # results with best estimate H4l reducible norm
-
-    upTFile = ROOT.TFile("interpolationClosure_InterpolatedResults_asymptotic.root","OPEN")   # resutls with reducible normalized to 120% of best estimate value, i.e. +20%
 
 
+    referenceGraph = {"fileName"     : "interpolationClosure_ReferenceResults_asymptotic.root", 
+                      "color"        : ROOT.kRed, 
+                      "legend"       : "simulated signal templates",
+                      "fileNamePart" : "SimulatedSignal"}
 
-    refGraph = refTFile.Get("expectedLimits_1Sigma")
-    upGraph  = upTFile.Get("expectedLimits_1Sigma")
+    comparisonGraphs = collections.defaultdict(dict)
 
-    refGraphNoError = graphHelper.getTGraphWithoutError(refGraph)
-    upGraphNoError  = graphHelper.getTGraphWithoutError(upGraph)
+    comparisonGraphs["interpolatedSignal"] = {
+                          "fileName"     : "interpolationClosure_InterpolatedResults_asymptotic.root", 
+                          "color"        : ROOT.kBlue, 
+                          "legend"       : "interpolated signal templates",
+                          "fileNamePart" : "interpolatedSignal"} 
 
+    comparisonGraphs["interpolatedSignalToyErrors"] = {
+                          "fileName"     : "preppedHists_interpolatedResults_simulateErrors100_asymptoticLimits.root", 
+                          "color"        : ROOT.kGreen, 
+                          "legend"       : "interpolated signal templates, toy errors",
+                          "fileNamePart" : "interpolatedSignalToyErros"} 
 
+    comparisonGraphs["interpolatedSignalSimulatedNorm"] = {
+                          "fileName"     : "interpolationClosure_InterpolatedResults_WithSimulatedNorms_asymptotic.root", 
+                          "color"        : ROOT.kMagenta, 
+                          "legend"       : "interpolated signal templates, norms from simulation",
+                          "fileNamePart" : "interpolatedSignalSimulatedNorm"} 
 
-
-
-
-
-
-
-    ratioCanvas = ROOT.TCanvas("ratioReducibles", "ratioReducibles")
-
-    ratioCanvas.SetGridy()
-
-    ratioTGraph = ratioOfTGraphs(upGraph, refGraph)
-
-    # set label options, do it with ratioTGraph, as we will plot that one first
-
-
-
-    titleStr = "ratio [unitless]"
-
-    ratioTGraph.GetYaxis().SetTitle(titleStr)
-    ratioTGraph.GetYaxis().SetTitleSize(0.05)
-    ratioTGraph.GetYaxis().SetTitleOffset(0.8)
-    ratioTGraph.GetYaxis().CenterTitle()
-    ratioTGraph.GetYaxis().SetRangeUser(0.99,1.03)
-
-    ratioTGraph.GetYaxis().SetNdivisions( 506, True)  # XYY x minor divisions YY major ones, optimizing around these values = TRUE
-
-    ratioTGraph.GetXaxis().SetTitle("m_{Z_{d}} [GeV]")
-    ratioTGraph.GetXaxis().SetTitleSize(0.05)
-    ratioTGraph.GetXaxis().SetTitleOffset(0.85)
-
-    # #sigma_{ZZ_{d}} with nominal reducible estimate /#sigma_{ZZ_{d}} with 1.2 #upoint reducible estimate
-    ratioTGraph.SetTitle("#splitline{ratio of expected upper 95% CLs on #sigma_{ZZ_{d}}:}{ #sigma_{ZZ_{d}} with 1.2 #upoint reducible / #sigma_{ZZ_{d}} with 1.0 #upoint reducible}")
-    ratioTGraph.SetLineWidth(2)
-    ratioTGraph.Draw()
-    ratioCanvas.Update()
+    comparisonGraphs["interpolatedSignalNewMorph"] = {
+                          "fileName"     : "interpolationClosure_InterpolatedResults_newMorphInterface_asymptotic.root", 
+                          "color"        : ROOT.kCyan, 
+                          "legend"       : "interpolated signal templates, new morph implementation",
+                          "fileNamePart" : "interpolatedSignalNewMorph"} 
 
 
-    #import pdb; pdb.set_trace() # import the debugger and instruct 
-
-
-
-
-    canv = ROOT.TCanvas("compareReducibles", "compareReducibles", 1920, 1080)
-
-    colorScheme = ROOT.kRed
-
-    # set label options, do it with refGraph, as we will plot that one first
-    refGraph.GetYaxis().SetTitle("Expeted upper 95% CL on #sigma_{ZZ_{d}} [fb] ")
-    refGraph.GetYaxis().SetTitleSize(0.05)
-    refGraph.GetYaxis().SetTitleOffset(0.8)
-    refGraph.GetYaxis().CenterTitle()
-
-    refGraph.GetXaxis().SetTitle("m_{Z_{d}} [GeV]")
-    refGraph.GetXaxis().SetTitleSize(0.05)
-    refGraph.GetXaxis().SetTitleOffset(0.85)
-    #refGraph.GetXaxis().CenterTitle()
-
-    refGraph.SetFillColorAlpha(ROOT.kRed-9, 0.5)
-    refGraph.Draw("A3")
-
-    upGraph.SetFillColorAlpha(ROOT.kBlue-9, 0.5)
-    upGraph.Draw("3 SAME")
-
-    refGraphNoError.SetLineColor(ROOT.kRed)
-    refGraphNoError.SetLineWidth(2)
-    refGraphNoError.SetMarkerStyle(20)
-    refGraphNoError.SetMarkerColor(ROOT.kRed)
-    refGraphNoError.Draw("SAME PL")
-
-    upGraphNoError.SetLineColor(ROOT.kBlue)
-    upGraphNoError.SetLineWidth(2)
-    upGraphNoError.SetMarkerStyle(21)
-    upGraphNoError.SetMarkerColor(ROOT.kBlue)
-    upGraphNoError.Draw("SAME PL")
-
-
-    legend = setupTLegend()
-    legend.AddEntry(refGraphNoError , "expected limit, simulated signal templates"  , "l");
-    legend.AddEntry(refGraph , "#pm1 #sigma error"  , "f");
-    legend.AddEntry(upGraphNoError , "expected limit, interpolated signal templates"  , "l");
+    for comparisonLimit in comparisonGraphs:
     
-    legend.AddEntry(upGraph , "#pm1 #sigma error"  , "f");    
 
-    legend.Draw()
+        refTFile = ROOT.TFile(referenceGraph["fileName"],"OPEN")  # results with best estimate H4l reducible norm
 
-    canv.Update()
+        upTFile = ROOT.TFile(comparisonGraphs[comparisonLimit]["fileName"],"OPEN")   # resutls with reducible normalized to 120% of best estimate value, i.e. +20%
 
-    canv.Print("compare.pdf")
+
+
+        refGraph = refTFile.Get("expectedLimits_1Sigma")
+        upGraph  = upTFile.Get("expectedLimits_1Sigma")
+
+        refGraphNoError = graphHelper.getTGraphWithoutError(refGraph)
+        upGraphNoError  = graphHelper.getTGraphWithoutError(upGraph)
+
+
+
+
+
+
+
+
+
+        ratioCanvas = ROOT.TCanvas("ratioReducibles", "ratioReducibles")
+
+        ratioCanvas.SetGridy()
+
+        ratioTGraph = ratioOfTGraphs(upGraph, refGraph)
+
+        # set label options, do it with ratioTGraph, as we will plot that one first
+
+
+
+        titleStr = "ratio [unitless]"
+
+        ratioTGraph.GetYaxis().SetTitle(titleStr)
+        ratioTGraph.GetYaxis().SetTitleSize(0.05)
+        ratioTGraph.GetYaxis().SetTitleOffset(0.8)
+        ratioTGraph.GetYaxis().CenterTitle()
+        ratioTGraph.GetYaxis().SetRangeUser(0.99,1.03)
+
+        ratioTGraph.GetYaxis().SetNdivisions( 506, True)  # XYY x minor divisions YY major ones, optimizing around these values = TRUE
+
+        ratioTGraph.GetXaxis().SetTitle("m_{Z_{d}} [GeV]")
+        ratioTGraph.GetXaxis().SetTitleSize(0.05)
+        ratioTGraph.GetXaxis().SetTitleOffset(0.85)
+
+        # #sigma_{ZZ_{d}} with nominal reducible estimate /#sigma_{ZZ_{d}} with 1.2 #upoint reducible estimate
+        ratioTGraph.SetTitle("#splitline{ratio of expected upper 95% CLs on #sigma_{ZZ_{d}}:}{ #sigma_{ZZ_{d}} with 1.2 #upoint reducible / #sigma_{ZZ_{d}} with 1.0 #upoint reducible}")
+        ratioTGraph.SetLineWidth(2)
+        ratioTGraph.Draw()
+        ratioCanvas.Update()
+
+
+        #import pdb; pdb.set_trace() # import the debugger and instruct 
+
+
+
+
+        canv = ROOT.TCanvas("compareReducibles", "compareReducibles", 1920, 1080)
+
+        colorScheme = ROOT.kRed
+
+        # set label options, do it with refGraph, as we will plot that one first
+        refGraph.GetYaxis().SetTitle("Expeted upper 95% CL on #sigma_{ZZ_{d}} [fb] ")
+        refGraph.GetYaxis().SetTitleSize(0.05)
+        refGraph.GetYaxis().SetTitleOffset(0.8)
+        refGraph.GetYaxis().CenterTitle()
+
+        refGraph.GetXaxis().SetTitle("m_{Z_{d}} [GeV]")
+        refGraph.GetXaxis().SetTitleSize(0.05)
+        refGraph.GetXaxis().SetTitleOffset(0.85)
+        #refGraph.GetXaxis().CenterTitle()
+
+        refGraph.SetFillColorAlpha(referenceGraph["color"]-9, 0.5)
+        refGraph.Draw("A3")
+
+        upGraph.SetFillColorAlpha(comparisonGraphs[comparisonLimit]["color"]-9, 0.5)
+        upGraph.Draw("3 SAME")
+
+        refGraphNoError.SetLineColor(referenceGraph["color"])
+        refGraphNoError.SetLineWidth(2)
+        refGraphNoError.SetMarkerStyle(20)
+        refGraphNoError.SetMarkerColor(referenceGraph["color"])
+        refGraphNoError.Draw("SAME PL")
+
+        upGraphNoError.SetLineColor(comparisonGraphs[comparisonLimit]["color"])
+        upGraphNoError.SetLineWidth(2)
+        upGraphNoError.SetMarkerStyle(21)
+        upGraphNoError.SetMarkerColor(comparisonGraphs[comparisonLimit]["color"])
+        upGraphNoError.Draw("SAME PL")
+
+
+        legend = setupTLegend()
+        legend.AddEntry(refGraphNoError , referenceGraph["legend"]  , "l");
+        legend.AddEntry(refGraph , "#pm1 #sigma error"  , "f");
+        legend.AddEntry(upGraphNoError , comparisonGraphs[comparisonLimit]["legend"] , "l");
+        
+        legend.AddEntry(upGraph , "#pm1 #sigma error"  , "f");    
+
+        legend.Draw()
+
+        canv.Update()
+
+        outputDir = "limitComparisons"
+
+        if not path.exists(outputDir): os.mkdir(outputDir)
+
+        outputFileName = path.join(outputDir , referenceGraph["fileNamePart"] +"_vs_"+comparisonGraphs[comparisonLimit]["fileNamePart"])
+
+        canv.Print(outputFileName+".pdf")
+        canv.Print(outputFileName+".png")
+        canv.Print(outputFileName+".root")
 
     #canv.Print("compareReducibles.pdf")
     import pdb; pdb.set_trace() # import the debugger and instruct 
