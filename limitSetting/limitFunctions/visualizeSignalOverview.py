@@ -93,13 +93,84 @@ def make3dOverview(masterHistDict, masspointsBeforeInterpolation = [] ):
     return signalSampleStack , canvasSignalOverview3
 
 
+def make2dOverview(masterHistDict, masspointsBeforeInterpolation = []):
+
+    masspoints = getMasspointDict(masterHistDict , channel = "ZXSR" ) # This will be used later in plotting the signal samples
+
+    canvas = ROOT.TCanvas("2D_canvas","2D_canvas")
+
+        # sort things into the two overviewTH2s
+
+    colorList = [ROOT.kRed, ROOT.kBlue, ROOT.kBlue, ROOT.kBlue, ROOT.kBlue ]
+
+    yMax = 0
+    for mass in masspoints:
+        hist = masterHistDict["ZXSR"][ masspoints[mass] ]['Nominal']['All']
+
+        hist.Rebin(2)
+
+        color = colorList[mass%5] 
 
 
+        if mass in masspointsBeforeInterpolation: 
+            hist.SetLineColor(color)
+            hist.SetFillColorAlpha(color, 0.5)
+        else: 
+            hist.SetLineColor(color)
+            hist.SetFillColorAlpha(color , 0.5)
 
+        hist.Draw("SAME HIST")
+
+        yMax = max( yMax , hist.GetMaximum() )
+
+
+    masspoints.values()[0]
+
+    hist = masterHistDict["ZXSR"][     masspoints.values()[0] ]['Nominal']['All']
+
+    hist.GetXaxis().SetTitle("m_{34} [GeV]" )
+    hist.GetYaxis().SetTitle("events / " + str(hist.GetXaxis().GetBinWidth(1) )+" GeV" )
+
+    hist.GetYaxis().SetRangeUser(0, yMax*1.1)
+    hist.GetXaxis().SetRangeUser(10, 65)
+    hist.SetStats(False)
+
+    hist.SetTitle("")
+
+    legend = setupTLegend()
+
+    legend.AddEntry(hist , "simulated"  , "fl");
+    legend.AddEntry(masterHistDict["ZXSR"][     masspoints.values()[1] ]['Nominal']['All'] , "interpolated" , "fl");
+    legend.Draw()
+
+
+    canvas.Update()
+
+    canvas.Print("test_2d_b.pdf")
+
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+
+    return None
+
+def setupTLegend():
+    # set up a TLegend, still need to add the different entries
+    xOffset = 0.6; yOffset = 0.7
+    xWidth  = 0.3; ywidth = 0.2
+    TLegend = ROOT.TLegend(xOffset, yOffset ,xOffset + xWidth, yOffset+ ywidth)
+    TLegend.SetFillColor(ROOT.kWhite)
+    TLegend.SetLineColor(ROOT.kWhite)
+    TLegend.SetNColumns(1);
+    TLegend.SetFillStyle(0);  # make legend background transparent
+    TLegend.SetBorderSize(0); # and remove its border without a border
+    return TLegend
 
 if __name__ == '__main__':
 
-    fileName = "../preppedHistsV2_mc16ade_1GeVBins.root"
+    #fileName = "../preppedHistsV2_mc16ade_1GeVBins.root"
+    #fileName = "../testoutput_1GeVBinsNow_0.5GeVAtInterpolation.root"
+
+    fileName = "../testoutput_0.05GeVBinsNow_0.05GeVAtInterpolation.root"
 
     aTFile = ROOT.TFile(fileName, "OPEN")
 
@@ -111,12 +182,12 @@ if __name__ == '__main__':
 
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-
     ###############################################################################
     ## write the histograms in the masterHistDict to file for the limit setting
     ###############################################################################
     #rootDictAndTDirTools.writeDictTreeToRootFile( masterHistDict, targetFilename = "test.root" )
+
+    make2dOverview(masterHistDict, masspointsBeforeInterpolation = range(15,56,5) )
 
 
     signalSampleStack, canvasSignalOverview3 = make3dOverview(masterHistDict, masspointsBeforeInterpolation = range(15,56,5) )
