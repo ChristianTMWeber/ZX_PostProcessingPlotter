@@ -102,7 +102,7 @@ def addInterpolatedSignalSamples(masterHistDict, channels = None):
 
                     # we want to interpolate between lowHist and highHist in 1GeV steps
                     for newMass in xrange(lowMass+1,highMass,1):
-                        # do the actual interpolation                                                                                                       #                             errorInterpolation = simulateErrors,  morph1SigmaHists, or morphErrorsToo
+                        # do the actual interpolation                                                                       #                             errorInterpolation = simulateErrors,  morph1SigmaHists, or morphErrorsToo
                         newSignalHist = integralMorphWrapper.getInterpolatedHistogram(histsAndMasses, interpolateAt = newMass, morphType = "momentMorph", errorInterpolation = "morph1SigmaHists", nSimulationRounds = 10)
                         # determine new names and eventType
                         newEventType = re.sub('\d{2}', str(newMass), masspointDict[lowMass]) # make the new eventType string, by replacing the mass number in a given old one
@@ -112,6 +112,37 @@ def addInterpolatedSignalSamples(masterHistDict, channels = None):
                         masterHistDict[channel][ newEventType ][systematic][flavor] = newSignalHist
 
                         reportMemUsage.reportMemUsage(startTime = startTimeInterp)
+
+                # interpolate signal samples at the masses we simulate them for comparison purposes
+                for massToInterpolate in sortedMasses[1:-1]:
+
+                    # getInterpolatedHistogram takes not as input a list of tuples [(hist,parameter at which hist is realized),...]
+                    # remember to exclude the hist that we want to interpolate at
+                    histsAndMasses = [ (masterHistDict[channel][ masspointDict[mass]  ][systematic][flavor], mass) for mass in masspointDict if  mass != massToInterpolate ]
+
+                    # we want to interpolate between lowHist and highHist in 1GeV steps
+                    # do the actual interpolation                                                                                                       #                             errorInterpolation = simulateErrors,  morph1SigmaHists, or morphErrorsToo
+                    #newSignalHist = integralMorphWrapper.getInterpolatedHistogram(lowHist, highHist,  paramA = lowMass , paramB = highMass, interpolateAt = newMass, morphType = "momentMorph", errorInterpolation = "morph1SigmaHists", nSimulationRounds = 10)
+                    newSignalHist = integralMorphWrapper.getInterpolatedHistogram(histsAndMasses, interpolateAt = massToInterpolate, errorInterpolation = "morph1SigmaHists" , morphType = "momentMorph", nSimulationRounds = 100)
+
+                    # determine new names and eventType
+                    newEventType = re.sub('\d{2}', str(massToInterpolate), masspointDict[massToInterpolate])+"_Interpolated" # make the new eventType string, by replacing the mass number in a given old one
+                    newTH1Name   = re.sub('\d{2}', str(massToInterpolate), masterHistDict[channel][ masspointDict[massToInterpolate] ][systematic][flavor].GetName())+"_Interpolated"
+                    newSignalHist.SetName(newTH1Name)
+
+                    #referenceHist = masterHistDict[channel][ masspointDict[massToInterpolate] ][systematic][flavor] # histogram from simulation at the Zd mass that we are interpolating at
+                    #interpolatedNorm = newSignalHist.Integral()
+                    #simulatedNorm = referenceHist.Integral()
+
+                    #newSignalHist.Scale(simulatedNorm/interpolatedNorm)
+
+                    #print( "Zd mass = %i: interpolatedNorm = %f, simulatedNorm = %f" %(newMass, interpolatedNorm, simulatedNorm) )
+
+                    # add the new histogram to the sample
+                    masterHistDict[channel][ newEventType ][systematic][flavor] = newSignalHist
+
+                    reportMemUsage.reportMemUsage(startTime = startTimeInterp)
+
     return None
 
 
