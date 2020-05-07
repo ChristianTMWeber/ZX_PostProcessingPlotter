@@ -92,15 +92,18 @@ def addInterpolatedSignalSamples(masterHistDict, channels = None):
         for systematic in masterHistDict[channel][masspointDict.values()[0]].keys():
             #if systematic != "Nominal": continue
             for flavor in flavors:
-                for lowMass, highMass in massPairs:
+                for lowMass, highMass in massPairs: # interpolate between simulated signal samples
                     # remember: masspointDict[ mass ] gives the event type name  
                     lowHist  = masterHistDict[channel][ masspointDict[lowMass]  ][systematic][flavor]
                     highHist = masterHistDict[channel][ masspointDict[highMass] ][systematic][flavor]
 
+                    histsAndMasses = [ (masterHistDict[channel][ masspointDict[mass]  ][systematic][flavor], mass) for mass in masspointDict ]
+
+
                     # we want to interpolate between lowHist and highHist in 1GeV steps
                     for newMass in xrange(lowMass+1,highMass,1):
                         # do the actual interpolation                                                                                                       #                             errorInterpolation = simulateErrors,  morph1SigmaHists, or morphErrorsToo
-                        newSignalHist = integralMorphWrapper.getInterpolatedHistogram(lowHist, highHist,  paramA = lowMass , paramB = highMass, interpolateAt = newMass, morphType = "momentMorph", errorInterpolation = "morph1SigmaHists", nSimulationRounds = 10)
+                        newSignalHist = integralMorphWrapper.getInterpolatedHistogram(histsAndMasses, interpolateAt = newMass, morphType = "momentMorph", errorInterpolation = "morph1SigmaHists", nSimulationRounds = 10)
                         # determine new names and eventType
                         newEventType = re.sub('\d{2}', str(newMass), masspointDict[lowMass]) # make the new eventType string, by replacing the mass number in a given old one
                         newTH1Name   = re.sub('\d{2}', str(newMass), lowHist.GetName())
@@ -242,7 +245,12 @@ def add2l2eAnd2l2muHists(masterHistDict):
 
     return None
 
+def loopOverRecursiveDict( aDict ):
 
+    for value in aDict.values():
+        if isinstance(value,dict): 
+            for output in loopOverRecursiveDict( value ): yield output
+        else: yield value
 
 if __name__ == '__main__':
 
@@ -365,6 +373,9 @@ if __name__ == '__main__':
     # sum up 4e + 2mu2e hists to 2l2e and 4mu + 2e2mu hists to 2l2mu hists, and include them in the masterHistDict
     ###############################################################################################################
     add2l2eAnd2l2muHists(masterHistDict)
+
+
+    #for anyHist in loopOverRecursiveDict( masterHistDict  ): anyHist.Rebin(2)
 
     ##############################################################################
     # write the histograms in the masterHistDict to file for the limit setting
