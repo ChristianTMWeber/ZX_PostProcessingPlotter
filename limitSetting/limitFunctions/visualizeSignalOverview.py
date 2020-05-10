@@ -30,7 +30,7 @@ def prepareSignalSampleOverviewTH2(masterHistDict, channel = None):
     return signalOverviewTH2
 
 
-def getMasspointDict(masterHistDict , channel = None ):
+def getMasspointDict(masterHistDict , channel = None , skipString = None):
     # returns a dict of the available masspoints: masspointDict[ int ] = <name of event type with that mass>
     # e.g.: masspointDict[20] = 'ZZd, m_{Zd} = 20GeV'
     #if channel is None: channel = masterHistDict.keys()[0]
@@ -38,6 +38,10 @@ def getMasspointDict(masterHistDict , channel = None ):
     masspointDict = {}
     for channel in masterHistDict.keys(): 
         for eventType in masterHistDict[channel].keys(): 
+ 
+            if skipString is not None: 
+                if re.search(skipString, eventType): continue
+
             reObject = re.search("\d{2}", eventType)
             if reObject: # True if we found something
                 # do some checks that the 'All' and 'Nominal' are in the dict, and that the TH1 in the dict is actually in there
@@ -93,70 +97,126 @@ def make3dOverview(masterHistDict, masspointsBeforeInterpolation = [] ):
     return signalSampleStack , canvasSignalOverview3
 
 
-def make2dOverview(masterHistDict, masspointsBeforeInterpolation = []):
+def translateFlavorTag(flavor):
 
-    masspoints = getMasspointDict(masterHistDict , channel = "ZXSR" ) # This will be used later in plotting the signal samples
+    if "4m"      in flavor:  outStr = "4#mu"
+    elif "2e2m"  in flavor:  outStr = "2e2#mu"
+    elif "2e2mu" in flavor:  outStr = "2e2#mu"
+    elif "2m2e"  in flavor:  outStr = "2#mu2e"
+    elif "2mu2e" in flavor:  outStr = "2#mu2e"
+    elif "4e"    in flavor:  outStr = "4e"
+    elif "All"   in flavor:  outStr = "4#mu, 2e2#mu, 2#mu2e, 4e"
+    else:                    outStr = ""
 
-    canvas = ROOT.TCanvas("2D_canvas","2D_canvas")
+    return outStr
+
+def make2dOverview(masterHistDict, masspointsBeforeInterpolation = [], flavor = 'All', showInterpolatedAtSignalMass = False):
+
+    masspoints = getMasspointDict(masterHistDict , channel = "ZXSR", skipString = "Interpolated" ) # This will be used later in plotting the signal samples
+
+    if flavor == 'All': resolutionDevidend = 1
+    else:               resolutionDevidend = 2
+    canvas = ROOT.TCanvas("2D_canvas","2D_canvas", 2560 / resolutionDevidend, 1080)
+
 
         # sort things into the two overviewTH2s
 
-    colorList = [ROOT.kRed, ROOT.kBlue, ROOT.kBlue, ROOT.kBlue, ROOT.kBlue ]
+    simColor = ROOT.kRed
+    interpColor = ROOT.kBlue
+    interpAtSimColor = ROOT.kGreen
+
+    #simColor = ROOT.kBlue
+    #interpColor = ROOT.kRed
+    #interpAtSimColor = ROOT.kGreen
+
+    rebinSetting = 1
 
     yMax = 0
+
+    extraInterpolatedHist = None
+
     for mass in masspoints:
-        hist = masterHistDict["ZXSR"][ masspoints[mass] ]['Nominal']['All']
+        hist = masterHistDict["ZXSR"][ masspoints[mass] ]['Nominal'][flavor]
 
-        hist.Rebin(2)
+        print masspoints[mass]
 
-        color = colorList[mass%5] 
+        hist.Rebin(rebinSetting)
 
 
-        if mass in masspointsBeforeInterpolation: 
-            hist.SetLineColor(color)
-            hist.SetFillColorAlpha(color, 0.5)
+        if mass in masspointsBeforeInterpolation :#and "Interpolated" not in masspoints[mass]: 
+            hist.SetLineColor(simColor)
+            hist.SetFillColorAlpha(simColor, 0.5)
         else: 
-            hist.SetLineColor(color)
-            hist.SetFillColorAlpha(color , 0.5)
+            hist.SetLineColor(interpColor)
+            hist.SetFillColorAlpha(interpColor , 0.5)
 
         hist.Draw("SAME HIST")
 
         yMax = max( yMax , hist.GetMaximum() )
 
 
+        if  showInterpolatedAtSignalMass:
+            extraMassName = masspoints[mass]+"_Interpolated" 
+            if extraMassName in masterHistDict["ZXSR"].keys():
+
+                #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+
+                hist = masterHistDict["ZXSR"][ extraMassName ]['Nominal'][flavor]
+                hist.Rebin(rebinSetting)
+                hist.SetLineColor(interpAtSimColor )
+                hist.SetFillColorAlpha(interpAtSimColor, 0.5)
+                hist.Draw("SAME HIST")
+
+                extraInterpolatedHist = hist
+
+
+
     masspoints.values()[0]
 
-    hist = masterHistDict["ZXSR"][     masspoints.values()[0] ]['Nominal']['All']
+    hist = masterHistDict["ZXSR"][     masspoints.values()[0] ]['Nominal'][flavor]
 
     hist.GetXaxis().SetTitle("m_{34} [GeV]" )
     hist.GetYaxis().SetTitle("events / " + str(hist.GetXaxis().GetBinWidth(1) )+" GeV" )
+
+    hist.GetYaxis().SetTitleSize(0.05)
+    hist.GetYaxis().SetTitleOffset(0.9)
+
+    hist.GetXaxis().SetTitleSize(0.05)
+    hist.GetXaxis().SetTitleOffset(0.8)
+
 
     hist.GetYaxis().SetRangeUser(0, yMax*1.1)
     hist.GetXaxis().SetRangeUser(10, 65)
     hist.SetStats(False)
 
-    hist.SetTitle("")
+    hist.SetTitle("ZZ_{d} signal interpolation, " + translateFlavorTag(flavor) + " final state")
+    hist.SetTitleSize(0.05)
+
+
 
     legend = setupTLegend()
 
     legend.AddEntry(hist , "simulated"  , "fl");
-    legend.AddEntry(masterHistDict["ZXSR"][     masspoints.values()[1] ]['Nominal']['All'] , "interpolated" , "fl");
+    legend.AddEntry(masterHistDict["ZXSR"][     masspoints.values()[1] ]['Nominal'][flavor] , "interpolated" , "fl");
+    if extraInterpolatedHist is not None: legend.AddEntry(extraInterpolatedHist , "interpolated from neighboring simulated distributions" , "fl");
     legend.Draw()
 
 
     canvas.Update()
 
-    canvas.Print("test_2d_b.pdf")
+    #canvas.Print("2d_InterpolationOverview_InterpAtSimMasses_altColor.pdf")
+    canvas.Print("2d_InterpolationOverview_"+flavor+".pdf")
 
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
 
-    return None
+    return canvas
 
 def setupTLegend():
     # set up a TLegend, still need to add the different entries
-    xOffset = 0.6; yOffset = 0.7
-    xWidth  = 0.3; ywidth = 0.2
+    xOffset = 0.7; yOffset = 0.7
+    xWidth  = 0.2; ywidth = 0.2
     TLegend = ROOT.TLegend(xOffset, yOffset ,xOffset + xWidth, yOffset+ ywidth)
     TLegend.SetFillColor(ROOT.kWhite)
     TLegend.SetLineColor(ROOT.kWhite)
@@ -171,6 +231,9 @@ if __name__ == '__main__':
     #fileName = "../testoutput_1GeVBinsNow_0.5GeVAtInterpolation.root"
 
     fileName = "../testoutput_0.05GeVBinsNow_0.05GeVAtInterpolation.root"
+
+    #fileName = "../SignalTestInterpolations_noSamplesEndingOn5.root"
+    #fileName = "../SignalTestInterpolations_noSamplesEndingOn0.root"
 
     aTFile = ROOT.TFile(fileName, "OPEN")
 
@@ -187,9 +250,10 @@ if __name__ == '__main__':
     ###############################################################################
     #rootDictAndTDirTools.writeDictTreeToRootFile( masterHistDict, targetFilename = "test.root" )
 
-    make2dOverview(masterHistDict, masspointsBeforeInterpolation = range(15,56,5) )
+    for flavorSetting in ['All', '4e', '2e2mu', '2mu2e', '4mu']:
+        overviewCanvas2 = make2dOverview(masterHistDict, masspointsBeforeInterpolation = range(15,56,5) , flavor = flavorSetting, showInterpolatedAtSignalMass = True)
 
-
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     signalSampleStack, canvasSignalOverview3 = make3dOverview(masterHistDict, masspointsBeforeInterpolation = range(15,56,5) )
 
 
@@ -205,6 +269,9 @@ if __name__ == '__main__':
     signalOverviewFile = ROOT.TFile("signalOverview.root","RECREATE")
     #signalOverviewTH2.Write()
     #signalOverviewTH2Interpolated.Write()
+
+    overviewCanvas2.Write()
+
     signalSampleStack.Write()
     canvasSignalOverview3.Write()
     for hist in signalTH1List: hist.Write()
