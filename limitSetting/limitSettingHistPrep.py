@@ -92,56 +92,63 @@ def addInterpolatedSignalSamples(masterHistDict, channels = None):
         for systematic in masterHistDict[channel][masspointDict.values()[0]].keys():
             #if systematic != "Nominal": continue
             for flavor in flavors:
-                for lowMass, highMass in massPairs: # interpolate between simulated signal samples
-                    # remember: masspointDict[ mass ] gives the event type name  
-                    lowHist  = masterHistDict[channel][ masspointDict[lowMass]  ][systematic][flavor]
-                    highHist = masterHistDict[channel][ masspointDict[highMass] ][systematic][flavor]
+                # remember: masspointDict[ mass ] gives the event type name  
+                refHist  = masterHistDict[channel][ masspointDict.values()[0]  ][systematic][flavor]
 
-                    histsAndMasses = [ (masterHistDict[channel][ masspointDict[mass]  ][systematic][flavor], mass) for mass in masspointDict ]
+                histsAndMasses = [ (masterHistDict[channel][ masspointDict[mass]  ][systematic][flavor], mass) for mass in masspointDict ]
+
+                interpolationPoints = []
+
+                for mass in range(min(masspointDict.keys()), max(masspointDict.keys())+1):
+                    if mass not in masspointDict.keys(): interpolationPoints.append(mass)
 
 
-                    # we want to interpolate between lowHist and highHist in 1GeV steps
-                    for newMass in xrange(lowMass+1,highMass,1):
-                        # do the actual interpolation                                                                       #                             errorInterpolation = simulateErrors,  morph1SigmaHists, or morphErrorsToo
-                        newSignalHist = integralMorphWrapper.getInterpolatedHistogram(histsAndMasses, interpolateAt = newMass, morphType = "momentMorph", errorInterpolation = "morph1SigmaHists", nSimulationRounds = 10)
-                        # determine new names and eventType
-                        newEventType = re.sub('\d{2}', str(newMass), masspointDict[lowMass]) # make the new eventType string, by replacing the mass number in a given old one
-                        newTH1Name   = re.sub('\d{2}', str(newMass), lowHist.GetName())
-                        newSignalHist.SetName(newTH1Name)
-                        # add the new histogram to the sample
-                        masterHistDict[channel][ newEventType ][systematic][flavor] = newSignalHist
 
-                        reportMemUsage.reportMemUsage(startTime = startTimeInterp)
+                print( channel +" "+ systematic +" "+ flavor )
+                # do the actual interpolation                                                                       #                             errorInterpolation = simulateErrors,  morph1SigmaHists, or morphErrorsToo
+                newSignalHistDict = integralMorphWrapper.getInterpolatedHistogram(histsAndMasses, interpolateAt = interpolationPoints, morphType = "momentMorph", errorInterpolation = "morph1SigmaHists", nSimulationRounds = 10)
+
+                for interpolatedMass in newSignalHistDict: 
+                    # determine new names and eventType
+                    newEventType = re.sub('\d{2}', str(interpolatedMass), masspointDict.values()[0]) # make the new eventType string, by replacing the mass number in a given old one
+                    newTH1Name   = re.sub('\d{2}', str(interpolatedMass), refHist.GetName())
+                    newSignalHistDict[interpolatedMass].SetName(newTH1Name)
+                    newSignalHistDict[interpolatedMass].SetTitle(refHist.GetTitle())
+                    # add the new histogram to the sample
+                    masterHistDict[channel][ newEventType ][systematic][flavor] = newSignalHistDict[interpolatedMass]
+
+                reportMemUsage.reportMemUsage(startTime = startTimeInterp)
+
 
                 # interpolate signal samples at the masses we simulate them for comparison purposes
-                for massToInterpolate in sortedMasses[1:-1]:
-
-                    # getInterpolatedHistogram takes not as input a list of tuples [(hist,parameter at which hist is realized),...]
-                    # remember to exclude the hist that we want to interpolate at
-                    histsAndMasses = [ (masterHistDict[channel][ masspointDict[mass]  ][systematic][flavor], mass) for mass in masspointDict if  mass != massToInterpolate ]
-
-                    # we want to interpolate between lowHist and highHist in 1GeV steps
-                    # do the actual interpolation                                                                                                       #                             errorInterpolation = simulateErrors,  morph1SigmaHists, or morphErrorsToo
-                    #newSignalHist = integralMorphWrapper.getInterpolatedHistogram(lowHist, highHist,  paramA = lowMass , paramB = highMass, interpolateAt = newMass, morphType = "momentMorph", errorInterpolation = "morph1SigmaHists", nSimulationRounds = 10)
-                    newSignalHist = integralMorphWrapper.getInterpolatedHistogram(histsAndMasses, interpolateAt = massToInterpolate, errorInterpolation = "morph1SigmaHists" , morphType = "momentMorph", nSimulationRounds = 100)
-
-                    # determine new names and eventType
-                    newEventType = re.sub('\d{2}', str(massToInterpolate), masspointDict[massToInterpolate])+"_Interpolated" # make the new eventType string, by replacing the mass number in a given old one
-                    newTH1Name   = re.sub('\d{2}', str(massToInterpolate), masterHistDict[channel][ masspointDict[massToInterpolate] ][systematic][flavor].GetName())+"_Interpolated"
-                    newSignalHist.SetName(newTH1Name)
-
-                    #referenceHist = masterHistDict[channel][ masspointDict[massToInterpolate] ][systematic][flavor] # histogram from simulation at the Zd mass that we are interpolating at
-                    #interpolatedNorm = newSignalHist.Integral()
-                    #simulatedNorm = referenceHist.Integral()
-
-                    #newSignalHist.Scale(simulatedNorm/interpolatedNorm)
-
-                    #print( "Zd mass = %i: interpolatedNorm = %f, simulatedNorm = %f" %(newMass, interpolatedNorm, simulatedNorm) )
-
-                    # add the new histogram to the sample
-                    masterHistDict[channel][ newEventType ][systematic][flavor] = newSignalHist
-
-                    reportMemUsage.reportMemUsage(startTime = startTimeInterp)
+    #                for massToInterpolate in range(20,50+1):
+    #
+    #                    # getInterpolatedHistogram takes not as input a list of tuples [(hist,parameter at which hist is realized),...]
+    #                    # remember to exclude the hist that we want to interpolate at
+    #                    histsAndMasses = [ (masterHistDict[channel][ masspointDict[mass]  ][systematic][flavor], mass) for mass in masspointDict if  mass%10 !=5 ]
+    #
+    #                    # we want to interpolate between lowHist and highHist in 1GeV steps
+    #                    # do the actual interpolation                                                                                                       #                             errorInterpolation = simulateErrors,  morph1SigmaHists, or morphErrorsToo
+    #                    #newSignalHist = integralMorphWrapper.getInterpolatedHistogram(lowHist, highHist,  paramA = lowMass , paramB = highMass, interpolateAt = newMass, morphType = "momentMorph", errorInterpolation = "morph1SigmaHists", nSimulationRounds = 10)
+    #                    newSignalHist = integralMorphWrapper.getInterpolatedHistogram(histsAndMasses, interpolateAt = massToInterpolate, errorInterpolation = "morph1SigmaHists" , morphType = "momentMorph", nSimulationRounds = 100)
+    #
+    #                    # determine new names and eventType
+    #                    newEventType = re.sub('\d{2}', str(massToInterpolate), masspointDict[15])+"_Interpolated" # make the new eventType string, by replacing the mass number in a given old one
+    #                    newTH1Name   = re.sub('\d{2}', str(massToInterpolate), masterHistDict[channel][ masspointDict[15] ][systematic][flavor].GetName())+"_Interpolated"
+    #                    newSignalHist.SetName(newTH1Name)
+    #
+    #                    #referenceHist = masterHistDict[channel][ masspointDict[massToInterpolate] ][systematic][flavor] # histogram from simulation at the Zd mass that we are interpolating at
+    #                    #interpolatedNorm = newSignalHist.Integral()
+    #                    #simulatedNorm = referenceHist.Integral()
+    #
+    #                    #newSignalHist.Scale(simulatedNorm/interpolatedNorm)
+    #
+    #                    #print( "Zd mass = %i: interpolatedNorm = %f, simulatedNorm = %f" %(newMass, interpolatedNorm, simulatedNorm) )
+    #
+    #                    # add the new histogram to the sample
+    #                    masterHistDict[channel][ newEventType ][systematic][flavor] = newSignalHist
+    #
+    #                    reportMemUsage.reportMemUsage(startTime = startTimeInterp)
 
     return None
 
@@ -370,15 +377,15 @@ if __name__ == '__main__':
 
         if makeHistDict.skipTObject(path, myTObject, selectChannels = channelMapping.keys() ): continue # skip non-relevant histograms
 
-        if myTObject.GetBinWidth(1) != 1.0:
-            if myTObject.GetBinWidth(1) == 0.5: myTObject.Rebin(2)
-            else: raise ValueError('Bin size is neither 1 nor 0.5. Check the binwidth, and decide which binwidth you want.')
+        #if myTObject.GetBinWidth(1) != 1.0:
+        #    if myTObject.GetBinWidth(1) == 0.5: myTObject.Rebin(2)
+        #    else: raise ValueError('Bin size is neither 1 nor 0.5. Check the binwidth, and decide which binwidth you want.')
 
 
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
 
-        if args.rebin > 1: myTObject.Rebin( args.rebin )
+        #if args.rebin > 1: myTObject.Rebin( args.rebin )
         masterHistDict = makeHistDict.fillHistDict(path, myTObject , args.mcCampaign[0], myDSIDHelper, channelMap = channelMapping ) 
 
         nRelevantHistsProcessed += 1
@@ -406,7 +413,13 @@ if __name__ == '__main__':
     add2l2eAnd2l2muHists(masterHistDict)
 
 
-    #for anyHist in loopOverRecursiveDict( masterHistDict  ): anyHist.Rebin(2)
+
+    ###############################################################################################################
+    # Rebin all the hists, usefull if we wanna interpolate at a smaller binning
+    ###############################################################################################################
+
+    if args.rebin > 1: 
+        for anyHist in loopOverRecursiveDict( masterHistDict  ): anyHist.Rebin( args.rebin )
 
     ##############################################################################
     # write the histograms in the masterHistDict to file for the limit setting
