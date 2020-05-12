@@ -25,6 +25,7 @@ def getTTreeLocations():
 
     shapeSourceFiles = { "HeavyFlavor" : "post_20200228_203930__ZX_Run2_ZJetBFilter_May_Minitree.root", 
                          "ttBar"       : "post_20200228_152824__ZX_Run2_ttbar_May_Minitree.root",
+                         #"ttBar"       : "post_20200505_152227__ZX_Run2_Bckg_May_InvertedD0cr_ttbar_minitree_TEST.root",
                          "3l+X"        : "post_20200319_122149__ZX_Run2_Data_May_3lX_Minitree.root"      }
 
 
@@ -162,9 +163,26 @@ def makeRooKeysPDFs( m34Min = 12000, m34Max = 115000):
     return pdfDict, m34
 
 
-def addRelativeHistError(hist, relError):
+def addRelativeHistError(hist, relError, errorIsOnIntegral = False):
     for n in xrange(0,hist.GetNbinsX()+2): 
         hist.SetBinError(n, hist.GetBinContent(n) * relError )
+
+    if errorIsOnIntegral: # hist errors are added in quadrature. 
+        # If the error relates to the uncertainty in the integral of the yield, correct appropriately here
+
+        lowerLimit = 0
+        upperLimit = hist.GetNbinsX() +1
+
+        integralUncertainty = ROOT.Double()
+
+        integral = hist.IntegralAndError( lowerLimit , upperLimit, integralUncertainty)
+        errorCorrectionFactor = relError/(integralUncertainty / integral)
+
+        for n in xrange(0,hist.GetNbinsX()+2): 
+            hist.SetBinError(n, hist.GetBinError(n) * errorCorrectionFactor )
+
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
     return None
 
 
@@ -290,7 +308,7 @@ def getReducibleTH1s(TH1Template = None , convertXAxisFromMeVToGeV = False):
     TH1Dict["all"].SetTitle(newTitle)
     TH1Dict["all"].Add(TH1Dict["llee"])
 
-    for finalState in TH1Dict: addRelativeHistError( TH1Dict[finalState]  ,  statErrorDict[finalState]  )
+    for finalState in TH1Dict: addRelativeHistError( TH1Dict[finalState]  ,  statErrorDict[finalState] , errorIsOnIntegral = True )
 
     #for flavor in TH1Dict: TH1Dict[flavor].Integral()
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
