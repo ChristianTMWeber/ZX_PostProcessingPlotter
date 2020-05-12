@@ -126,8 +126,10 @@ def getIndexOfNearestNeigborsInList(aList, valueOfInterest):
 
     assert aList == sorted(aList)
 
-    lowNeighborIndex = bisect.bisect_left(aList,valueOfInterest) -1
+    lowNeighborIndex = bisect.bisect_left(aList,valueOfInterest)
+    if aList[lowNeighborIndex] > valueOfInterest: lowNeighborIndex -= 1
     highNeighborIndex = bisect.bisect_right(aList,valueOfInterest)
+    if max(aList) == valueOfInterest: highNeighborIndex =len(aList)-1
 
     return lowNeighborIndex, highNeighborIndex
 
@@ -205,7 +207,7 @@ def getInterpolatedHistogram(histAndParamList, interpolateAt = 0.5, errorInterpo
 
     referenceHist = histAndParamList[leftIndex][0]
 
-    assert (parameterList[leftIndex] < interpolateAt) and (interpolateAt < parameterList[rightIndex])
+    assert (parameterList[leftIndex] <= interpolateAt) and (interpolateAt <= parameterList[rightIndex])
 
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
