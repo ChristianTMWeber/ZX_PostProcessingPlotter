@@ -573,7 +573,7 @@ def toyHypoTestInverter(workspace, confidenceLevel = 0.95, drawLimitPlot = False
 
     return result
 
-def writeOutWorkspaces(workspace, masspoint ):
+def writeOutWorkspaces(workspace, masspoint , outputDir = None):
 
     workspace.SetName("combined") # rename so that the workspace conforms with the expectation of StandardHypoTestInv at 
     # https://gitlab.cern.ch/atlas_higgs_combination/software/StandardHypoTestInv 
@@ -585,8 +585,7 @@ def writeOutWorkspaces(workspace, masspoint ):
     mcPOI.setVal(1.0)
     modelConfig.SetSnapshot( ROOT.RooArgSet( mcPOI ) )
 
-
-    outputDir = "ZXWorkspaces"
+    if outputDir is None:  outputDir = "ZXWorkspaces"
 
     if not os.path.exists(outputDir): os.mkdir(outputDir)
 
@@ -822,7 +821,7 @@ if __name__ == '__main__':
 
             elif limitType == "writeOutWorkspaces":
 
-                writeOutWorkspaces( workspace, massPoint )
+                writeOutWorkspaces( workspace, massPoint , args.outputDir)
 
                 continue
 
