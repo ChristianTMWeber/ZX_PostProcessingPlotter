@@ -676,7 +676,7 @@ if __name__ == '__main__':
     parser.add_argument("--nIterations", type=int, default=1 ,
         help="number of iterations over all the masspoints " )
 
-    parser.add_argument("--limitType", type=str, default="toys" , choices=["toys","asymptotic","observed", "HypoTestInverter", "writeOutWorkspaces"],
+    parser.add_argument("--limitType", type=str, default="toys" , choices=["toys","asymptotic","observed", "HypoTestInverter", "writeOutWorkspaces", "asimov"],
         help = "Determines what kind of limit setting we do. \
         'observed' provides limtis on the cross section, based on the data provided. \
         'toys' provides expected limits by sampleing histograms from the 'expected data' but requires many iterations and \
@@ -764,13 +764,17 @@ if __name__ == '__main__':
 
             dataHist = myHistSampler.sampleFromTH1(expectedDataHist)
 
-            dataObj = setupHistofactoryData(dataHist) # put things in a HistFactory.Data object to avoit some seg faults
+        elif limitType == "asimov":
+            dataHistPath = getFullTDirPath(masterDict, region, "expectedData" , "Nominal",  flavor)
+            dataHist = inputTFile.Get( dataHistPath )
 
-        else :   # either do asymptotic expected limits, or get real data limits
+        elif limitType == "observed" or limitType == "asymptotic":  # either do asymptotic expected limits, or get real data limits
             dataHistPath = getFullTDirPath(masterDict, region, "data" , "Nominal",  flavor)
             dataHist = inputTFile.Get( dataHistPath )
 
-            dataObj = setupHistofactoryData(dataHist)
+        else: raise ValueError("specific limittype '%s' has not been implemented" %limitType)
+
+        dataObj = setupHistofactoryData(dataHist) # put things in a HistFactory.Data object to avoit some seg faults
 
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
@@ -825,7 +829,7 @@ if __name__ == '__main__':
 
                 continue
 
-            else :  # profile limits, for actual limits or expected limits from toys 
+            else :  # profile limits, for  observed, toys and  asimov limits
 
                 # profile limit: profileLimit.getVal(), profileLimit.getErrorHi(), profileLimit.getErrorLo()
                 interval = getProfileLikelihoodLimits(workspace , drawLikelihoodIntervalPlot = False)
