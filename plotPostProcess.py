@@ -526,6 +526,8 @@ def addRegionAndChannelToStatsText(shortName):
     elif "2m2e"  in shortName:  outList += "2#mu2e"
     elif "2mu2e" in shortName:  outList += "2#mu2e"
     elif "4e"    in shortName:  outList += "4e"
+    elif "llee"  in shortName:  outList += "llee"
+    elif "llmumu"in shortName:  outList += "ll#mu#mu"
     else:                       outList += "4#mu, 2e2#mu, 2#mu2e, 4e"
 
     return outList
@@ -591,6 +593,45 @@ def getDataDrivenReducibleShape2(canvasName, sortedSampleKey, rebin, referenceHi
     #        return copy.deepcopy(mergedHist) # return a deep copy to protec the hist from getting garbage collected after the TFile here goes out of scope
 
     return False
+
+def makelleeAndllmumuPlots(dictTree):
+
+
+    for histEnding in dictTree.keys():
+
+        checkForMixedFlavor = re.search("(_2e2mu_)|(_2mu2e_)", histEnding )
+
+        if not checkForMixedFlavor: continue
+
+        referenceFlavor = checkForMixedFlavor.group()
+
+        if referenceFlavor == "_2e2mu_" : 
+            complimentingHistEnding = re.sub("_2e2mu_", "_4mu_", histEnding) 
+
+            combdinedFlavor = "_llmumu_"
+            combinedHistEnding = re.sub("_2e2mu_", "_llmumu_", histEnding) 
+        else:                                  
+            complimentingHistEnding = re.sub("_2mu2e_", "_4e_", histEnding) 
+            combdinedFlavor = "_llee_"
+            combinedHistEnding = re.sub("_2mu2e_", "_llee_", histEnding) 
+
+        for mcTag in dictTree[histEnding].keys():
+            for DSID in dictTree[histEnding][mcTag].keys():
+
+                histA = dictTree[histEnding][mcTag][DSID]
+                histB = dictTree[complimentingHistEnding][mcTag][DSID]
+
+                newName = re.sub("_2e2mu_", combdinedFlavor, histEnding) 
+
+                combinedHist = histA.Clone(newName)
+                combinedHist.Add(histB)
+
+                dictTree[combinedHistEnding][mcTag][DSID] = combinedHist
+
+                #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    return None
+
 
 if __name__ == '__main__':
 
@@ -696,9 +737,14 @@ if __name__ == '__main__':
     myDSIDHelper.fillSumOfEventWeightsDict(postProcessedData)
 
     histCounter = 0 # count how many relevant hists we have
+    nonRelevantHistCounter = 0
 
     # loop over all of the TObjects in the given ROOT file                         # newOwnership set to none for newer root versions, set to true for older ones
     for path, baseHist  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = ownershipSetpoint): 
+
+        nonRelevantHistCounter += 1
+        if nonRelevantHistCounter %1e5 == 0: print "%i irrelevant hists processed. \t Memory usage: %s (MB)" % (nonRelevantHistCounter, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1000)
+
 
         if irrelevantTObject(path, baseHist): continue # skip non-relevant histograms
 
@@ -749,6 +795,8 @@ if __name__ == '__main__':
     # Do the data processing from here on
     ######################################################
 
+
+    makelleeAndllmumuPlots(masterHistDict)
 
     combinedMCTagHistDict = masterHistDict
 
