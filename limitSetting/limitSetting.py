@@ -444,7 +444,42 @@ def getProfileLikelihoodLimits(workspace, confidenceLevel = 0.95, drawLikelihood
         canvas.Draw()
         canvas.Print("ProfileLikelihood.pdf")
 
-    return interval
+
+    pullInputParamDict = getPullRelevantedParametersFromModelConfig(mc)
+    
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    return interval , pullInputParamDict
+
+
+def getPullRelevantedParametersFromModelConfig(aModelConfig):
+
+    pullInputParamDict = collections.defaultdict(list)
+
+    # put the GetGlobalObservables / nominal values of the parameters in a dict so we can associate them well with their postfir values
+    nominalObservables = TDirTools.rooArgSetToList( aModelConfig.GetGlobalObservables () )
+    for nominalObs in nominalObservables :
+        #nominalParameterDict[nominalObs.GetName()] = nominalObs
+
+        if "gamma_stat" in nominalObs.GetName(): continue # skip parameters related to individual bin statistics
+        #nominalObs.Print()
+
+        pullInputParamDict[nominalObs.GetName()] = [nominalObs.getVal()]
+        prefitError = (nominalObs.getMax() - nominalObs.getVal() ) / 10
+        pullInputParamDict[nominalObs.GetName() + "upperLimit"] = [prefitError]
+
+    # values starting with 'nom' refer to the prefit values,
+
+    nuisanceParamList = TDirTools.rooArgSetToList(aModelConfig.GetNuisanceParameters())
+    
+    for nuisanceParam in nuisanceParamList: 
+        if "gamma_stat" in nuisanceParam.GetName(): continue
+        #nuisanceParam.Print()
+        pullInputParamDict[nuisanceParam.GetName()]  = [nuisanceParam.getVal()]
+        pullInputParamDict[nuisanceParam.GetName()+"_err"]  = [nuisanceParam.getErrorHi()]
+
+    return pullInputParamDict
+
 
 def expectedLimitsAsimov(workspace, confidenceLevel = 0.95, drawLimitPlot = False ):
     # get expected upper limits on the parameter of interest using the 'AsymptoticCalculator'
@@ -749,6 +784,9 @@ if __name__ == '__main__':
     timingDict = collections.defaultdict(list)
     memoryDict = collections.defaultdict(list)
 
+    pullParameterMetaDict = {}
+
+
     myHistSampler = sampleTH1FromTH1.histSampler()
 
     if limitType == "toys":   nIterations = args.nIterations
@@ -764,7 +802,7 @@ if __name__ == '__main__':
 
             dataHist = myHistSampler.sampleFromTH1(expectedDataHist)
 
-        elif limitType == "asimov":
+        elif limitType == "asimov": # asimov dataset, data has been set to the expectation value from backgrounds
             dataHistPath = getFullTDirPath(masterDict, region, "expectedData" , "Nominal",  flavor)
             dataHist = inputTFile.Get( dataHistPath )
 
@@ -832,11 +870,14 @@ if __name__ == '__main__':
             else :  # profile limits, for  observed, toys and  asimov limits
 
                 # profile limit: profileLimit.getVal(), profileLimit.getErrorHi(), profileLimit.getErrorLo()
-                interval = getProfileLikelihoodLimits(workspace , drawLikelihoodIntervalPlot = False)
+                interval, pullInputParamDict = getProfileLikelihoodLimits(workspace , drawLikelihoodIntervalPlot = False)
 
                 likelihoodLimit = translateLimits( interval, nSigmas = 1 )
                 likelihoodLimit.Print()
                 likelihoodLimit_2Sig = translateLimits( interval, nSigmas = 2 )
+
+                pullParameterMetaDict["pullParameters_%iGeV" %massPoint ] = pullInputParamDict
+                #import pdb; pdb.set_trace()
 
 
             graphHelper.fillTGraphWithRooRealVar(observedLimitGraph, massPoint, likelihoodLimit)
@@ -908,6 +949,10 @@ if __name__ == '__main__':
             memoryDict["RAM_Used_MiB"].append(float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)/1024 )
             memoryUsageTTree = fillTTreeWithDictOfList(memoryDict, treeName = "memoryUsage")
 
+            #for pullDictName in pullParameterMetaDict: fillTTreeWithDictOfList( pullParameterMetaDict[pullDictName], treeName = pullDictName )
+
+            # need to put pullTtree in a list to avoid gettim them deleted from the stack before writing out the 
+            pullTTreeList = [ fillTTreeWithDictOfList( pullParameterMetaDict[pullDictName], treeName = pullDictName ) for pullDictName in pullParameterMetaDict ]
 
             observedLimitGraph.Write()
             expectedLimitsGraph_1Sigma.Write()
