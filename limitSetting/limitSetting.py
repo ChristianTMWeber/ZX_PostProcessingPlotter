@@ -409,29 +409,28 @@ def addSystematicsToSample(histFactorySample, inputFileOrName, region = "ZXSR", 
 
     return None
 
+def runProfileLikelihoodCalculator(data, modelConfig, confidenceLevel):
+    parameterOfInterest = modelConfig.GetParametersOfInterest().first() # use this, so we don't have to pass the name of the parameter of interest along
+
+    pl = ROOT.RooStats.ProfileLikelihoodCalculator(data,modelConfig)
+    pl.SetConfidenceLevel( confidenceLevel ) # remember 1 sigma =0.6827, 2 sigma=0.9545,  3 sigma=0.9973 
+
+    interval = pl.GetInterval()
+    # we need to call this here, so that we can retrieve the limits later on with the elements of interval.GetBestFitParameters() later on. It's weird.
+    interval.UpperLimit( parameterOfInterest )
+    interval.LowerLimit( parameterOfInterest )
+
+    return interval
+
+
 def getProfileLikelihoodLimits(workspace, confidenceLevel = 0.95, drawLikelihoodIntervalPlot = False):
     # get the limits on the (first) parameter of interest by doing a profile likelyhood scan
     # pl.SetConfidenceLevel(0.6827 ) # remember 1 sigma =0.6827, 2 sigma=0.9545,  3 sigma=0.9973 
 
     mc = workspace.obj("ModelConfig")
     data = workspace.data("obsData")
-    
-    parameterOfInterest = mc.GetParametersOfInterest().first() # use this, so we don't have to pass the name of the parameter of interest along
 
-    pl = ROOT.RooStats.ProfileLikelihoodCalculator(data,mc)
-    #pl.SetConfidenceLevel(0.6827 ) # remember 1 sigma =0.6827, 2 sigma=0.9545,  3 sigma=0.9973 
-    #pl.SetConfidenceLevel(0.9545 )
-    pl.SetConfidenceLevel(0.95 )
-
-    interval = pl.GetInterval()
-
-    #intervalVariables = {x.GetName() : x for x in TDirTools.rooArgSetToList(interval.GetParameters())}
-    #interval.UpperLimit(intervalVariables["SigXsecOverSM"])
-    #interval.LowerLimit(intervalVariables["SigXsecOverSM"])
-
-    # we need to call this here, so that we can retrieve the limits later on with the elements of interval.GetBestFitParameters() later on. It's weird.
-    interval.UpperLimit( parameterOfInterest )
-    interval.LowerLimit( parameterOfInterest )
+    interval = runProfileLikelihoodCalculator(data, mc, confidenceLevel)
 
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
@@ -445,16 +444,81 @@ def getProfileLikelihoodLimits(workspace, confidenceLevel = 0.95, drawLikelihood
         canvas.Print("ProfileLikelihood.pdf")
 
 
-    pullInputParamDict = getPullRelevantedParametersFromModelConfig(mc)
+    pullParamDict = getPullRelevantedParametersFromModelConfig(mc)
+
+    prePostFitImpactDict = makePreAndPostFitImpact(data, mc, confidenceLevel, referenceInterval = interval)
+
+    return interval , pullParamDict, prePostFitImpactDict
+
+
+def makePreAndPostFitImpact(data, refModelConfig, confidenceLevel, referenceInterval = None):
+
+    def constrainRooRalVar(aRooRealVar, constrainTo): 
+        aRooRealVar.setRange( constrainTo , constrainTo )
+        aRooRealVar.setVal( constrainTo )
+        aRooRealVar.setError(0)
+        return None
+
+
+    def getNuisanceParamVariationImpact(relevantNuianceParam, nuisancePSetValue , impactModelConfig , data):
+        
+        constrainRooRalVar(relevantNuianceParam, nuisancePSetValue )
+        impactModelConfig.SetSnapshot(ROOT.RooArgSet(relevantNuianceParam))
+        interval = runProfileLikelihoodCalculator(data, impactModelConfig, confidenceLevel)
+        upperLimit = translateLimits( interval, nSigmas = 1 ).getMax()
+        return upperLimit
+
+    prePostFitImpactDict = collections.defaultdict(list) 
+
+    if referenceInterval is not None: 
+        referenceUpperLimit = translateLimits( referenceInterval, nSigmas = 1 ).getMax()
+        prePostFitImpactDict["mu_reference"] = [referenceUpperLimit]
     
-    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
-    return interval , pullInputParamDict
+    postFitNuisanceParameters = TDirTools.rooArgSetToList(refModelConfig.GetNuisanceParameters())
 
+    prePostFitNameMapping = getMapBetweenNuisanceParametersAndGlobalObservables(refModelConfig)
+
+    # RooRealVar::SigXsecOverSM_1SigmaLimit_ProfileLikelihood = 3.46046e-09  L(0 - 0.473894)
+
+
+    for nuisanceParameter in postFitNuisanceParameters:
+        if "gamma_stat" in nuisanceParameter.GetName(): continue # skip parameters related to individual bin statistics
+
+        impactModelConfig = refModelConfig.Clone( "fitModelConfig_"+nuisanceParameter.GetName())
+
+
+        relevantNuianceParam = TDirTools.getElementFromRooArgSetByName( nuisanceParameter.GetName() , impactModelConfig.GetNuisanceParameters() )
+        
+        nuisanceSetValue = nuisanceParameter.getVal() + nuisanceParameter.getErrorHi()
+        prePostFitImpactDict["mu_postFitUp_"+nuisanceParameter.GetName()] = [getNuisanceParamVariationImpact(relevantNuianceParam, nuisanceSetValue , impactModelConfig , data)]
+
+        nuisanceSetValue = nuisanceParameter.getVal() - nuisanceParameter.getErrorHi()
+        prePostFitImpactDict["mu_postFitDown_"+nuisanceParameter.GetName()] = [getNuisanceParamVariationImpact(relevantNuianceParam, nuisanceSetValue , impactModelConfig , data)]
+
+
+        prefitNuisanceVarName = prePostFitNameMapping[nuisanceParameter.GetName()] # get name of the associarated variable that holds the prefit uncertainty
+
+        if prefitNuisanceVarName is not None: 
+
+            prefitNuisanceVar = TDirTools.getElementFromRooArgSetByName( prefitNuisanceVarName , refModelConfig.GetGlobalObservables() )
+
+            nuisanceSetValue = nuisanceParameter.getVal() + (prefitNuisanceVar.getMax() - prefitNuisanceVar.getVal() ) / 10.
+            prePostFitImpactDict["mu_preFitUp_"+nuisanceParameter.GetName()] = [getNuisanceParamVariationImpact(relevantNuianceParam, nuisanceSetValue , impactModelConfig , data)]
+
+            nuisanceSetValue = nuisanceParameter.getVal() - (prefitNuisanceVar.getMax() - prefitNuisanceVar.getVal() ) / 10.
+            prePostFitImpactDict["mu_preFitUp_"+nuisanceParameter.GetName()] = [getNuisanceParamVariationImpact(relevantNuianceParam, nuisanceSetValue , impactModelConfig , data)]
+
+
+        #import pdb; pdb.set_trace()
+
+        # for x in prePostFitImpactDict: (x , prePostFitImpactDict[x])
+
+    return prePostFitImpactDict
 
 def getPullRelevantedParametersFromModelConfig(aModelConfig):
 
-    pullInputParamDict = collections.defaultdict(list)
+    pullParamDict = collections.defaultdict(list)
 
     # put the GetGlobalObservables / nominal values of the parameters in a dict so we can associate them well with their postfir values
     nominalObservables = TDirTools.rooArgSetToList( aModelConfig.GetGlobalObservables () )
@@ -464,9 +528,9 @@ def getPullRelevantedParametersFromModelConfig(aModelConfig):
         if "gamma_stat" in nominalObs.GetName(): continue # skip parameters related to individual bin statistics
         #nominalObs.Print()
 
-        pullInputParamDict[nominalObs.GetName()] = [nominalObs.getVal()]
-        prefitError = (nominalObs.getMax() - nominalObs.getVal() ) / 10
-        pullInputParamDict[nominalObs.GetName() + "upperLimit"] = [prefitError]
+        pullParamDict[nominalObs.GetName()] = [nominalObs.getVal()]
+        prefitError = (nominalObs.getMax() - nominalObs.getVal() ) / 10.
+        pullParamDict[nominalObs.GetName() + "upperLimit"] = [prefitError]
 
     # values starting with 'nom' refer to the prefit values,
 
@@ -475,11 +539,32 @@ def getPullRelevantedParametersFromModelConfig(aModelConfig):
     for nuisanceParam in nuisanceParamList: 
         if "gamma_stat" in nuisanceParam.GetName(): continue
         #nuisanceParam.Print()
-        pullInputParamDict[nuisanceParam.GetName()]  = [nuisanceParam.getVal()]
-        pullInputParamDict[nuisanceParam.GetName()+"_err"]  = [nuisanceParam.getErrorHi()]
+        pullParamDict[nuisanceParam.GetName()]  = [nuisanceParam.getVal()]
+        pullParamDict[nuisanceParam.GetName()+"_err"]  = [nuisanceParam.getErrorHi()]
 
-    return pullInputParamDict
+    return pullParamDict
 
+def getMapBetweenNuisanceParametersAndGlobalObservables(modelConfig):
+
+    nominalRooRealDict = {}
+    for rooReal in TDirTools.rooArgSetToList( modelConfig.GetGlobalObservables () ): 
+        nominalRooRealDict[rooReal.GetName() ]  = rooReal
+
+    nuisanceRooRealDict = {}
+    for rooReal in TDirTools.rooArgSetToList( modelConfig.GetNuisanceParameters () ): 
+        nuisanceRooRealDict[rooReal.GetName() ]  = rooReal
+
+    correspondenceDict = {}
+    for nuisanceName in nuisanceRooRealDict:
+        # try closest match  
+        closestMatch = difflib.get_close_matches( nuisanceName  , nominalRooRealDict.keys(), n=1, cutoff =0.3 )
+
+        if len(closestMatch) == 0 or nuisanceName not in closestMatch[0]: 
+            correspondenceDict[  nuisanceName    ] = None
+        else: 
+            correspondenceDict[  nuisanceName    ] = closestMatch[0]  
+
+    return correspondenceDict
 
 def expectedLimitsAsimov(workspace, confidenceLevel = 0.95, drawLimitPlot = False ):
     # get expected upper limits on the parameter of interest using the 'AsymptoticCalculator'
@@ -768,7 +853,7 @@ if __name__ == '__main__':
     region = "ZXSR"
     flavor = args.flavor
 
-    massesToProcess =  range(15,56,1)#[30]#range(15,56,5)
+    massesToProcess =  range(15,56,5)#[30]#range(15,56,5)
     # setup some output datastructures
     overviewHist = ROOT.TH1D("ZX_limit_Overview","ZX_limit_Overview", len(massesToProcess), min(massesToProcess), max(massesToProcess) + 1 ) # construct the hist this way, so that we have a bin for each mass point
 
@@ -785,6 +870,7 @@ if __name__ == '__main__':
     memoryDict = collections.defaultdict(list)
 
     pullParameterMetaDict = {}
+    prePostFitImpactMetaDict = {}
 
 
     myHistSampler = sampleTH1FromTH1.histSampler()
@@ -870,13 +956,14 @@ if __name__ == '__main__':
             else :  # profile limits, for  observed, toys and  asimov limits
 
                 # profile limit: profileLimit.getVal(), profileLimit.getErrorHi(), profileLimit.getErrorLo()
-                interval, pullInputParamDict = getProfileLikelihoodLimits(workspace , drawLikelihoodIntervalPlot = False)
+                interval, pullParamDict, prePostFitImpactDict = getProfileLikelihoodLimits(workspace , drawLikelihoodIntervalPlot = False)
 
                 likelihoodLimit = translateLimits( interval, nSigmas = 1 )
                 likelihoodLimit.Print()
                 likelihoodLimit_2Sig = translateLimits( interval, nSigmas = 2 )
 
-                pullParameterMetaDict["pullParameters_%iGeV" %massPoint ] = pullInputParamDict
+                pullParameterMetaDict["pullParameters_%iGeV" %massPoint ] = pullParamDict
+                prePostFitImpactMetaDict["prePostFitImpact_%iGeV" %massPoint ] = prePostFitImpactDict
                 #import pdb; pdb.set_trace()
 
 
@@ -953,6 +1040,7 @@ if __name__ == '__main__':
 
             # need to put pullTtree in a list to avoid gettim them deleted from the stack before writing out the 
             pullTTreeList = [ fillTTreeWithDictOfList( pullParameterMetaDict[pullDictName], treeName = pullDictName ) for pullDictName in pullParameterMetaDict ]
+            fitImpactTTreeList = [ fillTTreeWithDictOfList( prePostFitImpactMetaDict[impactDictName], treeName = impactDictName ) for impactDictName in prePostFitImpactMetaDict ]
 
             observedLimitGraph.Write()
             expectedLimitsGraph_1Sigma.Write()
