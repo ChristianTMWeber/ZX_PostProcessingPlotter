@@ -23,10 +23,10 @@ def getRooRealVarFromTree( branchName, relevantTTree ):
 
 def getTTreeLocations():
 
-    shapeSourceFiles = { "HeavyFlavor" : "post_20200228_203930__ZX_Run2_ZJetBFilter_May_Minitree.root", 
-                         "ttBar"       : "post_20200228_152824__ZX_Run2_ttbar_May_Minitree.root",
+    shapeSourceFiles = { "HeavyFlavor" : "post_20200228_203930__ZX_Run2_ZJetBFilter_May_MinitreeSkim.root", 
+                         "ttBar"       : "post_20200228_152824__ZX_Run2_ttbar_May_MinitreeSkim.root",
                          #"ttBar"       : "post_20200505_152227__ZX_Run2_Bckg_May_InvertedD0cr_ttbar_minitree_TEST.root",
-                         "3l+X"        : "post_20200319_122149__ZX_Run2_Data_May_3lX_Minitree.root"      }
+                         "3l+X"        : "post_20200319_122149__ZX_Run2_Data_May_3lX_MinitreeSkim.root"      }
 
 
     # we need to translate the file names to absolute paths, as the working dir is arbitrary when we execute this script as a module
