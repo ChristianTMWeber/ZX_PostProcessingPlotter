@@ -492,9 +492,11 @@ def makePreAndPostFitImpact(data, refModelConfig, confidenceLevel, referenceInte
         
         nuisanceSetValue = nuisanceParameter.getVal() + nuisanceParameter.getErrorHi()
         prePostFitImpactDict["mu_postFitUp_"+nuisanceParameter.GetName()] = [getNuisanceParamVariationImpact(relevantNuianceParam, nuisanceSetValue , impactModelConfig , data)]
+        print( nuisanceParameter.GetName()  +" "+ str(nuisanceSetValue)  +" "+   "mu_postFitUp_"+nuisanceParameter.GetName()   +" "+  str(prePostFitImpactDict["mu_postFitUp_"+nuisanceParameter.GetName()] ) )
 
         nuisanceSetValue = nuisanceParameter.getVal() - nuisanceParameter.getErrorHi()
         prePostFitImpactDict["mu_postFitDown_"+nuisanceParameter.GetName()] = [getNuisanceParamVariationImpact(relevantNuianceParam, nuisanceSetValue , impactModelConfig , data)]
+        print( nuisanceParameter.GetName()  +" "+ str(nuisanceSetValue)  +" "+   "mu_postFitDown_"+nuisanceParameter.GetName()   +" "+  str(prePostFitImpactDict["mu_postFitDown_"+nuisanceParameter.GetName()] ) )
 
 
         prefitNuisanceVarName = prePostFitNameMapping[nuisanceParameter.GetName()] # get name of the associarated variable that holds the prefit uncertainty
@@ -505,9 +507,11 @@ def makePreAndPostFitImpact(data, refModelConfig, confidenceLevel, referenceInte
 
             nuisanceSetValue = nuisanceParameter.getVal() + (prefitNuisanceVar.getMax() - prefitNuisanceVar.getVal() ) / 10.
             prePostFitImpactDict["mu_preFitUp_"+nuisanceParameter.GetName()] = [getNuisanceParamVariationImpact(relevantNuianceParam, nuisanceSetValue , impactModelConfig , data)]
+            print( nuisanceParameter.GetName()  +" "+ str(nuisanceSetValue)  +" "+   "mu_preFitUp_"+nuisanceParameter.GetName()   +" "+  str(prePostFitImpactDict["mu_preFitUp_"+nuisanceParameter.GetName()] ) )
 
             nuisanceSetValue = nuisanceParameter.getVal() - (prefitNuisanceVar.getMax() - prefitNuisanceVar.getVal() ) / 10.
-            prePostFitImpactDict["mu_preFitUp_"+nuisanceParameter.GetName()] = [getNuisanceParamVariationImpact(relevantNuianceParam, nuisanceSetValue , impactModelConfig , data)]
+            prePostFitImpactDict["mu_preFitDown_"+nuisanceParameter.GetName()] = [getNuisanceParamVariationImpact(relevantNuianceParam, nuisanceSetValue , impactModelConfig , data)]
+            print( nuisanceParameter.GetName()  +" "+ str(nuisanceSetValue)  +" "+   "mu_preFitDown_"+nuisanceParameter.GetName()   +" "+  str(prePostFitImpactDict["mu_preFitDown_"+nuisanceParameter.GetName()] ) )
 
 
         #import pdb; pdb.set_trace()
@@ -853,7 +857,7 @@ if __name__ == '__main__':
     region = "ZXSR"
     flavor = args.flavor
 
-    massesToProcess =  range(15,56,5)#[30]#range(15,56,5)
+    massesToProcess =  range(15,56,1)#[30]#range(15,56,5)
     # setup some output datastructures
     overviewHist = ROOT.TH1D("ZX_limit_Overview","ZX_limit_Overview", len(massesToProcess), min(massesToProcess), max(massesToProcess) + 1 ) # construct the hist this way, so that we have a bin for each mass point
 
@@ -1040,7 +1044,7 @@ if __name__ == '__main__':
 
             # need to put pullTtree in a list to avoid gettim them deleted from the stack before writing out the 
             pullTTreeList = [ fillTTreeWithDictOfList( pullParameterMetaDict[pullDictName], treeName = pullDictName ) for pullDictName in pullParameterMetaDict ]
-            fitImpactTTreeList = [ fillTTreeWithDictOfList( prePostFitImpactMetaDict[impactDictName], treeName = impactDictName ) for impactDictName in prePostFitImpactMetaDict ]
+            fitImpactTTreeList = [ fillTTreeWithDictOfList( prePostFitImpactMetaDict[impactDictName], treeName = impactDictName ) for impactDictName in prePostFitImpactMetaDict if prePostFitImpactMetaDict[impactDictName] is not None]
 
             observedLimitGraph.Write()
             expectedLimitsGraph_1Sigma.Write()

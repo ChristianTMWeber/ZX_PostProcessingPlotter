@@ -122,7 +122,10 @@ def rooArgSetToList( aRooArgSet ): # turn a RooArgSet into a python list
         tObj = iter.Next(); 
     return outputList
 
-
+def getElementFromRooArgSetByName( targetName, aRooArgSet ):
+    for element in rooArgSetToList( aRooArgSet ):
+        if targetName == element.GetName(): return element
+    return None
 
 
 if __name__ == '__main__':
