@@ -1,4 +1,4 @@
-ZX_PostprocessingPlotter
+# Setup instructions - 20.7ZX_PostprocessingPlotter
 
 A set of programms and tools to facilitate the ZX analysis. Builds upon output from the output from the cutflow at https://gitlab.cern.ch/atlas-phys/exot/ueh/EXOT-2016-22/ZdZdPostProcessing
 
