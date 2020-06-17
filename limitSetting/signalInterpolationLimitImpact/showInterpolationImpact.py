@@ -79,36 +79,93 @@ if __name__ == '__main__':
 
     comparisonGraphs["interpolatedSignalToyErrors"] = {
                           "fileName"     : "preppedHists_interpolatedResults_simulateErrors100_asymptoticLimits.root", 
-                          "color"        : ROOT.kGreen, 
+                          "color"        : ROOT.kOrange, 
                           "legend"       : "interpolated signal templates, toy errors",
                           "fileNamePart" : "interpolatedSignalToyErros"} 
 
     comparisonGraphs["interpolatedSignalSimulatedNorm"] = {
                           "fileName"     : "interpolationClosure_InterpolatedResults_WithSimulatedNorms_asymptotic.root", 
-                          "color"        : ROOT.kMagenta, 
+                          "color"        : ROOT.kMagenta+2, 
                           "legend"       : "interpolated signal templates, norms from simulation",
                           "fileNamePart" : "interpolatedSignalSimulatedNorm"} 
 
     comparisonGraphs["interpolatedSignalNewMorph"] = {
                           "fileName"     : "interpolationClosure_InterpolatedResults_newMorphInterface_asymptotic.root", 
                           "color"        : ROOT.kCyan, 
-                          "legend"       : "interpolated signal templates, new morph implementation",
+                          "legend"       : "interpolated signal templates, new morph implementation, spline interpolation for norm",
                           "fileNamePart" : "interpolatedSignalNewMorph"} 
 
+    comparisonGraphs["interpolatedSignalNewMorphLinearNormInterp"] = {
+                          "fileName"     : "interpolationClosure_morph1SigmaHists_multiPDFMorph_linearNorm_asymptotic.root", 
+                          "color"        : ROOT.kGreen+1, 
+                          "legend"       : "interpolated signal templates, new morph implementation, linear norm interp",
+                          "fileNamePart" : "interpolatedSignalNewMorphLinearNorm"} 
 
-    for comparisonLimit in comparisonGraphs:
-    
+    canv = ROOT.TCanvas("compareReducibles", "compareReducibles", 1920, 1080)
+    legend = setupTLegend()
 
-        refTFile = ROOT.TFile(referenceGraph["fileName"],"OPEN")  # results with best estimate H4l reducible norm
+    keepInScopeArray = []
+
+    refTFile = ROOT.TFile(referenceGraph["fileName"],"OPEN")  # results with best estimate H4l reducible norm
+    refGraph = refTFile.Get("expectedLimits_1Sigma")
+    keepInScopeArray.append(refGraph)
+
+    refGraphNoError = graphHelper.getTGraphWithoutError(refGraph)
+
+
+    # set label options, do it with refGraph, as we will plot that one first
+    refGraph.GetYaxis().SetTitle("Expeted upper 95% CL on #sigma_{ZZ_{d}} [fb] ")
+    refGraph.GetYaxis().SetTitleSize(0.05)
+    refGraph.GetYaxis().SetTitleOffset(0.8)
+    refGraph.GetYaxis().CenterTitle()
+
+    refGraph.GetXaxis().SetTitle("m_{Z_{d}} [GeV]")
+    refGraph.GetXaxis().SetTitleSize(0.05)
+    refGraph.GetXaxis().SetTitleOffset(0.85)
+    #refGraph.GetXaxis().CenterTitle()
+
+    refGraph.SetFillColorAlpha(referenceGraph["color"]-9, 0.5)
+    refGraph.Draw("A3 SAME")
+
+
+
+    refGraphNoError.SetLineColor(referenceGraph["color"])
+    refGraphNoError.SetLineWidth(3)
+    refGraphNoError.SetMarkerSize(2)
+    refGraphNoError.SetMarkerStyle(20)
+    refGraphNoError.SetMarkerColor(referenceGraph["color"])
+    refGraphNoError.Draw("SAME PL")
+
+    legend.AddEntry(refGraphNoError , referenceGraph["legend"]  , "lf");
+    #legend.AddEntry(refGraph , "#pm1 #sigma error"  , "f");
+
+
+    listOfComparisonGraphs = [ "interpolatedSignal",
+                               "interpolatedSignalSimulatedNorm",
+                               "interpolatedSignalNewMorphLinearNormInterp",
+                               "interpolatedSignalNewMorph"
+                               ]
+
+    #for comparisonLimit in comparisonGraphs:
+
+    plotCounter = 0
+    for comparisonLimit in listOfComparisonGraphs:
+
+        plotCounter += 1
+
+        print(plotCounter)
+
 
         upTFile = ROOT.TFile(comparisonGraphs[comparisonLimit]["fileName"],"OPEN")   # resutls with reducible normalized to 120% of best estimate value, i.e. +20%
 
 
 
-        refGraph = refTFile.Get("expectedLimits_1Sigma")
         upGraph  = upTFile.Get("expectedLimits_1Sigma")
 
-        refGraphNoError = graphHelper.getTGraphWithoutError(refGraph)
+
+        keepInScopeArray.append(upGraph)
+
+
         upGraphNoError  = graphHelper.getTGraphWithoutError(upGraph)
 
 
@@ -119,10 +176,8 @@ if __name__ == '__main__':
 
 
 
-        ratioCanvas = ROOT.TCanvas("ratioReducibles", "ratioReducibles")
-
-        ratioCanvas.SetGridy()
-
+        #ratioCanvas = ROOT.TCanvas("ratioReducibles", "ratioReducibles")
+        #ratioCanvas.SetGridy()
         ratioTGraph = ratioOfTGraphs(upGraph, refGraph)
 
         # set label options, do it with ratioTGraph, as we will plot that one first
@@ -130,7 +185,6 @@ if __name__ == '__main__':
 
 
         titleStr = "ratio [unitless]"
-
         ratioTGraph.GetYaxis().SetTitle(titleStr)
         ratioTGraph.GetYaxis().SetTitleSize(0.05)
         ratioTGraph.GetYaxis().SetTitleOffset(0.8)
@@ -143,11 +197,11 @@ if __name__ == '__main__':
         ratioTGraph.GetXaxis().SetTitleSize(0.05)
         ratioTGraph.GetXaxis().SetTitleOffset(0.85)
 
-        # #sigma_{ZZ_{d}} with nominal reducible estimate /#sigma_{ZZ_{d}} with 1.2 #upoint reducible estimate
-        ratioTGraph.SetTitle("#splitline{ratio of expected upper 95% CLs on #sigma_{ZZ_{d}}:}{ #sigma_{ZZ_{d}} with 1.2 #upoint reducible / #sigma_{ZZ_{d}} with 1.0 #upoint reducible}")
-        ratioTGraph.SetLineWidth(2)
-        ratioTGraph.Draw()
-        ratioCanvas.Update()
+        ## #sigma_{ZZ_{d}} with nominal reducible estimate /#sigma_{ZZ_{d}} with 1.2 #upoint reducible estimate
+        #ratioTGraph.SetTitle("#splitline{ratio of expected upper 95% CLs on #sigma_{ZZ_{d}}:}{ #sigma_{ZZ_{d}} with 1.2 #upoint reducible / #sigma_{ZZ_{d}} with 1.0 #upoint reducible}")
+        #ratioTGraph.SetLineWidth(2)
+        #ratioTGraph.Draw("same")
+        #ratioCanvas.Update()
 
 
         #import pdb; pdb.set_trace() # import the debugger and instruct 
@@ -155,46 +209,31 @@ if __name__ == '__main__':
 
 
 
-        canv = ROOT.TCanvas("compareReducibles", "compareReducibles", 1920, 1080)
+
 
         colorScheme = ROOT.kRed
 
-        # set label options, do it with refGraph, as we will plot that one first
-        refGraph.GetYaxis().SetTitle("Expeted upper 95% CL on #sigma_{ZZ_{d}} [fb] ")
-        refGraph.GetYaxis().SetTitleSize(0.05)
-        refGraph.GetYaxis().SetTitleOffset(0.8)
-        refGraph.GetYaxis().CenterTitle()
 
-        refGraph.GetXaxis().SetTitle("m_{Z_{d}} [GeV]")
-        refGraph.GetXaxis().SetTitleSize(0.05)
-        refGraph.GetXaxis().SetTitleOffset(0.85)
-        #refGraph.GetXaxis().CenterTitle()
-
-        refGraph.SetFillColorAlpha(referenceGraph["color"]-9, 0.5)
-        refGraph.Draw("A3")
 
         upGraph.SetFillColorAlpha(comparisonGraphs[comparisonLimit]["color"]-9, 0.5)
-        upGraph.Draw("3 SAME")
+        #upGraph.Draw("3 SAME")
 
-        refGraphNoError.SetLineColor(referenceGraph["color"])
-        refGraphNoError.SetLineWidth(2)
-        refGraphNoError.SetMarkerStyle(20)
-        refGraphNoError.SetMarkerColor(referenceGraph["color"])
-        refGraphNoError.Draw("SAME PL")
+
 
         upGraphNoError.SetLineColor(comparisonGraphs[comparisonLimit]["color"])
         upGraphNoError.SetLineWidth(2)
-        upGraphNoError.SetMarkerStyle(21)
+        #upGraphNoError.SetMarkerSize(3)
+        #upGraphNoError.SetMarkerStyle(21+plotCounter)
+        upGraphNoError.SetLineStyle(plotCounter)
         upGraphNoError.SetMarkerColor(comparisonGraphs[comparisonLimit]["color"])
         upGraphNoError.Draw("SAME PL")
 
-
-        legend = setupTLegend()
-        legend.AddEntry(refGraphNoError , referenceGraph["legend"]  , "l");
-        legend.AddEntry(refGraph , "#pm1 #sigma error"  , "f");
-        legend.AddEntry(upGraphNoError , comparisonGraphs[comparisonLimit]["legend"] , "l");
         
-        legend.AddEntry(upGraph , "#pm1 #sigma error"  , "f");    
+        keepInScopeArray.append(upGraphNoError)
+        
+
+        legend.AddEntry(upGraphNoError , comparisonGraphs[comparisonLimit]["legend"] , "lf");
+        #legend.AddEntry(upGraph , "#pm1 #sigma error"  , "f");    
 
         legend.Draw()
 
@@ -206,9 +245,12 @@ if __name__ == '__main__':
 
         outputFileName = path.join(outputDir , referenceGraph["fileNamePart"] +"_vs_"+comparisonGraphs[comparisonLimit]["fileNamePart"])
 
+        outputFileName= "test_" + str(plotCounter)
+
         canv.Print(outputFileName+".pdf")
         canv.Print(outputFileName+".png")
         canv.Print(outputFileName+".root")
+        #import pdb; pdb.set_trace() # import the debugger and instruct 
 
     #canv.Print("compareReducibles.pdf")
     import pdb; pdb.set_trace() # import the debugger and instruct 

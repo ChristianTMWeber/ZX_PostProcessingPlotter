@@ -48,7 +48,7 @@ def makeInterpolatedSignalSamples(masterHistDict, channels = None, flavors = ["A
                     newMass = massToInterpolate#(float(highMass) + float(lowMass))/2
                     # do the actual interpolation                                                                                                       #                             errorInterpolation = simulateErrors,  morph1SigmaHists, or morphErrorsToo
                     #newSignalHist = integralMorphWrapper.getInterpolatedHistogram(lowHist, highHist,  paramA = lowMass , paramB = highMass, interpolateAt = newMass, morphType = "momentMorph", errorInterpolation = "morph1SigmaHists", nSimulationRounds = 10)
-                    newSignalHist = integralMorphWrapper.getInterpolatedHistogram(histsAndMasses, interpolateAt = massToInterpolate, errorInterpolation = False , morphType = "momentMorph", nSimulationRounds = 100)
+                    newSignalHist = integralMorphWrapper.getInterpolatedHistogram(histsAndMasses, interpolateAt = massToInterpolate, errorInterpolation = "morph1SigmaHists" , morphType = "momentMorph", nSimulationRounds = 100)
                     # determine new names and eventType
                     newMass = int(newMass)
                     newEventType = re.sub('\d{2}', str(newMass), masspointDict[massToInterpolate]) # make the new eventType string, by replacing the mass number in a given old one
@@ -176,7 +176,7 @@ if __name__ == '__main__':
         DSIDList.add(DSID)
         if not myDSIDHelper.isSignalSample( DSID ): continue
 
-        myTObject.Rebin(2)
+        myTObject.Rebin(1)
 
         masterHistDict = makeHistDict.fillHistDict(path, myTObject , "mc16ade", myDSIDHelper ) 
 
@@ -191,6 +191,16 @@ if __name__ == '__main__':
     signalSampleKeyList = masterHistDict["interpolated"].keys()
     signalSampleKeyList.sort()
 
+
+    canvasCounter = 0
+
+    canvasName = "0.55Bins_0.05BinsPre_momentMorph_morph1SigmaHists_NonLinear"
+    canv = ROOT.TCanvas(canvasName,canvasName, 1080, 1920 )
+    canv.Divide(2,4)
+
+    ratioHistList = []
+    padList = []
+
     for signalSampleKey in signalSampleKeyList:         
         #for signalSampleKey in masterHistDict["signalRegion"]:    masterHistDict["signalRegion"][signalSampleKey]["Nominal"][flavor]      
 
@@ -200,8 +210,9 @@ if __name__ == '__main__':
         interpHist = masterHistDict["interpolated"][signalSampleKey]["Nominal"][flavor]
         simHist = masterHistDict["signalRegion"][signalSampleKey]["Nominal"][flavor]
 
-        interpHist.Rebin(1)
-        simHist.Rebin(1)
+        commonRebin = 10
+        interpHist.Rebin(commonRebin)
+        simHist.Rebin(commonRebin)
 
         
         # prep the look of the histograms
@@ -224,7 +235,7 @@ if __name__ == '__main__':
         simHist.GetYaxis().SetTitle("Events / " + str(simHist.GetBinWidth(1) )+" GeV" )
 
 
-        xMin,xMax = getSmallestInterval(simHist, desiredWidth= 0.95)
+        xMin,xMax = getSmallestInterval(simHist, desiredWidth= 0.99)
         simHist.GetXaxis().SetRangeUser(xMin,xMax)
 
 
@@ -236,16 +247,18 @@ if __name__ == '__main__':
 
         
 
-        canvasName = "checkInterpolation: mZd = "+str(mass)+"GeV"
+        #canvasName = "checkInterpolation: mZd = "+str(mass)+"GeV"
 
-        canv = ROOT.TCanvas(canvasName,canvasName, 700, 700)
+        canvasCounter  += 1
+        canv.cd(canvasCounter)
+        #canv = ROOT.TCanvas(canvasName,canvasName, 700, 700)
 
         histPadYStart = 3.5/13
         histPad = ROOT.TPad("histPad", "histPad", 0, histPadYStart, 1, 1);
         histPad.Draw();              # Draw the upper pad: pad1
         histPad.cd();                # pad1 becomes the current pad
 
-
+        padList.append(histPad)
 
 
 
@@ -261,7 +274,7 @@ if __name__ == '__main__':
 
 
 
-        canv.cd()
+        canv.cd(canvasCounter)
 
         ratioPad = ROOT.TPad("ratioPad", "ratioPad", 0, 0, 1, histPadYStart);
 
@@ -270,10 +283,12 @@ if __name__ == '__main__':
         ratioPad.SetGridy(); #ratioPad.SetGridx(); 
         ratioPad.Draw();              # Draw the upper pad: pad1
         ratioPad.cd();   
-
+        padList.append(ratioPad)
 
         ratioHist = simHist.Clone( simHist.GetName()+"_Clone" )
         ratioHist.Divide(interpHist)
+
+        ratioHistList.append(ratioHist)
 
         #ratioHist.GetYaxis().SetRangeUser(0, 2)
 
@@ -290,19 +305,23 @@ if __name__ == '__main__':
 
         ratioHist.Draw("P")
 
-        canv.Update()
+        #canv.Update()
 
         printString = "interpolation closure, mZd = %i GeV" %(int(mass))
 
-        canv.Print(printString+".png")
-        canv.Print(printString+".pdf")
+        #canv.Print(printString+".png")
+        #canv.Print(printString+".pdf")
 
-        canv.Close()
+        #canv.Close()
 
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
+    canv.Update()
 
 
+    canv.Print(canvasName+".png")
+    canv.Print(canvasName+".pdf")
+    canv.Print(canvasName+".root")
 
 
 
