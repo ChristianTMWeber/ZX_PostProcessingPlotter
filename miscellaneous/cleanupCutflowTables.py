@@ -2,11 +2,11 @@
 #   Run as 
 #   python cleanupCutflowTables.py cutflowOnly_post_20190905_233618_ZX_Run2_BckgSignal.root 
 
-# python cleanupCutflowTables.py ../restricedFlavorCombinationRootFiles/post_20200605_171837__ZX_Run2_Bckg_May_4eOnly.root --titleTag 4MuOnly --DSIDs 343238 --batch
-# python cleanupCutflowTables.py ../restricedFlavorCombinationRootFiles/post_20200605_172229__ZX_Run2_Bckg_May_2Mu2eOnly.root --titleTag 4MuOnly --DSIDs 343238 --batch
-# python cleanupCutflowTables.py ../restricedFlavorCombinationRootFiles/post_20200605_172703__ZX_Run2_Bckg_May_2e2MuOnly.root --titleTag 4MuOnly --DSIDs 343238 --batch
+# python cleanupCutflowTables.py ../restricedFlavorCombinationRootFiles/post_20200605_171837__ZX_Run2_Bckg_May_4eOnly.root --titleTag 4eOnly --DSIDs 343238 --batch
+# python cleanupCutflowTables.py ../restricedFlavorCombinationRootFiles/post_20200605_172229__ZX_Run2_Bckg_May_2Mu2eOnly.root --titleTag 2Mu2eOnly --DSIDs 343238 --batch
+# python cleanupCutflowTables.py ../restricedFlavorCombinationRootFiles/post_20200605_172703__ZX_Run2_Bckg_May_2e2MuOnly.root --titleTag 2e2MuOnly --DSIDs 343238 --batch
 # python cleanupCutflowTables.py ../restricedFlavorCombinationRootFiles/post_20200611_143715__ZX_Run2_Bckg_May_4MuOnly.root --titleTag 4MuOnly --DSIDs 343238 --batch
-# python cleanupCutflowTables.py ../restricedFlavorCombinationRootFiles/post_20200611_112212__ZX_Run2_Bckg_May.root --titleTag 4MuOnly --DSIDs 343238 --batch
+# python cleanupCutflowTables.py ../restricedFlavorCombinationRootFiles/post_20200611_112212__ZX_Run2_Bckg_May.root --titleTag NoFlavorRestriction --DSIDs 343238 --batch
 
 import ROOT # to do all the ROOT stuff
 import re
