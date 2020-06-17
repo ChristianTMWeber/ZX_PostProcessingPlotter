@@ -645,7 +645,7 @@ if __name__ == '__main__':
 
     parser.add_argument("input", type=str, help="name or path to the input files")
 
-    parser.add_argument("-c", "--mcCampaign", nargs='*', type=str, choices=["mc16a","mc16d","mc16e","mc16ade"], default=["mc16ade"],
+    parser.add_argument("-c", "--mcCampaign", type=str, choices=["mc16a","mc16d","mc16e","mc16ade"], default="mc16ade",
         help="name of the mc campaign, i.e. mc16a or mc16d, need to provide exactly 1 mc-campaign tag for each input file, \
         make sure that sequence of mc-campaign tags matches the sequence of 'input' strings")
 
@@ -688,12 +688,6 @@ if __name__ == '__main__':
     # do some checks to make sure the command line options have been provided correctly
     ######################################################
 
-    assert 1 ==  len(args.mcCampaign), "We do not have exactly one mc-campaign tag per input file"
-    #assert len(args.input) ==  len(args.mcCampaign)
-
-    assert all( x==1   for x in collections.Counter( args.mcCampaign ).values() ), "\
-    Some mc-campaign tags have been declared more than once. \
-    For now we are only setup to support one file per MC-tag. Until we changed that, 'hadd' them in bash"
 
     # check root version
     currentROOTVersion = ROOT.gROOT.GetVersion()
@@ -783,7 +777,7 @@ if __name__ == '__main__':
         plotTitle = idPlotTitle(path, myDSIDHelper, DSID=DSID)
 
         # build my tree structure here to house the relevant histograms, pre-sorted for plotting
-        masterHistDict = fillMasterHistDict2( baseHist, plotTitle, args.mcCampaign[0], DSID, myDSIDHelper )
+        masterHistDict = fillMasterHistDict2( baseHist, plotTitle, args.mcCampaign, DSID, myDSIDHelper )
 
         # output a running counter of processed hists and used memory
         histCounter += 1
@@ -1027,7 +1021,7 @@ if __name__ == '__main__':
     if isinstance(args.input,list):  postProcessedDataFileName = os.path.basename( args.input[0] ) # split off the file name from the path+fileName string if necessary
     else:                            postProcessedDataFileName = os.path.basename( args.input ) # split off the file name from the path+fileName string if necessary
 
-    if args.outputName is None: outputName = postProcessedDataFileName.split(".")[0] + "_" + "_".join(args.mcCampaign)+"_"
+    if args.outputName is None: outputName = postProcessedDataFileName.split(".")[0] +  "_"+args.mcCampaign+"_"
     else:                       outputName = args.outputName
 
     indexFile = open(outputName+".txt", "w") # w for (over) write
