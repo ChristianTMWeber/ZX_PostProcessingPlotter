@@ -80,6 +80,49 @@ def calculatePulls(pullTTree):
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     return pullMeanDict, pullErrorDict
 
+def makeImpacts(impactTTree):
+
+    impactVarNames = [branch.GetName()  for branch in impactTTree.GetListOfBranches()]
+
+    varNames = []
+
+    prefixes = ["mu_postFitUp_", "mu_postFitDown_", "mu_preFitUp_", "mu_preFitDown_"] 
+
+    impactVarsDict = collections.defaultdict(dict)
+
+    # make var names that are consistent with the pull ones
+
+    for impactName in impactVarNames: 
+
+        if impactName.startswith("mu_postFitUp_"):  varNames.append( re.sub('mu_postFitUp_', "", impactName) )
+        elif "reference" in impactName: refMuValue = RootTools.GetValuesFromTree(impactTTree, impactName )[0]
+
+        #prefixFound = re.search("mu_\w+?_", impactName)
+        #if prefixFound: prefixes.add( prefixFound.group() )
+
+    for varName in varNames: 
+        for prefix in prefixes:
+            if prefix+varName in impactVarNames:
+                impactVarsDict[varName][prefix] = RootTools.GetValuesFromTree(impactTTree, prefix+varName )[0] - refMuValue
+                #print varName + " " + prefix  + " " + str( impactVarsDict[varName][prefix])
+
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    # rucio download  --ndownloader 1  `cat containers.txt`
+
+    return impactVarsDict
+
+
+def setupTLegend():
+    # set up a TLegend, still need to add the different entries
+    xOffset = 0.02; yOffset = 0.85
+    xWidth  = 0.2; ywidth = 0.15
+    TLegend = ROOT.TLegend(xOffset, yOffset ,xOffset + xWidth, yOffset+ ywidth)
+    TLegend.SetFillColor(ROOT.kWhite)
+    TLegend.SetLineColor(ROOT.kWhite)
+    TLegend.SetNColumns(1);
+    TLegend.SetFillStyle(0);  # make legend background transparent
+    TLegend.SetBorderSize(0); # and remove its border without a border
+    return TLegend
 
 if __name__ == '__main__':
 
@@ -100,31 +143,75 @@ if __name__ == '__main__':
 
 
         pullMeanDict, pullErrorDict = calculatePulls(pullTTree)
+        impactVarDict = makeImpacts(impactTTree)
 
-        graph = ROOT.TGraphAsymmErrors()
-        graph.SetName("TestGraph")
+        pullGraph = ROOT.TGraphAsymmErrors()
+        pullGraph.SetName("pullGraph")
 
-        nLabels = len(pullMeanDict)
+        prefitImpactGraph = ROOT.TGraphAsymmErrors()
+        prefitImpactGraph.SetName("prefitImpactGraph")
+
+        postfitImpactGraph = ROOT.TGraphAsymmErrors()
+        postfitImpactGraph.SetName("postfitImpactGraph")
+
+        nLabels = len(impactVarDict)
 
 
-        offset = 0
-        # TH2F ( *name,  *title, Int_t nbinsx, Double_t xlow, Double_t xup, Int_t nbinsy, Double_t ylow, Double_t yup)
-        labelTH2 = ROOT.TH2F("labelHist", "labelHist", 1, -1.2, +1.2, nLabels + offset + 1, -offset, nLabels + 1);
+        offset = 0.5
+        th2Name = "Pull and fit impact, m_{Z_{d}} = %i GeV" %mass
+        # TH2F (                   *name,  *title, Int_t nbinsx, Double_t xlow, Double_t xup, Int_t nbinsy, Double_t ylow, Double_t yup)
+        labelTH2 = ROOT.TH2F("labelHist", th2Name, 1, -1.2, +1.2,                         nLabels + 1, +offset, nLabels + 1 + offset);
+        labelTH2.GetXaxis().SetTitle("(#hat{#theta} - #theta_{0})/#Delta#theta , fit impact" )
+
+
+        impactTH2 = ROOT.TH2F("impactTH2", "impactTH2", 1, -0.2, +.2,                         nLabels + 1, +offset, nLabels + 1 + offset);
+
 
         counter = 0 
-        for nuisanceParameter in sorted(pullMeanDict): 
+        #for nuisanceParameter in sorted(pullMeanDict): 
+        for nuisanceParameter in sorted(impactVarDict): 
             counter += 1
-            
-            graph.SetPoint( counter, 0, counter )
 
+            print "%i %s" %(counter, nuisanceParameter)
+            
+            # make pull plots
+            if nuisanceParameter in pullMeanDict:
+                pullPointNr = pullGraph.GetN()
+                pullGraph.SetPoint( pullPointNr, pullMeanDict[nuisanceParameter] , counter )
+                # these are really erros here. I.e. how far the error bars extend in each direction from the center point
+                pullGraph.SetPointError( pullPointNr, pullErrorDict[nuisanceParameter],pullErrorDict[nuisanceParameter], 0 , 0 )  
+
+            #make impact plots
+
+            impactVars = impactVarDict[nuisanceParameter]
+
+
+            #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+            if "mu_preFitUp_" in impactVars:
+                prefitPointNr = prefitImpactGraph.GetN()
+
+                prefitMean = impactVars["mu_preFitUp_"] - impactVars["mu_preFitDown_"]
+                prefitImpactGraph.SetPoint( prefitPointNr, 0 , counter )
+                # these are really erros here. I.e. how far the error bars extend in each direction from the center point
+                prefitImpactGraph.SetPointError( prefitPointNr, abs(impactVars["mu_preFitDown_"]), abs(impactVars["mu_preFitUp_"]), 0.4 , 0.4 )  
+
+            postfitPointNr = postfitImpactGraph.GetN()
+
+            
+            postfitMean = impactVars["mu_postFitUp_"] - impactVars["mu_postFitDown_"]
+            postfitImpactGraph.SetPoint( postfitPointNr, 0 , counter )
             # these are really erros here. I.e. how far the error bars extend in each direction from the center point
-            graph.SetPointError( counter, pullErrorDict[nuisanceParameter],pullErrorDict[nuisanceParameter], 0 , 0 )  
+            postfitImpactGraph.SetPointError( postfitPointNr, abs(impactVars["mu_postFitDown_"]), abs(impactVars["mu_postFitUp_"]), 0.4 , 0.4 )  
 
 
             nuisanceParameterYLabel = nuisanceParameter.strip("_") # remove leading and trailing underscores
             labelTH2.GetYaxis().SetBinLabel(counter, nuisanceParameterYLabel)
 
-            #graph.GetYaxis().SetBinLabel(counter, x)
+            #pullGraph.GetYaxis().SetBinLabel(counter, x)
+
+
+
+
 
 
         #labelTH2.GetYaxis().SetTitleOffset(2.)
@@ -139,7 +226,38 @@ if __name__ == '__main__':
         #pad1.cd();
 
         labelTH2.Draw()
-        graph.Draw("same")
+        
+
+
+        #impactTH2.Draw("same")
+
+
+        prefitImpactGraph.SetFillColor( ROOT.kAzure);
+        #prefitImpactGraph.SetFillStyle(3001);
+        prefitImpactGraph.Draw("same 2 ")
+
+        ROOT.gStyle.SetHatchesLineWidth(2) #define the hatches line width.
+        ROOT.gStyle.SetHatchesSpacing(0.5) # to define the spacing between hatches.
+
+
+        postfitImpactGraph.SetFillColor(1);
+        postfitImpactGraph.SetFillStyle(3354);
+        #postfitImpactGraph.SetFillColor(ROOT.kGray+3);
+        #postfitImpactGraph.SetLineWidth()
+        postfitImpactGraph.Draw("same 2 ")
+
+        pullGraph.Draw("same P")
+
+
+        legend = setupTLegend()
+
+        legend.AddEntry(pullGraph , "pull"  , "l");
+        legend.AddEntry(prefitImpactGraph , "prefitImpact" , "f");
+        legend.AddEntry(postfitImpactGraph , "postfitImpact" , "f");
+        legend.Draw()
+
+
+
         canvas.Update()
 
 
