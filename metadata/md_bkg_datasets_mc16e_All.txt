@@ -143,6 +143,23 @@ dataset_number/I:crossSection/D:kFactor/D:genFiltEff/D:physics_short/C:ami_tags/
 343241 1.00E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd50  e4551_e5984_a875_r9364_r9315_p3654
 343242 1.00E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd55  e4551_e5984_a875_r9364_r9315_p3654
 
+#Za Signal, a = pseudoscalar remeber, cross section unit here is nb = 1E-9 barn. Let's list the ZZd cross section as 1fb = 1E-15 barn = 1E-6 nb 
+451324 1.00E-06   1.0             1.0000E+00 PowhegPythia8EvtGen_AZNLOCTEQ6L1_ggH125_a1_2mu_Z_ll  e8034_e5984_a875_r10724_r10726_p3654
+451325 1.00E-06   1.0             1.0000E+00 PowhegPythia8EvtGen_AZNLOCTEQ6L1_ggH125_a2_2mu_Z_ll  e8034_e5984_a875_r10724_r10726_p3654
+451326 1.00E-06   1.0             1.0000E+00 PowhegPythia8EvtGen_AZNLOCTEQ6L1_ggH125_a2p5_2mu_Z_ll  e8034_e5984_a875_r10724_r10726_p3654
+451327 1.00E-06   1.0             1.0000E+00 PowhegPythia8EvtGen_AZNLOCTEQ6L1_ggH125_a4_2mu_Z_ll  e8034_e5984_a875_r10724_r10726_p3654
+451328 1.00E-06   1.0             1.0000E+00 PowhegPythia8EvtGen_AZNLOCTEQ6L1_ggH125_a6_2mu_Z_ll  e8034_e5984_a875_r10724_r10726_p3654
+451329 1.00E-06   1.0             1.0000E+00 PowhegPythia8EvtGen_AZNLOCTEQ6L1_ggH125_a8_2mu_Z_ll  e8034_e5984_a875_r10724_r10726_p3654
+451330 1.00E-06   1.0             1.0000E+00 PowhegPythia8EvtGen_AZNLOCTEQ6L1_ggH125_a10_2mu_Z_ll  e8034_e5984_a875_r10724_r10726_p3654
+451331 1.00E-06   1.0             1.0000E+00 PowhegPythia8EvtGen_AZNLOCTEQ6L1_ggH125_a15_2mu_Z_ll  e8034_e5984_a875_r10724_r10726_p3654
+451332 1.00E-06   1.0             1.0000E+00 PowhegPythia8EvtGen_AZNLOCTEQ6L1_ggH125_a15_2e_Z_ll  e8034_e5984_a875_r10724_r10726_p3654
+451333 1.00E-06   1.0             1.0000E+00 PowhegPythia8EvtGen_AZNLOCTEQ6L1_ggH125_a20_2mu_Z_ll  e8034_e5984_a875_r10724_r10726_p3654
+451334 1.00E-06   1.0             1.0000E+00 PowhegPythia8EvtGen_AZNLOCTEQ6L1_ggH_125_a_20_2e_Z_ll  e8034_e5984_a875_r10724_r10726_p3654
+451335 1.00E-06   1.0             1.0000E+00 PowhegPythia8EvtGen_AZNLOCTEQ6L1_ggH125_a25_2mu_Z_ll  e8034_e5984_a875_r10724_r10726_p3654
+451336 1.00E-06   1.0             1.0000E+00 PowhegPythia8EvtGen_AZNLOCTEQ6L1_ggH125_a25_2e_Z_ll  e8034_e5984_a875_r10724_r10726_p3654
+451337 1.00E-06   1.0             1.0000E+00 PowhegPythia8EvtGen_AZNLOCTEQ6L1_ggH125_a30_2mu_Z_ll  e8034_e5984_a875_r10724_r10726_p3654
+451338 1.00E-06   1.0             1.0000E+00 PowhegPythia8EvtGen_AZNLOCTEQ6L1_ggH125_a30_2e_Z_ll  e8034_e5984_a875_r10724_r10726_p3654
+
 # ZdZd Signal
 302073  7.0E-07     1.0 1.0000E+00  MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZdZd4l_mZd0p5     e4022_e5984_s3126_r10724_r10726_p3654
 302074  7.0E-07     1.0 1.0000E+00  MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZdZd4l_mZd1       e4022_e5984_s3126_r10724_r10726_p3654

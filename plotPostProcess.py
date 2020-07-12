@@ -68,7 +68,23 @@ class DSIDHelper:
                             "ZdZd, m_{Zd} = 45GeV" : [302084],
                             "ZdZd, m_{Zd} = 50GeV" : [302085],
                             "ZdZd, m_{Zd} = 55GeV" : [302086],
-                            "ZdZd, m_{Zd} = 60GeV" : [302087]}
+                            "ZdZd, m_{Zd} = 60GeV" : [302087],
+                            "Za, m_{a} =  1GeV" : [451324],
+                            "Za, m_{a} =  2GeV" : [451325],
+                            "Za, m_{a} =2.5GeV" : [451326],
+                            "Za, m_{a} =  4GeV" : [451327],
+                            "Za, m_{a} =  6GeV" : [451328],
+                            "Za, m_{a} =  8GeV" : [451329],
+                            "Za, m_{a} = 10GeV" : [451330],
+                            "Za, m_{a} = 15GeV" : [451331],
+                            "Za, m_{a} = 15GeV" : [451332],
+                            "Za, m_{a} = 20GeV" : [451333],
+                            "Za, m_{a} = 20GeV" : [451334],
+                            "Za, m_{a} = 25GeV" : [451335],
+                            "Za, m_{a} = 25GeV" : [451336],
+                            "Za, m_{a} = 30GeV" : [451337],
+                            "Za, m_{a} = 30GeV" : [451338] }
+
 
     colorMap = {"H->ZZ*->4l" : ROOT.kRed  , "ZZ*->4l" :   ROOT.kAzure+1 ,
                       "Reducible (Z+Jets, WZ, ttbar)"  : ROOT.kYellow , "VVV/VBS" : ROOT.kCyan,
@@ -688,7 +704,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    skipZX = True
+    skipZX = False
     skipZdZd = True
     skipZjets = False
     skipReducible = True#False
@@ -879,7 +895,7 @@ if __name__ == '__main__':
             regionAndChannelString = addRegionAndChannelToStatsText(canvas.GetName() )
             if systematicChannel != "Nominal" : regionAndChannelString = systematicChannel +" "+ regionAndChannelString
             statsTexts.append( regionAndChannelString ) 
-            
+
             statsTexts.append( "  " ) 
 
             # use these to report the total number of background and signal samples each later on
