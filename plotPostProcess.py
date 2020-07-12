@@ -332,14 +332,15 @@ def idPlotTitle(path, DSIDHelper , DSID=None ):
 
 def irrelevantTObject(path, baseHist, requiredRootType = ROOT.TH1):
 
-    if "Nominal" not in path: return True
-    elif "Cutflow" in path: return True
+    #if "Nominal" not in path: return True
+    if "Cutflow" in path: return True
     elif "cutflow" in path: return True
     elif "h_raw_" in path: return True
     elif "hraw_" in path: return True
     elif "pileupWeight" in path: return True
     elif isinstance( baseHist, ROOT.TH2 ): return True
     elif not isinstance( baseHist, requiredRootType ): return True
+    elif "sumOfWeights" in path: return True
 
     return False
 
@@ -430,21 +431,21 @@ def getBinContentsPlusError(myTH1):
 
 
 
-def fillMasterHistDict2( currentTH1, histEnding, mcTag, DSID, aDSIDHelper, masterHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) ):
-    # split the histograms in inputFileDict by HistEnding, mcCampaign, and DSID 
-    # and put them into a collections.defaultdict to indext them by HistEnding, mcCampaign, and DSID
+def fillMasterHistDict2( currentTH1, systematicChannel, histEnding, mcTag, DSID, aDSIDHelper, masterHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) ):
+    # split the histograms in inputFileDict by HistEnding, systematicChannel, and DSID 
+    # and put them into a collections.defaultdict to indext them by HistEnding, systematicChannel, and DSID
     #
     # remember that python instantiates functions only once, 
     # so unless we provice a masterHistDict, we will aggregate results 
     # in the default one over multiple function calls
     #
-    # masterHistDict[ HistEnding ][ mcCampaign ][ DSID ][ ROOT.TH1 ] 
+    # masterHistDict[systematicChannel][ HistEnding ][ DSID ][ ROOT.TH1 ] 
 
     if int(DSID) != 0: # Signal & Background have DSID > 0
         scale = aDSIDHelper.getMCScale(DSID, mcTag)
         currentTH1.Scale(scale) # scale the histogram
 
-    masterHistDict[histEnding][mcTag][DSID]=currentTH1
+    masterHistDict[systematicChannel][histEnding][DSID]=currentTH1
 
     return masterHistDict
 
@@ -597,36 +598,37 @@ def getDataDrivenReducibleShape2(canvasName, sortedSampleKey, rebin, referenceHi
 def makelleeAndllmumuPlots(dictTree):
 
 
-    for histEnding in dictTree.keys():
+    for systematicChannel in dictTree.keys():
 
-        checkForMixedFlavor = re.search("(_2e2mu_)|(_2mu2e_)", histEnding )
+        for histEnding in dictTree[systematicChannel].keys():
 
-        if not checkForMixedFlavor: continue
+            checkForMixedFlavor = re.search("(_2e2mu_)|(_2mu2e_)", histEnding )
 
-        referenceFlavor = checkForMixedFlavor.group()
+            if not checkForMixedFlavor: continue
 
-        if referenceFlavor == "_2e2mu_" : 
-            complimentingHistEnding = re.sub("_2e2mu_", "_4mu_", histEnding) 
+            referenceFlavor = checkForMixedFlavor.group()
 
-            combdinedFlavor = "_llmumu_"
-            combinedHistEnding = re.sub("_2e2mu_", "_llmumu_", histEnding) 
-        else:                                  
-            complimentingHistEnding = re.sub("_2mu2e_", "_4e_", histEnding) 
-            combdinedFlavor = "_llee_"
-            combinedHistEnding = re.sub("_2mu2e_", "_llee_", histEnding) 
+            if referenceFlavor == "_2e2mu_" : 
+                complimentingHistEnding = re.sub("_2e2mu_", "_4mu_", histEnding) 
 
-        for mcTag in dictTree[histEnding].keys():
-            for DSID in dictTree[histEnding][mcTag].keys():
+                combdinedFlavor = "_llmumu_"
+                combinedHistEnding = re.sub("_2e2mu_", "_llmumu_", histEnding) 
+            else:                                  
+                complimentingHistEnding = re.sub("_2mu2e_", "_4e_", histEnding) 
+                combdinedFlavor = "_llee_"
+                combinedHistEnding = re.sub("_2mu2e_", "_llee_", histEnding) 
 
-                histA = dictTree[histEnding][mcTag][DSID]
-                histB = dictTree[complimentingHistEnding][mcTag][DSID]
+            for DSID in dictTree[systematicChannel][histEnding].keys():
+
+                histA = dictTree[systematicChannel][histEnding][DSID]
+                histB = dictTree[systematicChannel][complimentingHistEnding][DSID]
 
                 newName = re.sub("_2e2mu_", combdinedFlavor, histEnding) 
 
                 combinedHist = histA.Clone(newName)
                 combinedHist.Add(histB)
 
-                dictTree[combinedHistEnding][mcTag][DSID] = combinedHist
+                dictTree[systematicChannel][combinedHistEnding][DSID] = combinedHist
 
                 #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
@@ -673,16 +675,27 @@ if __name__ == '__main__':
     parser.add_argument( "--skipRatioHist", default=False, action='store_true' , 
     help = "If run with '--skipRatioHist' we will skip drawing of the ratio hist." ) 
 
+    parser.add_argument( "--makeSystematicsPlots", default=False, action='store_true' , 
+    help = "If run with '--makeSystematicsPlots' we will not only plot the 'Nominal' distributions, but also teh systematics variations too." ) 
+
+    parser.add_argument( "--kinematicsToPlot", nargs='*', default=[], 
+    help = "If we only want to list a subset of the kninematic variables, list them here.\
+            Use like --kinematicsToPlot m4l m34. If none are specified, or argument is not used, we plot all kinematic variables" ) 
+
+    parser.add_argument( "--flavorsToPlot", nargs='*', default=["2e2mu", "2mu2e", "4e", "4mu", "All"], 
+    help = "If we only want to list a subset of the kninematic variables, list them here.\
+            Use like --kinematicsToPlot m4l m34. If none are specified, or argument is not used, we plot all kinematic variables" ) 
+
     args = parser.parse_args()
 
     skipZX = True
     skipZdZd = True
     skipZjets = False
-    skipReducible = False
+    skipReducible = True#False
 
     if skipReducible: skipZjets = True
 
-    replaceWithDataDriven = True
+    replaceWithDataDriven = False
 
     ######################################################
     # do some checks to make sure the command line options have been provided correctly
@@ -693,8 +706,8 @@ if __name__ == '__main__':
     currentROOTVersion = ROOT.gROOT.GetVersion()
 
     if compareVersions( currentROOTVersion, "6.04/16") > 0:
-        warnings.warn("Running on newer than ideal root version. Designed for version 6.04/16, current version is  "
-                       + currentROOTVersion + ". This should work but might consume much more memory then otherwise. ")
+        warnings.warn("Running on ROOT version > 6.04/16. Current version is  "
+                       + currentROOTVersion + ". Adjusting ROOT object ownership, which might affect memory consumption.")
         # the underlying issue for the extra memory consumption is the root memory managment. 
         # For the version 6.04/16 our method of given root ownership of the parsed opjects to delete them works and memory utilization is lower
         # for the newer versions this way of affecting the ownership results in a crash. So we don't deal with it and accept higher memory utilization
@@ -742,7 +755,6 @@ if __name__ == '__main__':
 
         if irrelevantTObject(path, baseHist): continue # skip non-relevant histograms
 
-        ROOT.SetOwnership(baseHist, False)  # if we pass irrelevantTObject the histogram is relevant, so we change the ownership here to False in the attempt to prevent deletion
 
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
@@ -776,8 +788,23 @@ if __name__ == '__main__':
 
         plotTitle = idPlotTitle(path, myDSIDHelper, DSID=DSID)
 
+        systematicChannel = path.split("/")[2]
+
+        # skip the not 'nominal' histograms, unless we are doing systematic plots
+        if not args.makeSystematicsPlots  and "Nominal" != systematicChannel: continue
+
+        # make cuts on kinematic variables
+        if len(args.kinematicsToPlot) >0 :
+            if not any([kinematic in path for kinematic in args.kinematicsToPlot]): continue
+
+        # make cuts on flavors
+        if len(args.flavorsToPlot) >0 :
+            if not any([ "_"+flavor+"_" in path for flavor in args.flavorsToPlot]): continue
+
+        ROOT.SetOwnership(baseHist, False)  # if we pass irrelevantTObject the histogram is relevant, so we change the ownership here to False in the attempt to prevent deletion
+
         # build my tree structure here to house the relevant histograms, pre-sorted for plotting
-        masterHistDict = fillMasterHistDict2( baseHist, plotTitle, args.mcCampaign, DSID, myDSIDHelper )
+        masterHistDict = fillMasterHistDict2( baseHist, systematicChannel, plotTitle, args.mcCampaign, DSID, myDSIDHelper )
 
         # output a running counter of processed hists and used memory
         histCounter += 1
@@ -796,32 +823,36 @@ if __name__ == '__main__':
 
     canvasList = []
 
-    for histEnding in combinedMCTagHistDict.keys():
+    for systematicChannel in combinedMCTagHistDict.keys():
 
-        backgroundTHStack = ROOT.THStack(histEnding,histEnding)
-        backgroundSamples = [] # store the background samples as list of tuples [ (DSID, TH1) , ...] 
-        #backgroundTHStack.SetMaximum(25.)
-        canvas = ROOT.TCanvas(histEnding,histEnding,1300/2,1300/2);
-        ROOT.SetOwnership(canvas, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
-        legend = setupTLegend()
+        for histEnding in combinedMCTagHistDict[systematicChannel].keys():
 
+            backgroundTHStack = ROOT.THStack(histEnding,histEnding)
+            backgroundSamples = [] # store the background samples as list of tuples [ (DSID, TH1) , ...] 
+            #backgroundTHStack.SetMaximum(25.)
 
-        gotDataSample = False # change this to true later if we do have data samples
-
-        assert len( combinedMCTagHistDict[histEnding].keys() ) == 1, "We ended up with more than MC tag after the comining the masterHistDict. That shouldn't be the case"
-
-        for mcTag in combinedMCTagHistDict[histEnding].keys():
+            canvasName = systematicChannel +"_"+ histEnding
+            canvas = ROOT.TCanvas(canvasName,canvasName,1300/2,1300/2);
+            ROOT.SetOwnership(canvas, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
+            legend = setupTLegend()
 
 
+            gotDataSample = False # change this to true later if we do have data samples
 
-            for DSID in combinedMCTagHistDict[histEnding][mcTag].keys():
+            for DSID in combinedMCTagHistDict["Nominal"][histEnding].keys():
 
-                    currentTH1 = combinedMCTagHistDict[histEnding][mcTag][DSID]
-                    currentTH1.Rebin(args.rebin)
+
 
                     if int(DSID) > 0: # Signal & Background have DSID > 0
+                        currentTH1 = combinedMCTagHistDict[systematicChannel][histEnding][DSID]
+                        currentTH1.Rebin(args.rebin)
                         backgroundSamples.append( ( int(DSID), currentTH1) )
-                    else:   # data has DSID 0 for us  
+                    else:   # data has DSID 0 for us  \
+
+                        currentTH1 = copy.deepcopy(combinedMCTagHistDict["Nominal"][histEnding][DSID]) # do deppcopy here in case we rebin, otherwise we would rebin multiple times
+                        currentTH1.Rebin(args.rebin)
+
+
                         gotDataSample = True
                         dataTH1 = currentTH1
 
@@ -843,9 +874,12 @@ if __name__ == '__main__':
             statsTexts = []
 
             statsTexts.append( "#font[72]{ATLAS} internal")
-            statsTexts.append( "#sqrt{s} = 13 TeV, %.1f fb^{-1}" %( myDSIDHelper.lumiMap[mcTag] ) ) 
+            statsTexts.append( "#sqrt{s} = 13 TeV, %.1f fb^{-1}" %( myDSIDHelper.lumiMap[args.mcCampaign] ) ) 
 
-            statsTexts.append( addRegionAndChannelToStatsText(canvas.GetName() ) ) 
+            regionAndChannelString = addRegionAndChannelToStatsText(canvas.GetName() )
+            if systematicChannel != "Nominal" : regionAndChannelString = systematicChannel +" "+ regionAndChannelString
+            statsTexts.append( regionAndChannelString ) 
+            
             statsTexts.append( "  " ) 
 
             # use these to report the total number of background and signal samples each later on
