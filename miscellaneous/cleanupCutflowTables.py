@@ -22,8 +22,19 @@ import functions.rootDictAndTDirTools as TDirTools
 
 
 
+def getQuadType( histName ):
+
+    quadrupletOptionsRE = "4e|2e2m|2m2e|4m"
+
+    quadSearch = re.search(quadrupletOptionsRE, histName)
+
+    if quadSearch: return quadSearch.group()
+    else:          return quadSearch
+
 
 if __name__ == '__main__':
+
+    # Setup command line options
 
     parser = argparse.ArgumentParser()
 
@@ -34,98 +45,84 @@ if __name__ == '__main__':
     parser.add_argument( "--batch", default=False, action='store_true' , 
     help = "If run with '--batch' we will activate root batch mode and suppress all interactive graphics." ) 
 
-    parser.add_argument( "--DSIDs", default=None, nargs='*', type=int,
-    help = "List of DSIDs to parse, if not specified, loop over DSIDs in signalDSIDDict" ) 
+    #parser.add_argument( "--DSIDs", default=None, nargs='*', type=int,
+    #help = "List of DSIDs to parse, if not specified, loop over DSIDs in signalDSIDDict" ) 
 
     args = parser.parse_args()
 
 
-    ROOT.gROOT.SetBatch( args.batch )
+    ROOT.gROOT.SetBatch( args.batch ) # enact batch mode, if so dictated by commmand line option
 
-
-    signalDSIDDict = { 343234 : "m_{Zd} = 15GeV" ,   343235 : "m_{Zd} = 20GeV" ,
-                       343236 : "m_{Zd} = 25GeV" ,   343237 : "m_{Zd} = 30GeV" ,
-                       343238 : "m_{Zd} = 35GeV" ,   343239 : "m_{Zd} = 40GeV" ,
-                       343240 : "m_{Zd} = 45GeV" ,   343241 : "m_{Zd} = 50GeV" ,
-                       343242 : "m_{Zd} = 55GeV" }
-
-
-    if args.DSIDs is None: DSIDs = signalDSIDDict.keys()
-    else:                  DSIDs = args.DSIDs
 
     cutFlowTFile = ROOT.TFile(args.input,"OPEN")
-
-    signalDSIDStrings = [str(DSID) for DSID in signalDSIDDict]
-    signalDSID_REString = "|".join(signalDSIDStrings)
+    cutflowTDir = cutFlowTFile.Get("Cutflow")
 
 
-    quadrupletOptionsRE = "4e|2e2m|2m2e|4m"
-
-
-    histDict = collections.defaultdict(list)
+    histDict = collections.defaultdict(list) # prepare storage of cutflow histrams in dict of lists like histDict[ "123456" ] = [hist1,hist2]
     outputHists = []
 
-
-    for path, myTObject  in TDirTools.generateTDirPathAndContentsRecursive(cutFlowTFile, newOwnership = None):  
+    # gather the cutflow histograms
+    for path, myTObject  in TDirTools.generateTDirPathAndContentsRecursive(cutflowTDir, newOwnership = None):  
 
         objName = myTObject.GetName()
 
-        reSearchObj = re.search(signalDSID_REString, objName)
+        if "hraw_" in objName: continue
+        if not getQuadType( objName ): continue # we only want the 4e, 2e2mu, 2mu2e and 4mu hists, and we skip the the one for 'all' for now
+
+        DSIDmatch = re.search("\d+", objName)
+
+        if DSIDmatch :
+
+            DSID = DSIDmatch.group()
+            histDict[DSID].append(myTObject)
 
 
-        if reSearchObj : 
+    
 
-            #if re.search(signalDSID_REString, objName)
+    for DSID in histDict:
 
-            if "hraw_" in objName: continue
+        binNamesAndContentDict = {} # build a mapping between bin labels and the associated bin content
 
-            if re.search(quadrupletOptionsRE, objName): histDict[reSearchObj.group()].append(myTObject)
+        histList = histDict[DSID]
 
 
-
-    namesAndContentDict = {}
-
-    for DSID in DSIDs:
-
-        histList = histDict[str(DSID)]
-
-        hist = histList[0]
-
-        quadType = re.search(quadrupletOptionsRE, hist.GetName()).group()
-
+        # gather information about the first 5 bins, that are common among all the quadruplet flavor types
+        hist = histList[0] # pick an arbitrary histogram to 
+        quadType = getQuadType( hist.GetName() )
         nBins = hist.GetNbinsX()
+        for binNr in range(1,5+1):     binNamesAndContentDict[re.sub(quadType, "", hist.GetXaxis().GetBinLabel(binNr)) ] = hist.GetBinContent(binNr)
 
-        for binNr in range(1,5+1):     namesAndContentDict[re.sub(quadType, "", hist.GetXaxis().GetBinLabel(binNr)) ] = hist.GetBinContent(binNr)
-        for binNr in range(6,nBins+1):
-            binLabel = hist.GetXaxis().GetBinLabel(binNr)
-
-            if "ZXVR" in binLabel: continue
-
-            if quadType in binLabel: namesAndContentDict[re.sub(quadType, "", binLabel) ] = hist.GetBinContent(binNr)
-
-
-        for hist in histList[1:]:
-            quadType = re.search(quadrupletOptionsRE, hist.GetName()).group()
+        # get information about the remaining bins by adding the contents of all histograms up
+        for hist in histList:
+            quadType = getQuadType( hist.GetName() )
             for binNr in range(6,nBins+1):
                 binLabel = hist.GetXaxis().GetBinLabel(binNr)
+
                 if "ZXVR" in binLabel: continue
+                if quadType not in binLabel: continue
 
-                if quadType in binLabel: 
+                binLabelNoQuadType = re.sub(quadType, "", binLabel)
 
-                    namesAndContentDict[re.sub(quadType, "", binLabel) ] += hist.GetBinContent(binNr)
+                if binLabelNoQuadType not in binNamesAndContentDict: binNamesAndContentDict[binLabelNoQuadType] = 0
+
+                binNamesAndContentDict[binLabelNoQuadType] += hist.GetBinContent(binNr)
+
+        
+
 
         # make new plot
 
-        nNewBins = len(namesAndContentDict)
+        nNewBins = len(binNamesAndContentDict)
 
-        th1Title = "cutflow yield for "+signalDSIDDict[int(DSID)] +" sample, " + args.titleTag
+        th1Title = "cutflow yield for "+ DSID +" sample, " + args.titleTag
+        #th1Title = "cutflow yield for "+signalDSIDDict[int(DSID)] +" sample, " + args.titleTag
 
         newHist = ROOT.TH1D(str(DSID), th1Title, nNewBins, 0, nNewBins)
 
         counter = 0
 
         refHist = histList[0]
-        quadType = re.search(quadrupletOptionsRE, refHist.GetName()).group()
+        quadType = getQuadType( refHist.GetName() )
 
         for binNr in range(1,refHist.GetNbinsX()+1):
             binLabel = refHist.GetXaxis().GetBinLabel(binNr)
@@ -133,17 +130,16 @@ if __name__ == '__main__':
 
             binLabel_NoQuadMarker = re.sub(quadType, "", binLabel)
 
-            
-            if binLabel_NoQuadMarker in namesAndContentDict:
+            if binLabel_NoQuadMarker in binNamesAndContentDict:
                 counter +=1
 
-                newHist.SetBinContent(counter, namesAndContentDict[binLabel_NoQuadMarker])
+                newHist.SetBinContent(counter, binNamesAndContentDict[binLabel_NoQuadMarker])
 
                 binLabel_NoQuadMarker = re.sub("ElectronID", "LeptonID", binLabel_NoQuadMarker) # replace "ElectronID" with "LeptonID"
                 newHist.GetXaxis().SetBinLabel(counter, binLabel_NoQuadMarker)
 
 
-        newHist.GetYaxis().SetRangeUser( min(namesAndContentDict.values()) * 0.9, max( namesAndContentDict.values())*1.1  )
+        newHist.GetYaxis().SetRangeUser( min(binNamesAndContentDict.values()) * 0.9, max( binNamesAndContentDict.values())*1.1  )
         newHist.GetYaxis().SetTitle("yield after cut")
 
         newHist.GetYaxis().SetTitleSize(newHist.GetYaxis().GetTitleSize() *1.5)
@@ -152,7 +148,7 @@ if __name__ == '__main__':
         newHist.SetStats( False) # remove stats box
 
         #for hist in histList[1:]: 
-        #    for binNr in range(6,18+1):     namesAndContentDict[re.sub(quadType, "", hist.GetXaxis().GetBinLabel(binNr)) ] += hist.GetBinContent(binNr)
+        #    for binNr in range(6,18+1):     binNamesAndContentDict[re.sub(quadType, "", hist.GetXaxis().GetBinLabel(binNr)) ] += hist.GetBinContent(binNr)
 
             
         outputHists.append(newHist)
