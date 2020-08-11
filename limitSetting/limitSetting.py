@@ -277,8 +277,8 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, d
         backgroundH4l.AddNormFactor("H4lNorm", 1, 0, 3) # let's add this to fit the normalization of the background
         addSystematicsToSample(backgroundH4l, inputTFile, region = region, eventType = "H4l", flavor = flavor, finishAfterNSystematics = doNSystematics)
         if doStatError: backgroundH4l.ActivateStatError()
-        if doTheoreticalError: backgroundH4l.AddOverallSys("H4l_QCDUncert", 1.+0.0395, 1.-0.0561)
-        if doTheoreticalError: backgroundH4l.AddOverallSys("H4l_PDFUncert", 1.+0.0293, 1.-0.0293)
+        #if doTheoreticalError: backgroundH4l.AddOverallSys("H4l_QCDUncert", 1.+0.0395, 1.-0.0561)
+        #if doTheoreticalError: backgroundH4l.AddOverallSys("H4l_PDFUncert", 1.+0.0293, 1.-0.0293)
         
 
         chan.AddSample(backgroundH4l)

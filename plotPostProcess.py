@@ -135,6 +135,7 @@ class DSIDHelper:
     sumOfEventWeightsDict = {}
 
     mappingOfChoice = None
+    mappingOfChoiceInverse = None
 
     def __init__(self):
 
@@ -149,14 +150,16 @@ class DSIDHelper:
         self.physicsSubProcessByDSID = self.makeReverseDict( self.physicsSubProcess);
         self.analysisMappingByDSID = self.makeReverseDict( self.analysisMapping)
         self.physicsProcessSignalByDSID = self.makeReverseDict( self.physicsProcessSignal)
+        self.DSIDtoDSIDMapping =  { DSID : str(DSID) for DSID in self.physicsProcessByDSID }
 
     def setMappingOfChoice(self, mapping ):
 
 
-        if   mapping == "physicsProcess" :    self.mappingOfChoice = self.physicsProcessByDSID
-        elif mapping == "physicsSubProcess" : self.mappingOfChoice = self.physicsSubProcessByDSID
-        elif mapping == "analysisMapping" :   self.mappingOfChoice = self.analysisMappingByDSID
-        else:                                 self.mappingOfChoice = mapping
+        if   mapping == "physicsProcess" :    self.mappingOfChoice = self.physicsProcessByDSID    ; self.mappingOfChoiceInverse = self.physicsProcess
+        elif mapping == "physicsSubProcess" : self.mappingOfChoice = self.physicsSubProcessByDSID ; self.mappingOfChoiceInverse = self.physicsSubProcess
+        elif mapping == "analysisMapping" :   self.mappingOfChoice = self.analysisMappingByDSID   ; self.mappingOfChoiceInverse = self.analysisMapping
+        #elif mapping == "DSIDtoDSIDMapping" : self.mappingOfChoice = self.DSIDtoDSIDMapping       ; self.mappingOfChoiceInverse = self.DSIDtoDSIDMapping
+        else:  warnings.warn("Key not supported, no mapping defined")     # self.mappingOfChoice = mapping
 
         return None
 

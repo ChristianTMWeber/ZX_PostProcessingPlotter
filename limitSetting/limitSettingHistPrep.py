@@ -16,6 +16,7 @@ import warnings # to warn about things that might not have gone right
 import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
 import re
 import time # for measuring execution time
+import copy # for making deep copies
 
 
 # import sys and os.path to be able to import plotPostProcess from the parent directory
@@ -33,6 +34,8 @@ import limitFunctions.reportMemUsage as reportMemUsage
 from limitFunctions.visualizeSignalOverview import getMasspointDict
 
 import limitFunctions.makeHistDict as makeHistDict # things to fill what I call later the masterHistDict
+import limitFunctions.assembleTheoryShapeVariationHists as assembleTheoryShapeVariationHists # method to add the theory shape variations
+
 
 import makeReducibleShapes.makeReducibleShapes as makeReducibleShapes
 
@@ -205,7 +208,7 @@ def addDataDrivenReducibleBackground( masterHistDict , reducibleFileName = "data
     ########## normalize histograms to Target Luminosity ########
 
     # H4l shapes are normalized to 1 inverse femto barn, we need to scale the up to the target lumi
-    targetLumi = myDSIDHelper.lumiMap[ args.mcCampaign[0] ]
+    targetLumi = myDSIDHelper.lumiMap[ args.mcCampaign ]
 
     hist2l2e.Scale(targetLumi)
     hist2l2mu.Scale(targetLumi)
@@ -299,7 +302,7 @@ if __name__ == '__main__':
     parser.add_argument("--outputTo", type=str, default="testoutput.root" ,
         help="name of the output file" )
 
-    parser.add_argument("-c", "--mcCampaign", nargs='*', type=str, choices=["mc16a","mc16d","mc16e","mc16ade"], required=True,
+    parser.add_argument("-c", "--mcCampaign", type=str, choices=["mc16a","mc16d","mc16e","mc16ade"], default="mc16ade",
         help="name of the mc campaign, i.e. mc16a or mc16d, need to provide exactly 1 mc-campaign tag for each input file, \
         make sure that sequence of mc-campaign tags matches the sequence of 'input' strings")
 
@@ -328,8 +331,6 @@ if __name__ == '__main__':
     ######################################################
     # do some checks to make sure the command line options have been provided correctly
     ######################################################
-
-    assert 1 ==  len(args.mcCampaign), "We do not have exactly one mc-campaign tag per input file"
 
     # check root version
     currentROOTVersion = ROOT.gROOT.GetVersion()
@@ -370,6 +371,8 @@ if __name__ == '__main__':
 
     nRelevantHistsProcessed = 0
 
+    masterHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) 
+    pmgWeightDict  = copy.deepcopy(masterHistDict)  
 
     for path, myTObject  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = None):  
         # set newOwnership to 'None' here and let root handle the ownership itself for now, 
@@ -386,12 +389,18 @@ if __name__ == '__main__':
 
 
         #if args.rebin > 1: myTObject.Rebin( args.rebin )
-        masterHistDict = makeHistDict.fillHistDict(path, myTObject , args.mcCampaign[0], myDSIDHelper, channelMap = channelMapping ) 
+        if "PMG_" not in path: 
+            masterHistDict = makeHistDict.fillHistDict(path, myTObject , args.mcCampaign, myDSIDHelper, channelMap = channelMapping , masterHistDict = masterHistDict) 
+        if "PMG_" in path or "Nominal" in path:
+            pmgWeightDict  = makeHistDict.fillHistDict(path, myTObject , args.mcCampaign, myDSIDHelper, channelMap = channelMapping , masterHistDict = pmgWeightDict, customMapping=myDSIDHelper.DSIDtoDSIDMapping) 
 
         nRelevantHistsProcessed += 1
 
         if nRelevantHistsProcessed %100 == 0:  print( path, myTObject)
         if args.quick and (nRelevantHistsProcessed == 2000): break
+
+
+    assembleTheoryShapeVariationHists.addTheoryVariationsToMasterHistDict( pmgWeightDict, masterHistDict,  myDSIDHelper.mappingOfChoiceInverse, region = "ZXSR", backgroundtypes = ["H4l", "ZZ"], prefix="PMG_", outputEnvelopeDir = "theorySystOverview")
 
     addDataDrivenReducibleBackground2( masterHistDict  )
 

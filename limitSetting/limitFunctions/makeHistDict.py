@@ -35,7 +35,7 @@ def skipTObject(path, baseHist, requiredRootType = ROOT.TH1, selectChannels = ["
     return False
 
 
-def fillHistDict( path, currentTH1 , mcTag, aDSIDHelper , channelMap = { "ZXSR" : "signalRegion"}, DSID = None, 
+def fillHistDict( path, currentTH1 , mcTag, aDSIDHelper , channelMap = { "ZXSR" : "signalRegion"}, DSID = None, customMapping = None,
     masterHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) ):
 
     # channel map = {"substring in path" : "what we want to replace it with in the output"}
@@ -56,20 +56,31 @@ def fillHistDict( path, currentTH1 , mcTag, aDSIDHelper , channelMap = { "ZXSR" 
     # determine event type via DSID
     if DSID is None: DSID = int( aDSIDHelper.idDSID(path) )
 
+    scale = 1
+
     if DSID == 0:  eventType = "data"
     else: 
-        eventType = aDSIDHelper.mappingOfChoice[DSID]
+
+        if customMapping is not None: eventType = customMapping[DSID]
+        else:                         eventType = aDSIDHelper.mappingOfChoice[DSID]
         scale = aDSIDHelper.getMCScale(DSID, mcTag)
-        currentTH1.Scale(scale) # scale the histogram
+        #currentTH1.Scale(scale) # scale the histogram
 
     flavor = currentTH1.GetName().split("_")[2]
+
+#    print path +"\t" + currentTH1.GetName()
+
+    #if flavor == "Nominal": import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    th1Clone = currentTH1.Clone("tempHist")
+    if scale != 1: th1Clone.Scale(scale)# scale the histogram
 
 
     if flavor not in masterHistDict[channel][eventType][systematicVariation]:
         newName = "_".join([channel, eventType , systematicVariation, flavor ])
-        currentTH1.SetName(newName)
-        masterHistDict[channel][eventType][systematicVariation][flavor] = currentTH1
-    else: masterHistDict[channel][eventType][systematicVariation][flavor].Add(currentTH1)
+        th1Clone.SetName(newName)
+        masterHistDict[channel][eventType][systematicVariation][flavor] = th1Clone
+    else: masterHistDict[channel][eventType][systematicVariation][flavor].Add(th1Clone)
 
 
     # masterHistDict['signalRegion']['ZZ'].keys()
