@@ -289,7 +289,7 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, d
         backgroundZZ = ROOT.RooStats.HistFactory.Sample("backgroundZZ", templatePaths["ZZ"], inputFileName)
         addSystematicsToSample(backgroundZZ, inputTFile, region = region, eventType = "ZZ", flavor = flavor, finishAfterNSystematics = doNSystematics)
         if doStatError: backgroundZZ.ActivateStatError()#ActivateStatError("backgroundZZ_statUncert", inputFileName)
-        if doTheoreticalError: backgroundZZ.AddOverallSys("ZZ_QCDAndPDFUncert", 1.+0.0325, 1.-0.055)
+        #if doTheoreticalError: backgroundZZ.AddOverallSys("ZZ_QCDAndPDFUncert", 1.+0.0325, 1.-0.055)
 
         chan.AddSample(backgroundZZ)
 
@@ -812,6 +812,10 @@ if __name__ == '__main__':
     parser.add_argument( "--skipStatAndTheoryError", default=False, action='store_true' , 
         help = "If this command line option is invoked, we will skip the inclusion of statistical and theory uncertainties" ) 
 
+    parser.add_argument("--nMassPoints", type=int, nargs='*',
+        help="list of mass points that we run over " )
+
+
     args = parser.parse_args()
 
 
@@ -892,11 +896,11 @@ if __name__ == '__main__':
 
             dataHist = myHistSampler.sampleFromTH1(expectedDataHist)
 
-        elif limitType == "asimov": # asimov dataset, data has been set to the expectation value from backgrounds
+        elif limitType == "asimov" or limitType == "asymptotic": # asimov dataset, data has been set to the expectation value from backgrounds
             dataHistPath = getFullTDirPath(masterDict, region, "expectedData" , "Nominal",  flavor)
             dataHist = inputTFile.Get( dataHistPath )
 
-        elif limitType == "observed" or limitType == "asymptotic":  # either do asymptotic expected limits, or get real data limits
+        elif limitType == "observed" :  # either do asymptotic expected limits, or get real data limits
             dataHistPath = getFullTDirPath(masterDict, region, "data" , "Nominal",  flavor)
             dataHist = inputTFile.Get( dataHistPath )
 
