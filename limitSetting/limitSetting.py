@@ -597,6 +597,8 @@ def expectedLimitsAsimov(workspace, confidenceLevel = 0.95, drawLimitPlot = Fals
     #  AsymptoticCalculator(data, alternativeModel, nullModel)
     asympCalc = ROOT.RooStats.AsymptoticCalculator(data, bModel, modelConfigClone ) # asymptotic calculator is for the profile likelihood ratio
     asympCalc.SetOneSided(True);
+    asympCalc.SetPrintLevel(0) # suppress command line output 
+
 
 
     inverter = ROOT.RooStats.HypoTestInverter(asympCalc)
