@@ -12,17 +12,9 @@ sys.path.append( os.path.dirname( os.path.dirname( os.path.dirname( os.path.absp
 import functions.histNumpyTools as histNumpyTools
 
 
-
-def listOfTH1ToNumpyMatrix(listOfTh1):
-
-    listOfNumpyArrays = [ histNumpyTools.histToNPArray(hist) for hist in listOfTh1 ]
-    histMatrix = np.array(listOfNumpyArrays) # histMatrix[ histNumber , binNr]
-
-    return histMatrix
-
 def makeMinAndMaxHistograms(listOfTh1s):
 
-    histMatrix = listOfTH1ToNumpyMatrix(listOfTh1s)
+    histMatrix = histNumpyTools.listOfTH1ToNumpyMatrix(listOfTh1s)
 
     refHist = listOfTh1s[0]
 
@@ -41,7 +33,7 @@ def makeMinAndMaxHistograms(listOfTh1s):
 
 def makeEnvelopeHistograms(listOfTh1s , upperEnvelopeFunction = lambda x : x.max(axis=0), lowerEnvelopeFunction = lambda x : x.min(axis=0)):
 
-    histMatrix = listOfTH1ToNumpyMatrix(listOfTh1s) #histMatrix[ histNumber , binNr]
+    histMatrix = histNumpyTools.listOfTH1ToNumpyMatrix(listOfTh1s) #histMatrix[ histNumber , binNr]
 
     refHist = listOfTh1s[0]
 

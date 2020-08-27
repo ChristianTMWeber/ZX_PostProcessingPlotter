@@ -21,3 +21,9 @@ def histErrorToNPArray(hist):
 
     return outArray
 
+def listOfTH1ToNumpyMatrix(listOfTh1):
+
+    listOfNumpyArrays = [ histToNPArray(hist) for hist in listOfTh1 ]
+    histMatrix = np.array(listOfNumpyArrays) # histMatrix[ histNumber , binNr]
+
+    return histMatrix
