@@ -19,6 +19,7 @@ import copy # for making deep copies
 import argparse # to parse command line options
 #import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
 #import functions.RootTools as RootTools# root tool that I have taken from a program by Turra
+import numpy as np # good ol' numpy
 import os
 import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
 import resource # print 'Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
@@ -26,8 +27,11 @@ import resource # print 'Memory usage: %s (kb)' % resource.getrusage(resource.RU
 from functions.compareVersions import compareVersions # to compare root versions
 import functions.rootDictAndTDirTools as rootDictAndTDirTools
 import functions.histHelper as histHelper # to help me with histograms
+import functions.histNumpyTools as histNumpyTools # to convert ROOT.TH1 histograms to numpy arrays
 
 import makeReducibleShapes.makeReducibleShapes as makeReducibleShapes
+
+import limitSetting.limitFunctions.makeHistDict as makeHistDict # alternative option to fill the  masterHistDict
 
 class DSIDHelper:
 
@@ -139,6 +143,11 @@ class DSIDHelper:
 
     def __init__(self):
 
+        # make background and Signal mappings before we add in the signals to the more specified lists
+        self.BackgroundAndSignal = {"Background" : [] , "Signal" : [] } 
+        for DISDList in self.physicsProcess.values()       : self.BackgroundAndSignal["Background"].extend( DISDList )
+        for DISDList in self.physicsProcessSignal.values() : self.BackgroundAndSignal["Signal"].extend( DISDList )
+        self.BackgroundAndSignalByDSID    = self.makeReverseDict( self.BackgroundAndSignal);
         
         # add the signal into the physics(Sub)Process
         self.physicsProcess.update( self.physicsProcessSignal )
@@ -542,8 +551,8 @@ def addRegionAndChannelToStatsText(shortName):
     elif "2m2e"  in shortName:  outList += "2#mu2e"
     elif "2mu2e" in shortName:  outList += "2#mu2e"
     elif "4e"    in shortName:  outList += "4e"
-    elif "llee"  in shortName:  outList += "llee"
-    elif "llmumu"in shortName:  outList += "ll#mu#mu"
+    elif "2l2e"  in shortName:  outList += "llee"
+    elif "2l2mu"in shortName:  outList += "ll#mu#mu"
     else:                       outList += "4#mu, 2e2#mu, 2#mu2e, 4e"
 
     return outList
@@ -574,7 +583,7 @@ def getDataDrivenReducibleShape(canvasName, sortedSampleKey, rebin):
     return False
 
 
-def getDataDrivenReducibleShape2(canvasName, sortedSampleKey, rebin, referenceHist):
+def getDataDrivenReducibleShape2(canvasName, sortedSampleKey, referenceHist):
 
     # this is super crude :(
     # but should work for now
@@ -626,12 +635,12 @@ def makelleeAndllmumuPlots(dictTree):
             if referenceFlavor == "_2e2mu_" : 
                 complimentingHistEnding = re.sub("_2e2mu_", "_4mu_", histEnding) 
 
-                combdinedFlavor = "_llmumu_"
-                combinedHistEnding = re.sub("_2e2mu_", "_llmumu_", histEnding) 
+                combdinedFlavor = "_2l2mu_"
+                combinedHistEnding = re.sub("_2e2mu_", "_2l2mu_", histEnding) 
             else:                                  
                 complimentingHistEnding = re.sub("_2mu2e_", "_4e_", histEnding) 
-                combdinedFlavor = "_llee_"
-                combinedHistEnding = re.sub("_2mu2e_", "_llee_", histEnding) 
+                combdinedFlavor = "_2l2e_"
+                combinedHistEnding = re.sub("_2mu2e_", "_2l2e_", histEnding) 
 
             for DSID in dictTree[systematicChannel][histEnding].keys():
 
@@ -649,6 +658,77 @@ def makelleeAndllmumuPlots(dictTree):
 
     return None
 
+
+def make1UpAnd1DownSystVariationHistogram( BackgroundVariationDict , flavor = "All" ):
+    #make1UpAnd1DownSystVariationHistogram( altMasterHistDict["ZXSR"]["Background"] )
+
+    def makeVariationHist( upOrDown = "1up" , inlcudeStatUncertainty = False):
+
+        sysVarHists = [BackgroundVariationDict[sysName+upOrDown][flavor] for sysName in systematicNames]
+        sysYieldMatrix =  histNumpyTools.listOfTH1ToNumpyMatrix(sysVarHists)  # numpy matrix, entries are event counts, axis = 0 indexes the systeamatic variations, axis = 1 indexes the bins
+
+        nominalHist = BackgroundVariationDict["Nominal"][flavor]
+        nominalVector= histNumpyTools.histToNPArray(nominalHist) # 1-d numpy matrix that contains the nominal bin counts
+        nominalMatrix = np.tile(nominalVector, (len(systematicNames),1) ) # 2-d numpy matrix, axis = 1 indexes the bins, same shape as the sysYieldMatrix
+
+
+        relativeYieldDifference = (sysYieldMatrix - nominalMatrix)/nominalMatrix
+        relativeYieldDifference = np.nan_to_num(relativeYieldDifference) # replace the NaN with zeros
+
+        relativeYieldUncertainty = np.sqrt( np.sum( np.square( relativeYieldDifference) , axis=0) ) # add the same bin over different systematics in quadrature
+
+        if inlcudeStatUncertainty:
+            relStatError = histNumpyTools.histErrorToNPArray(nominalHist)/nominalVector
+            relStatError = np.nan_to_num(relStatError)
+
+            relativeYieldUncertainty = np.sqrt(relativeYieldUncertainty**2 + relStatError**2)
+
+        if upOrDown == "1up": yieldVariation = (1+relativeYieldUncertainty) *nominalVector
+        else:                 yieldVariation = (1-relativeYieldUncertainty) *nominalVector
+
+        sysHist = nominalHist.Clone( nominalHist.GetName() + "_systVar_"+upOrDown)
+        sysHist.Reset()
+
+        for binNr in xrange(0, len(yieldVariation)): sysHist.SetBinContent( binNr+1 ,yieldVariation[binNr] )
+
+        return sysHist
+
+    systematicNameSet = set()
+    for sysVariation in BackgroundVariationDict :     systematicNameSet.add( re.sub('(1down)|(1up)', '', sysVariation) )
+    systematicNameSet.discard("Nominal") # remove the Nominal variation from list
+    systematicNames = sorted(list(systematicNameSet))
+
+    upSysHist   = makeVariationHist( upOrDown = "1up"   , inlcudeStatUncertainty = True)
+    downSysHist = makeVariationHist( upOrDown = "1down" , inlcudeStatUncertainty = True)
+
+    return upSysHist, downSysHist
+
+def make1UpAnd1DownSystVariationYields( BackgroundVariationDict , flavor = "All" ):
+
+    def makeVariationYield( upOrDown = "1up" ):
+
+        sysVarYieldList = np.array([BackgroundVariationDict[sysName+upOrDown][flavor].Integral() for sysName in systematicNames])
+        nominalYield = BackgroundVariationDict["Nominal"][flavor].Integral()
+
+        relativeYieldDifference = (sysVarYieldList - nominalYield)/nominalYield
+        relativeYieldDifference = np.nan_to_num(relativeYieldDifference) # replace the NaN with zeros
+
+        relativeYieldUncertainty = np.sqrt( np.sum( np.square( relativeYieldDifference) , axis=0) ) # add the same bin over different systematics in quadrature
+
+        if upOrDown == "1up": yieldVariation = (1+relativeYieldUncertainty) *nominalYield
+        else:                 yieldVariation = (1-relativeYieldUncertainty) *nominalYield
+
+        return yieldVariation
+
+    systematicNameSet = set()
+    for sysVariation in BackgroundVariationDict :     systematicNameSet.add( re.sub('(1down)|(1up)', '', sysVariation) )
+    systematicNameSet.discard("Nominal") # remove the Nominal variation from list
+    systematicNames = sorted(list(systematicNameSet))
+
+    upSysYield   = makeVariationYield( upOrDown = "1up"   )
+    downSysYield = makeVariationYield( upOrDown = "1down" )
+
+    return upSysYield, downSysYield
 
 if __name__ == '__main__':
 
@@ -712,10 +792,11 @@ if __name__ == '__main__':
 
     replaceWithDataDriven = False
 
+    addSystematicUncertaintyToNominal = args.makeSystematicsPlots and (len(args.kinematicsToPlot)==1)
+
     ######################################################
     # do some checks to make sure the command line options have been provided correctly
     ######################################################
-
 
     # check root version
     currentROOTVersion = ROOT.gROOT.GetVersion()
@@ -757,6 +838,8 @@ if __name__ == '__main__':
     postProcessedData = ROOT.TFile(args.input,"READ"); # open the file with te data from the ZdZdPostProcessing
 
     myDSIDHelper.fillSumOfEventWeightsDict(postProcessedData)
+
+    altMasterHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) # alternative master hist dict, store here all backgrounds in one histogram, for calculations of systematic uncertainties
 
     histCounter = 0 # count how many relevant hists we have
     nonRelevantHistCounter = 0
@@ -819,6 +902,13 @@ if __name__ == '__main__':
         ROOT.SetOwnership(baseHist, False)  # if we pass irrelevantTObject the histogram is relevant, so we change the ownership here to False in the attempt to prevent deletion
 
         # build my tree structure here to house the relevant histograms, pre-sorted for plotting
+
+        baseHist.Rebin(args.rebin)
+
+        if addSystematicUncertaintyToNominal:
+            altMasterHistDict = makeHistDict.fillHistDict(path, baseHist , args.mcCampaign, myDSIDHelper, channelMap = { "ZXSR" : "ZXSR" , "ZXVR1" : "ZZCR"} , masterHistDict = altMasterHistDict, customMapping = myDSIDHelper.BackgroundAndSignalByDSID) 
+
+        # store the histograms for binning and and plotting in the master HistDict
         masterHistDict = fillMasterHistDict2( baseHist, systematicChannel, plotTitle, args.mcCampaign, DSID, myDSIDHelper )
 
         # output a running counter of processed hists and used memory
@@ -833,6 +923,7 @@ if __name__ == '__main__':
 
 
     makelleeAndllmumuPlots(masterHistDict)
+    makeHistDict.add2l2eAnd2l2muHists(altMasterHistDict)
 
     combinedMCTagHistDict = masterHistDict
 
@@ -856,16 +947,12 @@ if __name__ == '__main__':
 
             for DSID in combinedMCTagHistDict["Nominal"][histEnding].keys():
 
-
-
                     if int(DSID) > 0: # Signal & Background have DSID > 0
                         currentTH1 = combinedMCTagHistDict[systematicChannel][histEnding][DSID]
-                        currentTH1.Rebin(args.rebin)
                         backgroundSamples.append( ( int(DSID), currentTH1) )
                     else:   # data has DSID 0 for us  \
 
                         currentTH1 = copy.deepcopy(combinedMCTagHistDict["Nominal"][histEnding][DSID]) # do deppcopy here in case we rebin, otherwise we would rebin multiple times
-                        currentTH1.Rebin(args.rebin)
 
 
                         gotDataSample = True
@@ -907,7 +994,7 @@ if __name__ == '__main__':
 
                 if replaceWithDataDriven: # insert data driven reducible hist if so desided
                     #dataDrivenReducibleHist = getDataDrivenReducibleShape(canvas.GetName(), key, args.rebin)
-                    dataDrivenReducibleHist = getDataDrivenReducibleShape2(canvas.GetName(), key, args.rebin, sortedSamples[key] )
+                    dataDrivenReducibleHist = getDataDrivenReducibleShape2(canvas.GetName(), key, sortedSamples[key] )
 
                     if dataDrivenReducibleHist: # false if we didn't find a match
                         dataDrivenReducibleHist.SetFillStyle( 1001 )  
@@ -962,12 +1049,41 @@ if __name__ == '__main__':
             #backgroundTHStack.GetXaxis().SetTitleSize(0.12)
             backgroundTHStack.GetXaxis().SetTitleOffset(1.1)
 
+
+            backgroundSystAddendum = ""
+
+            ################# add in systematic uncertainties #################
+            if addSystematicUncertaintyToNominal and "ZXSR" in histEnding and systematicChannel == "Nominal":
+
+                inferredFlavor  = re.search("(All)|(2e2mu)|(4mu)|(4e)|(2mu2e)|(2l2e)|(2l2mu)", histEnding).group()
+
+                upSysHist, downSysHist = make1UpAnd1DownSystVariationHistogram( altMasterHistDict["ZXSR"]["Background"]  , flavor =  inferredFlavor)
+                upSysYield, downSysYield = make1UpAnd1DownSystVariationYields(  altMasterHistDict["ZXSR"]["Background"]  , flavor = inferredFlavor )
+
+                for sysHist in [upSysHist, downSysHist]: 
+                    sysHist.SetLineColor(ROOT.kGray+2 )
+                    sysHist.SetLineStyle(ROOT.kDashed )
+                    #sysHist.SetLineWidth( 2 )
+
+                upSysHist.Draw("same")
+                downSysHist.Draw("same")
+
+                legend.AddEntry(upSysHist, "MC stat+sys unc.", "l")
+
+                nominalYield = backgroundMergedTH1.Integral()
+
+                backgroundSystAddendum += "_{stat} #pm %.2f_{sys}" %(   (upSysYield-nominalYield + nominalYield-downSysYield)/2)
+
+                # include the systematic error in the backgroundMergedTH1, so that it is reflected in the ratio hist
+                for binNr in xrange(1,backgroundMergedTH1.GetNbinsX()+1): 
+                    newBinError = upSysHist.GetBinContent(binNr) - backgroundMergedTH1.GetBinContent(binNr)
+                    backgroundMergedTH1.SetBinError(binNr, newBinError )
+            ################# add in systematic uncertainties #################
+                
             statsTexts.append( "  " )       
             #statsTexts.append( "Background + Signal: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(backgroundMergedTH1)) )
-            statsTexts.append( "Background : %.2f #pm %.2f" %( getHistIntegralWithUnertainty(backgroundTallyTH1)) )
+            statsTexts.append( "Background : %.2f #pm %.2f" %( getHistIntegralWithUnertainty(backgroundTallyTH1)) + backgroundSystAddendum )
             if signalTallyTH1.Integral() >0 : statsTexts.append( "Signal: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(signalTallyTH1)) )
-
-
 
 
             # use the x-axis label from the original plot in the THStack, needs to be called after 'Draw()'
