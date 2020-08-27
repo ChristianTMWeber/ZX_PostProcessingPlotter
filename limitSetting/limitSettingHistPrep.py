@@ -420,6 +420,7 @@ if __name__ == '__main__':
     # sum up 4e + 2mu2e hists to 2l2e and 4mu + 2e2mu hists to 2l2mu hists, and include them in the masterHistDict
     ###############################################################################################################
     add2l2eAnd2l2muHists(masterHistDict)
+    makeHistDict.add2l2eAnd2l2muHists(masterHistDict)
 
 
 

@@ -88,6 +88,34 @@ def fillHistDict( path, currentTH1 , mcTag, aDSIDHelper , channelMap = { "ZXSR" 
 
     return masterHistDict
 
+def add2l2eAnd2l2muHists(masterHistDict):
+
+    for channel in masterHistDict.keys():
+        for eventType in masterHistDict[channel]: 
+            if eventType == "reducibleDataDriven": continue
+            for systematic in masterHistDict[channel][eventType]: 
+
+                ############### assemble 2l2e final state ##################
+                hist4e    = masterHistDict[channel][eventType][systematic]["4e"]
+                hist2mu2e = masterHistDict[channel][eventType][systematic]["2mu2e"]
+
+                hist2l2e = hist4e.Clone( re.sub('4e', '2l2e', hist4e.GetName())  )
+                hist2l2e.SetTitle(       re.sub('4e', '2l2e', hist4e.GetTitle()) ) 
+                hist2l2e.Add(hist2mu2e)
+
+                masterHistDict[channel][eventType][systematic]["2l2e"] = hist2l2e
+
+                ############### assemble 2l2mu final state ##################
+                hist4mu    = masterHistDict[channel][eventType][systematic]["4mu"]
+                hist2e2mu = masterHistDict[channel][eventType][systematic]["2e2mu"]
+
+                hist2l2mu = hist4mu.Clone( re.sub('4mu', '2l2mu', hist4mu.GetName())  )
+                hist2l2mu.SetTitle(        re.sub('4mu', '2l2mu', hist4mu.GetTitle()) ) 
+                hist2l2mu.Add(hist2e2mu)
+
+                masterHistDict[channel][eventType][systematic]["2l2mu"] = hist2l2mu
+
+    return None
 
 if __name__ == '__main__':
 
