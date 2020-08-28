@@ -163,8 +163,22 @@ def visualizeEnvelopeHistogram( upperHist, lowerHist, listHist, outputDir, nomin
 
 
 
-def makeHistVariationDict(dsidTheorySysDict, DSIDList , theoryWeightDict , nominalList, flavor="All", prefix=""):
-    # theoryWeightDict[nameOfTheoryWeightVariation]  = [ list of weight variation names for different samples that match to nameOfTheoryWeightVariation]
+def makeHistVariationDict(dsidTheorySysDict, DSIDList , PMGWeightVariationsDict , nominalList, flavor="All", prefix="", normalizeToNominal = True):
+    # We have a set of TH1 histogram variations for a number of DSIDs
+    # The histogram variations are one TH1 for PMG weight
+    # Different DSIDs might have differently named PMG weight names, that we consider to be the same weight variations
+    # e.g. we consider 'muR=2.0,muF=1.0' and 'MUR2_MUF1_PDF261000' to be the same vairations
+    # the PMGWeightVariationsDict defines how these different PMG weight names are matched to each other
+    #
+    #   PMGWeightVariationsDict[nameOfTheoryWeightVariation]  = [ list of weight variation names for different samples that match to nameOfTheoryWeightVariation]
+    #   e.g. 'muR=2.0,muF=1.0': ['muR=2.0,muF=1.0', 'MUR2_MUF1_PDF261000', ...]
+    #
+    #   The DSIDList defines the set of DSIDs that we consider here
+    #   All of the TH1 associated with a DSID in the DSIDList and one common variation name (i.e. one particular element from PMGWeightVariationsDict.keys() )
+    #   Are added to one output TH1
+    #   
+    #   The output here is a dict with
+    #   theoryVarHistDict[ PMGVariationName] = TH1
 
 
     def selectMatchingHistogram( histDictDict, keysToCheck ):
@@ -177,22 +191,30 @@ def makeHistVariationDict(dsidTheorySysDict, DSIDList , theoryWeightDict , nomin
 
     theoryVarHistDict = {}
 
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+
     for DSID in DSIDList:
 
         if str(DSID) not in dsidTheorySysDict.keys(): continue
 
-        for theoryVar in theoryWeightDict.keys():
+        for weightVariation in PMGWeightVariationsDict.keys():
 
             # find the matching theory variation histogram
-            theoryHist = selectMatchingHistogram( dsidTheorySysDict[str(DSID)], theoryWeightDict[theoryVar] )
-            if theoryHist is None: theoryHist = selectMatchingHistogram( dsidTheorySysDict[str(DSID)], nominalList )
+            theoryHist = selectMatchingHistogram( dsidTheorySysDict[str(DSID)], PMGWeightVariationsDict[weightVariation] )
+            #if theoryHist is None: theoryHist = selectMatchingHistogram( dsidTheorySysDict[str(DSID)], nominalList )
             if theoryHist is None: theoryHist = dsidTheorySysDict[str(DSID)]['Nominal'][flavor]
 
+            if normalizeToNominal : 
+                tempHist = theoryHist.Clone("tempHist")
+                tempHist.Scale(dsidTheorySysDict[str(DSID)]['Nominal'][flavor].Integral() /tempHist.Integral() )
+            else: tempHist = theoryHist
 
-            if theoryVar not in theoryVarHistDict: theoryVarHistDict[theoryVar] = theoryHist.Clone(theoryVar)
-            else:                                  theoryVarHistDict[theoryVar].Add(theoryHist)
 
-    #upperHist, lowerHist  = makeEnvelopeHistograms( theoryVarHistDict.values())
+            if weightVariation not in theoryVarHistDict: theoryVarHistDict[weightVariation] = tempHist.Clone(weightVariation)
+            else:                                  theoryVarHistDict[weightVariation].Add(tempHist)
+
+    #upperHist, lowerHist  = makeEnvelopeHistograms( weightVariationHistDict.values())
 
     return theoryVarHistDict
 
