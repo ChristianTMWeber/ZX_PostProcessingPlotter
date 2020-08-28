@@ -50,7 +50,7 @@ def makeEnvelopeHistograms(listOfTh1s , upperEnvelopeFunction = lambda x : x.max
     return maxHist, minHist
 
 
-def visualizeEnvelopeHistogram( upperHist, lowerHist, listHist, outputDir, title = "weight_variation_overview"):
+def visualizeEnvelopeHistogram( upperHist, lowerHist, listHist, outputDir, nominalHist , title = "weight_variation_overview"):
 
     def setupTLegend():
         # set up a TLegend, still need to add the different entries
@@ -69,17 +69,27 @@ def visualizeEnvelopeHistogram( upperHist, lowerHist, listHist, outputDir, title
 
     tCanvas = ROOT.TCanvas( title,title, 1280,720)
 
-    for minMaxHist in [upperHist, lowerHist]:
+    histPadYStart = 3.5/13
+    histPad = ROOT.TPad("histPad", "histPad", 0, histPadYStart, 1, 1);
+    ROOT.SetOwnership(histPad, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
 
-        minMaxHist.SetLineColor(ROOT.kRed )
+    histPad.Draw();              # Draw the upper pad: pad1
+    histPad.cd();                # pad1 becomes the current pad
+
+    for minMaxHist in [upperHist, lowerHist]:
         minMaxHist.SetLineStyle(ROOT.kDashed )
         minMaxHist.SetLineWidth( 2 )
+
+    upperHist.SetLineColor(ROOT.kRed )
+    lowerHist.SetLineColor(ROOT.kMagenta )
 
     histMaximumValues = []
 
     listHist[0].SetTitle(title)
 
     for hist in listHist: 
+        hist.SetStats( False) # remove stats box
+        hist.GetYaxis().SetTitle("#Events")
         hist.Draw("SAME HIST")
         histMaximumValues.append( hist.GetMaximum())
 
@@ -95,6 +105,49 @@ def visualizeEnvelopeHistogram( upperHist, lowerHist, listHist, outputDir, title
     legend.Draw()
 
     listHist[0].GetYaxis().SetRangeUser(0, max(histMaximumValues) * 1.1)
+
+
+    tCanvas.cd()
+
+    ratioPad = ROOT.TPad("ratioPad", "ratioPad", 0, 0, 1, histPadYStart);
+    ROOT.SetOwnership(ratioPad, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
+
+    ratioPad.SetTopMargin(0.)
+    ratioPad.SetBottomMargin(0.3)
+    ratioPad.Draw();              # Draw the upper pad: pad1
+    ratioPad.cd();                # pad1 becomes the current pad
+
+    upperRatioHist  = upperHist.Clone( "RatioUp")
+    lowerRatioHist  = lowerHist.Clone( "RatioDown")
+
+    upperRatioHist.Divide(nominalHist)
+    lowerRatioHist.Divide(nominalHist)
+
+    for hist in [upperRatioHist, lowerRatioHist]:
+        hist.SetStats( False) # remove stats box
+        hist.SetTitle("")
+        hist.GetYaxis().SetTitle(" % change to nominal")
+        hist.GetXaxis().SetLabelSize(0.06)
+        hist.GetXaxis().SetTitleSize(0.1)
+        hist.GetXaxis().SetTitleOffset(0.7)
+
+        hist.GetYaxis().SetLabelSize(0.065)
+        hist.GetYaxis().SetTitleSize(0.1)
+        hist.GetYaxis().SetTitleOffset(0.3)
+
+        for binNr in xrange(1,hist.GetNbinsX()+1): 
+            hist.SetBinError(binNr,0)
+            if hist.GetBinContent(binNr) > 0 : hist.SetBinContent(binNr, hist.GetBinContent(binNr) -1 )
+
+
+
+    upperRatioHist.GetYaxis().SetRangeUser( min(histNumpyTools.histToNPArray( lowerRatioHist)) *1.1, max(histNumpyTools.histToNPArray( upperRatioHist)) *1.1)
+
+
+
+    upperRatioHist.Draw()
+    lowerRatioHist.Draw("same")
+
 
     tCanvas.Update()
     
@@ -239,9 +292,12 @@ def addTheoryVariationsToMasterHistDict( pmgWeightDict, masterHistDict,  analysi
 
                 if outputEnvelopeDir is not None: 
                     canvasTitle = "_".join(["TheorySyst", region, background , systematicType, flavor ])
-                    visualizeEnvelopeHistogram( upperEnvelopeHist, lowerEnvelopeHist, histVariationDict.values(), outputEnvelopeDir, title = canvasTitle)
+                    nominalHist = masterHistDict[region][background]["Nominal"][flavor]
+                    visualizeEnvelopeHistogram( upperEnvelopeHist, lowerEnvelopeHist, histVariationDict.values(), outputEnvelopeDir, nominalHist, title = canvasTitle)
 
     return None
+
+
 
 if __name__ == '__main__':
 
