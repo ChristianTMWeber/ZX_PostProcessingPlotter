@@ -233,7 +233,7 @@ def getWeightVariationNames():
                     'muR=2.0,muF=1.0' : ['muR=2.0,muF=1.0', 'MUR2_MUF1_PDF261000',     'muR=0.20000E+01muF=0.10000E+01' ],
                     'muR=2.0,muF=2.0' : ['muR=2.0,muF=2.0', 'MUR2_MUF2_PDF261000',     'muR=0.20000E+01muF=0.20000E+01' ] }
 
-    interPDFDict =  {'MUR1_MUF1_PDF13000'  : ['MUR1_MUF1_PDF13000'],
+    PDFDict =       {'MUR1_MUF1_PDF13000'  : ['MUR1_MUF1_PDF13000'],
                      'MUR1_MUF1_PDF25300'  : ['MUR1_MUF1_PDF25300'],
                      'MUR1_MUF1_PDF269000' : ['MUR1_MUF1_PDF269000'],
                      'MUR1_MUF1_PDF270000' : ['MUR1_MUF1_PDF270000'],
@@ -246,12 +246,12 @@ def getWeightVariationNames():
                      'PDFset=90400'        : ['PDFset=90400'],
                      'PDFset=91400'        : ['PDFset=91400'] }
 
-    intraPDFDict = {}
-    for aNumber in xrange(0,101):   intraPDFDict[ "PDFset=%04d" % aNumber ] = [ "MUR1_MUF1_PDF261%03d" % aNumber, "PDFset=260%03d" % aNumber]
+    #intraPDFDict = {}
+    for aNumber in xrange(0,101):   PDFDict[ "PDFset=%04d" % aNumber ] = [ "MUR1_MUF1_PDF261%03d" % aNumber, "PDFset=260%03d" % aNumber]
 
     weightVariationDict = {"QCDScale" : QCDScaleDict, 
-                           "interPDF" : interPDFDict, 
-                           "intraPDF" : intraPDFDict }
+                           #"interPDF" : interPDFDict, 
+                           "PDFVariations" : PDFDict }
 
     nominalList = ['MUR1_MUF1_PDF261000', 'muR=0.10000E+01muF=0.10000E+01']
 
@@ -262,7 +262,7 @@ def getWeightVariationNames():
 def addTheoryVariationsToMasterHistDict( pmgWeightDict, masterHistDict,  analysisMapping, region = "ZXSR", backgroundtypes = ["H4l", "ZZ"], prefix="PMG_", outputEnvelopeDir = None):
     # pmgWeightDict and masterHistDict are both tree like dicts, but with slightly different keys
     # masterHistDict[ signal or validation region][ event type like 'H4l', 'ZZ', etc][ systematic variation like, 'nominal', 'MUONS_ID1up', etc][ flavor like 'All', '4mu', etc] = ROOT.TH1
-    # pmgWeightDict[ signal or validation region ][ DSID, e.g. '345060'             ][ PMG weight like 'muR=0.5,muF=0.5', or 'PDFset=260012'   ][ flavor like 'All', '4mu', etc] = ROOT.TH1
+    # pmgWeightDict[  signal or validation region][ DSID, e.g. '345060'             ][ PMG weight like 'muR=0.5,muF=0.5', or 'PDFset=260012'   ][ flavor like 'All', '4mu', etc] = ROOT.TH1
     #   
     # analysisMapping describes the mapping from 'DSID' to the event type as used in masterHistDict
     # e.g. analysisMapping['345060'] = 'H4l'
@@ -271,14 +271,24 @@ def addTheoryVariationsToMasterHistDict( pmgWeightDict, masterHistDict,  analysi
     # 
     # the function getWeightVariationNames yields a dict 'weightVariationDict' that defines the types of theory systematics that we consider, and how they relate to the PMG weights
     # weightVariationDict[theorySystematic][ PMG weight type] = [list of names we associate with this PMG weight type]
-    # we use the mapping {PMG weight type : [list of names we associate with this PMG weight type] } because the same pmg weight variation has different names in the PMGTruthWeightTool: https://gitlab.cern.ch/jrobinso/athena/-/tree/21.2/PhysicsAnalysis/AnalysisCommon/PMGTools/PMGTools
+    # we use the mapping {PMG weight type : [list of names we associate with this PMG weight type] } 
+    # because the same pmg weight variation has different names in the PMGTruthWeightTool: https://gitlab.cern.ch/jrobinso/athena/-/tree/21.2/PhysicsAnalysis/AnalysisCommon/PMGTools/PMGTools
+    #  
     # For example we consider : 'muR=0.5,muF=0.5', 'MUR0.5_MUF0.5_PDF261000', 'muR=0.50000E+00muF=0.50000E+00'  as the same QCD scale varaition and refer to it as the 'muR=0.5,muF=0.5' variation
     #                            and 'MUR1_MUF1_PDF261005', 'PDFset=260005' as the same variation of the 260000 PDF set weight and refer to it as the 'PDFset=260005' variation
     #
     # Additional getWeightVariationNames provides also a list of 'nominal' variatons. i.e. the weight variation include a 'nominal' weight point, but that one is not necessary named 'nominal'
     #  
+    #
     # The function 'makeHistVariationDict' does the combining, it takes the  pmgWeightDict[region] sub-dicts as input, 
     # together the { PMG weight type = [list of names we associate with this PMG weight type]} PMG weight name mappings and hte list of nominal variations
+    #
+    # The 1up and 1down shape variations are given as the upper and lower envelopes of the set of variations of kinematic distributions
+    # We could select the envelopes of each DSID, but I deem it to be more appropariate to of set of variations of the ZZ and H4l backgrounds each, and then take the envelope of those
+    # One obstacle in that is that the the same vriation for different DSIDs might have different names
+    # Here the 'makeHistVariationDict' together with the output from 'getWeightVariationNames' makes sure that that these are properly combined,
+    # So that we have a set of variations for ZZ and H4l
+    #
     #
     # the current function 'addTheoryVariationsToMasterHistDict' takes care to loop over all of the relevant theprySystematics, quadruplet flavors, and background types
     # it also builds the theory variation hists from the envelope of the output from 'makeHistVariationDict' and sorts them properly into the masterHistDict 
@@ -296,12 +306,12 @@ def addTheoryVariationsToMasterHistDict( pmgWeightDict, masterHistDict,  analysi
 
             for flavor in flavors: # all, 4e, 2e2mu, 2mu2e, 4mu
 
-                histVariationDict = makeHistVariationDict(pmgWeightDict[region], DSIDList , weightVariationDict[systematicType] , nominalList, flavor=flavor, prefix=prefix)
+                histVariationDict = makeHistVariationDict(pmgWeightDict[region], DSIDList , weightVariationDict[systematicType] , nominalList, flavor=flavor, prefix=prefix, normalizeToNominal = True)
 
-                if "intra" in systematicType:   # envelope function is slightly different for intraPdf estimate
-                    upperEnvelopeHist , lowerEnvelopeHist = makeEnvelopeHistograms(histVariationDict.values() , upperEnvelopeFunction = lambda x : np.percentile(x,84.14,axis=0), lowerEnvelopeFunction = lambda x : np.percentile(x,15.87,axis=0) )
-                else: 
-                    upperEnvelopeHist , lowerEnvelopeHist = makeEnvelopeHistograms(histVariationDict.values() , upperEnvelopeFunction = lambda x : x.max(axis=0), lowerEnvelopeFunction = lambda x : x.min(axis=0))
+                #if "intra" in systematicType:   # envelope function is slightly different for intraPdf estimate
+                #    upperEnvelopeHist , lowerEnvelopeHist = makeEnvelopeHistograms(histVariationDict.values() , upperEnvelopeFunction = lambda x : np.percentile(x,84.14,axis=0), lowerEnvelopeFunction = lambda x : np.percentile(x,15.87,axis=0) )
+
+                upperEnvelopeHist , lowerEnvelopeHist = makeEnvelopeHistograms(histVariationDict.values() , upperEnvelopeFunction = lambda x : x.max(axis=0), lowerEnvelopeFunction = lambda x : x.min(axis=0))
 
                 upperHistName = "_".join([region, background , systematicType+"1up", flavor ])
                 upperEnvelopeHist.SetName( upperHistName )#; upperEnvelopeHist.SetTitle( upperHistName )
