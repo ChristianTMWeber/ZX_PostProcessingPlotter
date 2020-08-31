@@ -137,7 +137,7 @@ def visualizeEnvelopeHistogram( upperHist, lowerHist, listHist, outputDir, nomin
 
         for binNr in xrange(1,hist.GetNbinsX()+1): 
             hist.SetBinError(binNr,0)
-            if hist.GetBinContent(binNr) > 0 : hist.SetBinContent(binNr, hist.GetBinContent(binNr) -1 )
+            if hist.GetBinContent(binNr) > 0 : hist.SetBinContent(binNr, (hist.GetBinContent(binNr) -1)*100 )
 
 
 
