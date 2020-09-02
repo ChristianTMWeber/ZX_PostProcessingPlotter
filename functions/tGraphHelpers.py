@@ -26,6 +26,8 @@ def createNamedTGraphAsymmErrors( objectName):
 
 def fillTGraphWithRooRealVar(graph, xFill, yFill):
 
+    if yFill is None: return graph
+
     pointNr = graph.GetN()
 
     graph.SetPoint( pointNr, xFill, yFill.getVal() )

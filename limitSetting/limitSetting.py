@@ -736,7 +736,7 @@ def writeOutWorkspaces(workspace, masspoint , outputDir = None):
     return None
 
 
-def translateLimits( rooStatsObject, nSigmas = 1 ):
+def translateLimits( rooStatsObject, nSigmas = 1 , getObservedAsymptotic = False):
     # we assume that there is always only one parameter of interest
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
@@ -747,17 +747,30 @@ def translateLimits( rooStatsObject, nSigmas = 1 ):
         lowLimit  = rooStatsObject.LowerLimit( limitObject )
         highLimit = rooStatsObject.UpperLimit( limitObject )
 
-        suffix = "ProfileLikelihood"
+        suffix = "ProfileLikelihoodObserved"
 
     elif isinstance( rooStatsObject , ROOT.RooStats.HypoTestInverterResult ):
         limitObject = rooStatsObject
 
-        bestEstimate = limitObject.GetExpectedUpperLimit(0)
+        if getObservedAsymptotic:
 
-        lowLimit  = rooStatsObject.GetExpectedUpperLimit(-nSigmas)
-        highLimit = rooStatsObject.GetExpectedUpperLimit(+nSigmas)
+            bestEstimate = rooStatsObject.UpperLimit()
 
-        suffix = "expectedUpperLimit"
+            lowLimit  = rooStatsObject.UpperLimit()
+            highLimit = rooStatsObject.UpperLimit()
+
+            suffix = "observedUpperLimitAsymptotic"
+
+        else: 
+
+            bestEstimate = limitObject.GetExpectedUpperLimit(0)
+
+            lowLimit  = rooStatsObject.GetExpectedUpperLimit(-nSigmas)
+            highLimit = rooStatsObject.GetExpectedUpperLimit(+nSigmas)
+
+            # limitObject.UpperLimit() observed upper limit for HypoTestInverterResult
+
+            suffix = "expectedUpperLimitAsymptotic"
 
     name = limitObject.GetName() +"_"+str(nSigmas) +"SigmaLimit" + "_" + suffix
     title = limitObject.GetTitle() +"_"+str(nSigmas) +"SigmaLimit" + "_" + suffix
@@ -864,7 +877,9 @@ if __name__ == '__main__':
     region = "ZXSR"
     flavor = args.flavor
 
-    massesToProcess =  range(15,56,1)#[30]#range(15,56,5)
+    if args.nMassPoints is None : massesToProcess =  range(15,56,1)#[30]#range(15,56,5)
+    else:                         massesToProcess =  args.nMassPoints
+    
     # setup some output datastructures
     overviewHist = ROOT.TH1D("ZX_limit_Overview","ZX_limit_Overview", len(massesToProcess), min(massesToProcess), max(massesToProcess) + 1 ) # construct the hist this way, so that we have a bin for each mass point
 
@@ -946,6 +961,10 @@ if __name__ == '__main__':
 
             #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
+            likelihoodLimit = None
+            likelihoodLimit_2Sig = None
+            likelihoodLimitObserved = None
+
             if limitType == "asymptotic":
                 # from: https://roostatsworkbook.readthedocs.io/en/latest/docs-cls.html
 
@@ -953,6 +972,8 @@ if __name__ == '__main__':
 
                 likelihoodLimit = translateLimits(asymptoticResuls, nSigmas = 1)
                 likelihoodLimit_2Sig = translateLimits(asymptoticResuls, nSigmas = 2)
+
+                likelihoodLimitObserved = translateLimits( asymptoticResuls, nSigmas = 1 , getObservedAsymptotic = True)
 
             elif limitType == "HypoTestInverter":
 
@@ -969,25 +990,25 @@ if __name__ == '__main__':
                 # profile limit: profileLimit.getVal(), profileLimit.getErrorHi(), profileLimit.getErrorLo()
                 interval, pullParamDict, prePostFitImpactDict = getProfileLikelihoodLimits(workspace , drawLikelihoodIntervalPlot = False)
 
-                likelihoodLimit = translateLimits( interval, nSigmas = 1 )
+                likelihoodLimitObserved = translateLimits( interval, nSigmas = 1 )
                 likelihoodLimit.Print()
-                likelihoodLimit_2Sig = translateLimits( interval, nSigmas = 2 )
+                #likelihoodLimit_2Sig = translateLimits( interval, nSigmas = 2 )
 
                 pullParameterMetaDict["pullParameters_%iGeV" %massPoint ] = pullParamDict
                 prePostFitImpactMetaDict["prePostFitImpact_%iGeV" %massPoint ] = prePostFitImpactDict
                 #import pdb; pdb.set_trace()
 
 
-            graphHelper.fillTGraphWithRooRealVar(observedLimitGraph, massPoint, likelihoodLimit)
+            graphHelper.fillTGraphWithRooRealVar(observedLimitGraph, massPoint, likelihoodLimitObserved)
             graphHelper.fillTGraphWithRooRealVar(expectedLimitsGraph_1Sigma, massPoint, likelihoodLimit)
             graphHelper.fillTGraphWithRooRealVar(expectedLimitsGraph_2Sigma, massPoint, likelihoodLimit_2Sig)
 
 
-            bestEstimateDict[signalSample].append( likelihoodLimit.getVal() )
-            upperLimits1SigDict[signalSample].append(likelihoodLimit.getMax())
-            upperLimits2SigDict[signalSample].append(likelihoodLimit_2Sig.getMax())
-            lowLimits1SigDict[signalSample].append(likelihoodLimit.getMin())
-            lowLimits2SigDict[signalSample].append(likelihoodLimit_2Sig.getMin())
+            if likelihoodLimitObserved is not None: bestEstimateDict[signalSample].append( likelihoodLimitObserved.getVal() )
+            if likelihoodLimit         is not None: upperLimits1SigDict[signalSample].append(likelihoodLimit.getMax())
+            if likelihoodLimit_2Sig    is not None: upperLimits2SigDict[signalSample].append(likelihoodLimit_2Sig.getMax())
+            if likelihoodLimit         is not None: lowLimits1SigDict[signalSample].append(likelihoodLimit.getMin())
+            if likelihoodLimit_2Sig    is not None: lowLimits2SigDict[signalSample].append(likelihoodLimit_2Sig.getMin())
 
             reportMemUsage.reportMemUsage(startTime = startTime)
             timingDict["timePerMassPoint_Minutes"].append(  (time.time() - massPointTime)/60 )
