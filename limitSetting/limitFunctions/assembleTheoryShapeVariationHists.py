@@ -329,6 +329,60 @@ def addTheoryVariationsToMasterHistDict( pmgWeightDict, masterHistDict,  analysi
 
     return None
 
+def addTheoryVariationsToMasterHistDict2( pmgWeightDict, masterHistDict,  analysisMapping, region = "ZXSR", backgroundtypes = ["H4l", "ZZ"], prefix="PMG_", outputEnvelopeDir = None):
+
+    weightVariationDict, nominalList = getWeightVariationNames()
+
+    flavors = masterHistDict[region].values()[0].values()[0].keys()   
+
+    for background in backgroundtypes:
+
+        DSIDList = analysisMapping[background]
+
+        for systematicType in weightVariationDict.keys(): # weightVariationDict, QCDScaleDict, or interPDFDict
+
+            for flavor in flavors: # all, 4e, 2e2mu, 2mu2e, 4mu
+
+                #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+                nominalHist = masterHistDict[region][background]["Nominal"][flavor]
+
+                aggregateUpperEnvelopeHist = nominalHist.Clone(re.sub("Nominal", systematicType +"1Up" , nominalHist.GetName()))
+                aggregateLowerEnvelopeHist = nominalHist.Clone(re.sub("Nominal", systematicType +"1Down" , nominalHist.GetName()))
+
+                aggregateUpperEnvelopeHist.Reset()
+                aggregateLowerEnvelopeHist.Reset()
+
+                for DSID in DSIDList: 
+
+                    if str(DSID) not in pmgWeightDict[region].keys(): continue
+
+                    histVariationDict = makeHistVariationDict(pmgWeightDict[region], [DSID] , weightVariationDict[systematicType] , nominalList, flavor=flavor, prefix=prefix, normalizeToNominal = True)
+
+                    #if "intra" in systematicType:   # envelope function is slightly different for intraPdf estimate
+                    #    upperEnvelopeHist , lowerEnvelopeHist = makeEnvelopeHistograms(histVariationDict.values() , upperEnvelopeFunction = lambda x : np.percentile(x,84.14,axis=0), lowerEnvelopeFunction = lambda x : np.percentile(x,15.87,axis=0) )
+                    #else: 
+                    #    upperEnvelopeHist , lowerEnvelopeHist = makeEnvelopeHistograms(histVariationDict.values() , upperEnvelopeFunction = lambda x : x.max(axis=0), lowerEnvelopeFunction = lambda x : x.min(axis=0))
+
+                    upperEnvelopeHist , lowerEnvelopeHist = makeEnvelopeHistograms(histVariationDict.values() , upperEnvelopeFunction = lambda x : x.max(axis=0), lowerEnvelopeFunction = lambda x : x.min(axis=0))
+
+                    aggregateUpperEnvelopeHist.Add(upperEnvelopeHist)
+                    aggregateLowerEnvelopeHist.Add(lowerEnvelopeHist)
+
+                    #upperHistName = "_".join([region, background , systematicType+"1up", flavor ])
+                    #upperEnvelopeHist.SetName( upperHistName )#; upperEnvelopeHist.SetTitle( upperHistName )
+
+                    #lowerHistName = "_".join([region, background , systematicType+"1down", flavor ])
+                    #lowerEnvelopeHist.SetName( lowerHistName )#; lowerEnvelopeHist.SetTitle( lowerHistName )
+
+                masterHistDict[region][background][systematicType+"1up"][flavor]   = aggregateUpperEnvelopeHist
+                masterHistDict[region][background][systematicType+"1down"][flavor] = aggregateLowerEnvelopeHist
+
+                if outputEnvelopeDir is not None: 
+                    canvasTitle = "_".join(["TheorySyst", region, background , systematicType, flavor ])
+                    nominalHist = masterHistDict[region][background]["Nominal"][flavor]
+                    visualizeEnvelopeHistogram( aggregateUpperEnvelopeHist, aggregateLowerEnvelopeHist, histVariationDict.values(), outputEnvelopeDir, nominalHist, title = canvasTitle)
+    return None
+
 
 
 if __name__ == '__main__':
