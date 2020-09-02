@@ -5,6 +5,7 @@ import numpy as np
 import re
 
 import math
+import argparse # to parse command line options
 
 
 # import sys and os.path to be able to import things from the parent directory
@@ -17,7 +18,7 @@ import functions.RootTools as RootTools
 
 from functions.getArrayConfInterval import getArrayConfInterval
 
-def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , colorScheme = ROOT.kRed, writeTo = False):
+def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , colorScheme = ROOT.kRed, writeTo = False, YAxisLimits = None):
 
     def setupTLegend():
         # set up a TLegend, still need to add the different entries
@@ -32,6 +33,9 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
         return TLegend
 
     canv = ROOT.TCanvas("GraphOverview", "GraphOverview",1920, 1080)
+
+
+    if YAxisLimits is not None: expectedLimit2Sig.GetYaxis().SetRangeUser(YAxisLimits[0], YAxisLimits[1])
  
 
     expectedLimit2Sig.GetYaxis().SetTitle("Upper 95% CL on #sigma_{ZZ_{d}} [fb] ")
@@ -83,7 +87,9 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
 
     if writeTo: writeTo.cd(); canv.Write()
 
-    return canv
+    keepInScopeList = [expectedLimit2Sig, expectedLimit1Sig, expectedLimitMedian, extractedLimit, legend]
+
+    return canv, keepInScopeList
 
 
 
@@ -210,40 +216,70 @@ def getAsymptoticTGraphs(filename):
 
 if __name__ == '__main__':
 
-    typeOfLimits = "asymptotic" # "toyBased"
 
 
-    if typeOfLimits == "asyptotic"
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input", type=str, help="name or path to the input files")
+    parser.add_argument( "--limitType", type=str, help = "type of the limit we are plotting ", choices=["asymptotic","toyBased"] )
+    parser.add_argument( "--outputName", type=str, help = "filename for the output", default= None )
+    parser.add_argument( "--YAxis", type=float, nargs=2, help = "lower and upper limit for the plot Y axis, --YAxis 0 2.5", default= None )
+
+    args = parser.parse_args()
+
+    if args.outputName is None:  outputFileName = re.sub( ".root", "_XSPlot.root"  , args.input)
+    else:                        outputFileName = args.outputName
+
+    if not outputFileName.endswith(".root"): outputFileName += ".root"
+
+
+    if args.limitType == "asymptotic":
 
         ###################### get limits (from asymptotics)
 
-        observedLimitTGraph =  getToyLimits( "unblinded/observedLimit_2l2mu.root" , TTreeName = "upperLimits2Sig_observed", graphName = "observedLimits_upperLimit" ,nSigma = 1, intervalType = "standardDeviation")
+        #asympFileName = "toyResults_MC16adeV2.root"
+        #asympFileName = "asymptotiveLimitV3_AsimovData.root"
+        asympFileName = args.input
+        #                                                                    TTreeName = "upperLimits2Sig_observed"
+        #observedLimitTGraph =  getToyLimits( asympFileName , TTreeName = "bestEstimates_asymptotic", graphName = "observedLimits_upperLimit" ,nSigma = 1, intervalType = "standardDeviation")
+        #observedLimitTGraph =  getToyLimits( "asymptotiveLimitV3_AsimovData.root" , TTreeName = "upperLimits2Sig_observed", graphName = "observedLimits_upperLimit" ,nSigma = 1, intervalType = "standardDeviation")
 
-        observedLimitTGraphNoErrors = graphHelper.getTGraphWithoutError( observedLimitTGraph )
+        #observedLimitTGraphNoErrors = graphHelper.getTGraphWithoutError( observedLimitTGraph )
 
         #########  plotExpectedLimitsFromTGraph   ### specifically just asymptotic case
-        expectedLimitTFile = ROOT.TFile("unblinded/asyptoticLimit_2l2mu.root", "OPEN")
+        expectedLimitTFile = ROOT.TFile(asympFileName, "OPEN")
 
-        ###observedLimitGraph         = expectedLimitTFile.Get("observedLimitGraph")
+        observedLimitTGraph = None
+
+        observedLimitGraph         = expectedLimitTFile.Get("observedLimitGraph")
         expectedLimitsGraph_1Sigma = expectedLimitTFile.Get("expectedLimits_1Sigma")
         expectedLimitsGraph_2Sigma = expectedLimitTFile.Get("expectedLimits_2Sigma")
+
+        
+
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
 
 
         outputTFile = ROOT.TFile("XSLimitPlot.root", "RECREATE")
         #makeGraphOverview( observedLimitTGraphNoErrors , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile)
-        makeGraphOverview(                 None         , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile)
+        canv, keepInScopeList = makeGraphOverview(  observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile, YAxisLimits = args.YAxis)
         outputTFile.Close()
 
-        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
-    elif typeOfLimits == "toyBased"
+        canv.Print( re.sub( ".root", ".pdf"  , outputFileName) )
+        canv.Print( re.sub( ".root", ".png"  , outputFileName) )
+
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    elif args.limitType == "toyBased":
 
         ################# plot expected limits from TTree    
 
         #testFile = ROOT.TFile("../allCombinedMC16a_1895.root")
         #upperLimitTree1Sig = testFile.Get("upperLimits1Sig_toys")
 
-        filename = "all_ToysV2_5109.root"
+        #filename = "all_ToysV2_5109.root"
+        asympFileName = args.input
 
         #filename = "allcombV1_all_mc16ade_5203Entries.root"
 
@@ -262,7 +298,7 @@ if __name__ == '__main__':
 
         outputTFile = ROOT.TFile("XSLimitPlot.root", "RECREATE")
 
-        canvas = makeGraphOverview( observedLimitTGraphNoErrors,  toyLimitTGrapah1Sigma, toyLimitTGrapah2Sigma , colorScheme = ROOT.kRed, writeTo = outputTFile)
+        canv, keepInScopeList = makeGraphOverview( observedLimitTGraphNoErrors,  toyLimitTGrapah1Sigma, toyLimitTGrapah2Sigma , colorScheme = ROOT.kRed, writeTo = outputTFile)
 
         outputTFile.Close()
 
