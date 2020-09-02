@@ -318,6 +318,9 @@ if __name__ == '__main__':
     parser.add_argument("--interpolateSamples", default=False, action='store_true' ,       # this is the more proper way to affect default booleans
         help = "if True we will interpolate between available signal samples in 1GeV steps" ) 
 
+    parser.add_argument("--makeTheoryShapeVariations", default=False, action='store_true' ,       # this is the more proper way to affect default booleans
+        help = "if True we will create QCD scale and PDF related shape variations for ZZ and H4l backgrounds" ) 
+
     parser.add_argument("--outputSignalOverview", default=False, action='store_true' ,       # this is the more proper way to affect default booleans
         help = "output overview of signal samples" ) 
 
@@ -391,7 +394,7 @@ if __name__ == '__main__':
         #if args.rebin > 1: myTObject.Rebin( args.rebin )
         if "PMG_" not in path: 
             masterHistDict = makeHistDict.fillHistDict(path, myTObject , args.mcCampaign, myDSIDHelper, channelMap = channelMapping , masterHistDict = masterHistDict) 
-        if "PMG_" in path or "Nominal" in path:
+        if args.makeTheoryShapeVariations and "PMG_" in path or "Nominal" in path:
             pmgWeightDict  = makeHistDict.fillHistDict(path, myTObject , args.mcCampaign, myDSIDHelper, channelMap = channelMapping , masterHistDict = pmgWeightDict, customMapping=myDSIDHelper.DSIDtoDSIDMapping) 
 
         nRelevantHistsProcessed += 1
@@ -400,8 +403,10 @@ if __name__ == '__main__':
         if args.quick and (nRelevantHistsProcessed == 2000): break
 
 
-    assembleTheoryShapeVariationHists.addTheoryVariationsToMasterHistDict( pmgWeightDict, masterHistDict,  myDSIDHelper.mappingOfChoiceInverse, region = "ZXSR", backgroundtypes = ["H4l", "ZZ"], prefix="PMG_", outputEnvelopeDir = "theorySystOverview")
+    if args.makeTheoryShapeVariations:
+        assembleTheoryShapeVariationHists.addTheoryVariationsToMasterHistDict( pmgWeightDict, masterHistDict,  myDSIDHelper.mappingOfChoiceInverse, region = "ZXSR", backgroundtypes = ["H4l", "ZZ"], prefix="PMG_", outputEnvelopeDir = "theorySystOverview")
 
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     addDataDrivenReducibleBackground2( masterHistDict  )
 
     ######################################################
