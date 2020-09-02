@@ -265,8 +265,8 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, d
     signal.AddNormFactor("SigXsecOverSM", 0, 0, 10) #  (<parameterName>, <start>, <lowLimit>, <highLimit>) keep the lower limit here at 0, otherwise the norm factor may get negative, which will introduce errors in the optimization routine
     addSystematicsToSample(signal, inputTFile, region = region, eventType = templatePaths["Signal"].split("/")[1] , flavor = flavor, finishAfterNSystematics = doNSystematics)
     if doStatError: signal.ActivateStatError()
-    if doTheoreticalError: signal.AddOverallSys("Signal_QCDUncert", 1.+0.017, 1.-0.037)
-    if doTheoreticalError: signal.AddOverallSys("Signal_PDFUncert", 1.+0.032, 1.-0.032)
+    if doTheoreticalError: signal.AddOverallSys("Signal_QCDUncert", 1.-0.039, 1.+0.039)
+    if doTheoreticalError: signal.AddOverallSys("Signal_PDFUncert", 1.-0.032, 1.+0.032)
 
     chan.AddSample(signal)
 
@@ -277,8 +277,8 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, d
         backgroundH4l.AddNormFactor("H4lNorm", 1, 0, 3) # let's add this to fit the normalization of the background
         addSystematicsToSample(backgroundH4l, inputTFile, region = region, eventType = "H4l", flavor = flavor, finishAfterNSystematics = doNSystematics)
         if doStatError: backgroundH4l.ActivateStatError()
-        #if doTheoreticalError: backgroundH4l.AddOverallSys("H4l_QCDUncert", 1.+0.0395, 1.-0.0561)
-        #if doTheoreticalError: backgroundH4l.AddOverallSys("H4l_PDFUncert", 1.+0.0293, 1.-0.0293)
+        if doTheoreticalError: backgroundH4l.AddOverallSys("H4l_QCDUncert", 1.-0.0672, 1.+0.0456)
+        if doTheoreticalError: backgroundH4l.AddOverallSys("H4l_PDFUncert", 1.-0.0320, 1.+0.0320)
         
 
         chan.AddSample(backgroundH4l)
@@ -289,7 +289,8 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, d
         backgroundZZ = ROOT.RooStats.HistFactory.Sample("backgroundZZ", templatePaths["ZZ"], inputFileName)
         addSystematicsToSample(backgroundZZ, inputTFile, region = region, eventType = "ZZ", flavor = flavor, finishAfterNSystematics = doNSystematics)
         if doStatError: backgroundZZ.ActivateStatError()#ActivateStatError("backgroundZZ_statUncert", inputFileName)
-        #if doTheoreticalError: backgroundZZ.AddOverallSys("ZZ_QCDAndPDFUncert", 1.+0.0325, 1.-0.055)
+        if doTheoreticalError: backgroundZZ.AddOverallSys("ZZ_QCDUncert", 1.-0.019, 1.+0.022,)
+        if doTheoreticalError: backgroundZZ.AddOverallSys("ZZ_PDFUncert", 1.-0.030, 1.+0.028,)
 
         chan.AddSample(backgroundZZ)
 
@@ -311,7 +312,7 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, d
     if "reducibleDataDriven" in templatePaths.keys():
         reducible = ROOT.RooStats.HistFactory.Sample("reducible", templatePaths["reducibleDataDriven"], inputFileName)
         if doStatError: reducible.ActivateStatError()# It looks like this setting makes it so that the binerror in the background template is taken into account
-        if doNSystematics != 0 : reducible.AddOverallSys("reducible_Syst", 1.+(0.0822 + 0.1), 1.-(0.0822 + 0.1)) # add extra 10% norm uncertainty for differences between H4l and ZX 
+        if doNSystematics != 0 : reducible.AddOverallSys("reducible_Syst", 1.-(0.0822 + 0.1), 1.+(0.0822 + 0.1)) # add extra 10% norm uncertainty for differences between H4l and ZX 
 
         
         chan.AddSample(reducible)
