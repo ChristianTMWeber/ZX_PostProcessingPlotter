@@ -694,8 +694,8 @@ def make1UpAnd1DownSystVariationHistogram( BackgroundVariationDict , flavor = "A
     systematicNameSet.discard("Nominal") # remove the Nominal variation from list
     systematicNames = sorted(list(systematicNameSet))
 
-    upSysHist   = makeVariationHist( upOrDown = "1up"   , inlcudeStatUncertainty = True)
-    downSysHist = makeVariationHist( upOrDown = "1down" , inlcudeStatUncertainty = True)
+    upSysHist   = makeVariationHist( upOrDown = "1up"   , inlcudeStatUncertainty = False)
+    downSysHist = makeVariationHist( upOrDown = "1down" , inlcudeStatUncertainty = False)
 
     return upSysHist, downSysHist
 
@@ -931,6 +931,8 @@ if __name__ == '__main__':
 
     for systematicChannel in combinedMCTagHistDict.keys():
 
+        #if "Nominal" != systematicChannel: continue
+
         for histEnding in combinedMCTagHistDict[systematicChannel].keys():
 
             backgroundTHStack = ROOT.THStack(histEnding,histEnding)
@@ -1052,6 +1054,8 @@ if __name__ == '__main__':
 
             backgroundSystAddendum = ""
 
+            backgroundMergedTH1ForRatioHist = backgroundMergedTH1.Clone( backgroundMergedTH1.GetName() + "_ratioHist")
+
             ################# add in systematic uncertainties #################
             if addSystematicUncertaintyToNominal and "ZXSR" in histEnding and systematicChannel == "Nominal":
 
@@ -1068,16 +1072,16 @@ if __name__ == '__main__':
                 upSysHist.Draw("same")
                 downSysHist.Draw("same")
 
-                legend.AddEntry(upSysHist, "MC stat+sys unc.", "l")
+                legend.AddEntry(upSysHist, "MC sys unc.", "l")
 
                 nominalYield = backgroundMergedTH1.Integral()
 
                 backgroundSystAddendum += "_{stat} #pm %.2f_{sys}" %(   (upSysYield-nominalYield + nominalYield-downSysYield)/2)
 
                 # include the systematic error in the backgroundMergedTH1, so that it is reflected in the ratio hist
-                for binNr in xrange(1,backgroundMergedTH1.GetNbinsX()+1): 
-                    newBinError = upSysHist.GetBinContent(binNr) - backgroundMergedTH1.GetBinContent(binNr)
-                    backgroundMergedTH1.SetBinError(binNr, newBinError )
+                for binNr in xrange(1,backgroundMergedTH1ForRatioHist.GetNbinsX()+1): 
+                    newBinError = upSysHist.GetBinContent(binNr) - backgroundMergedTH1ForRatioHist.GetBinContent(binNr)
+                    backgroundMergedTH1ForRatioHist.SetBinError(binNr, newBinError )
             ################# add in systematic uncertainties #################
                 
             statsTexts.append( "  " )       
@@ -1099,7 +1103,7 @@ if __name__ == '__main__':
                 if dataTH1.Integral >0: statsTexts.append("Data: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(dataTH1) ) )  
 
             # rescale Y-axis
-            largestYValue = [max(getBinContentsPlusError(backgroundMergedTH1) )]
+            largestYValue = [max(getBinContentsPlusError(backgroundMergedTH1ForRatioHist) )]
             if gotDataSample:  largestYValue.append( max( getBinContentsPlusError(dataTH1) ) )
             backgroundTHStack.SetMaximum( max(largestYValue) * 1.3 )
 
@@ -1132,7 +1136,7 @@ if __name__ == '__main__':
                 ratioPad.cd();                # pad1 becomes the current pad
 
                 ratioHist = dataTH1.Clone( dataTH1.GetName()+"_Clone" )
-                ratioHist.Divide(backgroundMergedTH1)
+                ratioHist.Divide(backgroundMergedTH1ForRatioHist)
                 ratioHist.GetXaxis().SetRange(axRangeLow, axRangeHigh)
                 ratioHist.SetStats( False) # remove stats box
                 
