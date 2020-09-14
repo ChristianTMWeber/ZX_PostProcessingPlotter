@@ -59,7 +59,7 @@ def getOrderedZAndZdFromHiggs(higgsBoson):
     if vectorBoson1.pdgId() == 23:  
         ZBoson  = vectorBoson1 ;  ZdBoson = vectorBoson2
     else: 
-        ZBoson  = vectorBoson1 ;  ZdBoson = vectorBoson2
+        ZBoson  = vectorBoson2 ;  ZdBoson = vectorBoson1
 
     return ZBoson , ZdBoson
 
