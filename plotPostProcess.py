@@ -596,6 +596,8 @@ def getDataDrivenReducibleShape2(canvasName, sortedSampleKey, referenceHist):
 
             th1Dict = makeReducibleShapes.getReducibleTH1s(TH1Template = referenceHist , convertXAxisFromMeVToGeV = True)
             mergedHist = th1Dict["all"]
+ 
+            mergedHist.Scale(   myDSIDHelper.lumiMap[args.mcCampaign] / myDSIDHelper.lumiMap["mc16ade"])
             #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
 
