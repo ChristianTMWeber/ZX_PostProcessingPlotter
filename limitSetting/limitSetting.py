@@ -528,6 +528,16 @@ def makePreAndPostFitImpact(data, refModelConfig, confidenceLevel, referenceInte
     return prePostFitImpactDict
 
 def getPullRelevantedParametersFromModelConfig(aModelConfig):
+    #   outputs mapping via  'value name' : [value] in the pullParamDict
+    #   The values in pullParamDict are all lists, so that they work better with the fillTTreeWithDictOfList
+    #   
+    #   pullParamDict['alpha_EG_RESOLUTION_ALL']               = [-1.3846881863344151e-08]
+    #   pullParamDict['alpha_EG_RESOLUTION_ALL_err']           = [0.9926310565779826]
+    #   pullParamDict['nom_alpha_EG_RESOLUTION_ALL']           = [0.0]
+    #   pullParamDict['nom_alpha_EG_RESOLUTION_ALLupperLimit'] = [1.0]
+    #
+    #   value names starting with 'nom' refer to the prefit values
+    #
 
     pullParamDict = collections.defaultdict(list)
 
@@ -556,6 +566,14 @@ def getPullRelevantedParametersFromModelConfig(aModelConfig):
     return pullParamDict
 
 def getMapBetweenNuisanceParametersAndGlobalObservables(modelConfig):
+    # outputs correspondenceDict, which is a mapping like 
+    # correspondenceDict[ postFit nuisance parameter name] = 'preFit nuisance parameter name'
+    # e.g.
+    #   correspondenceDict[ "alpha_MUONS_SAGITTA_RESBIAS" ] = "nom_alpha_MUONS_SAGITTA_RESBIAS"
+    #   correspondenceDict[ "Lumi" ] = "nominalLumi"
+    #   etc 
+    #
+    #   remember, value names starting with 'nom' refer to the prefit values
 
     nominalRooRealDict = {}
     for rooReal in TDirTools.rooArgSetToList( modelConfig.GetGlobalObservables () ): 
