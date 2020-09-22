@@ -27,3 +27,16 @@ def listOfTH1ToNumpyMatrix(listOfTh1):
     histMatrix = np.array(listOfNumpyArrays) # histMatrix[ histNumber , binNr]
 
     return histMatrix
+
+def fillHistWithNPArray( hist, npContentArray, npErrorArray = None):
+
+    assert len(npContentArray) == hist.GetNbinsX()
+
+    for x in xrange(1,hist.GetNbinsX()+1): # we are ignoring the over and underflow here. Otherweise we would do xrange(0,hist.GetNbinsX()+2)
+        hist.SetBinContent(x,  npContentArray[x-1] )
+
+    if npErrorArray is not None: 
+            for x in xrange(1,hist.GetNbinsX()+1):  hist.SetBinError(x,  npErrorArray[x-1] )
+
+    
+    return hist
