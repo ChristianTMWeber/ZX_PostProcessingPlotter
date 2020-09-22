@@ -34,13 +34,17 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
 
     canv = ROOT.TCanvas("GraphOverview", "GraphOverview",1920, 1080)
 
+    canv.SetLeftMargin(0.15)
+    canv.SetBottomMargin(0.1)
+
+    
 
     if YAxisLimits is not None: expectedLimit2Sig.GetYaxis().SetRangeUser(YAxisLimits[0], YAxisLimits[1])
  
 
-    expectedLimit2Sig.GetYaxis().SetTitle("Upper 95% CL on #sigma_{ZZ_{d}} [fb] ")
+    expectedLimit2Sig.GetYaxis().SetTitle("Upper 95% CL on #sigma_{H #rightarrow ZZ_{d} #rightarrow 4l} [fb] ")
     expectedLimit2Sig.GetYaxis().SetTitleSize(0.06)
-    expectedLimit2Sig.GetYaxis().SetTitleOffset(0.6)
+    expectedLimit2Sig.GetYaxis().SetTitleOffset(0.8)
     expectedLimit2Sig.GetYaxis().CenterTitle()
 
     expectedLimit2Sig.GetXaxis().SetTitle("m_{Z_{d}} [GeV]")
