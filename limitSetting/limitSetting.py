@@ -1001,7 +1001,7 @@ if __name__ == '__main__':
                 interval, pullParamDict, prePostFitImpactDict = getProfileLikelihoodLimits(workspace , drawLikelihoodIntervalPlot = False)
 
                 likelihoodLimitObserved = translateLimits( interval, nSigmas = 1 )
-                likelihoodLimit.Print()
+                likelihoodLimitObserved.Print()
                 #likelihoodLimit_2Sig = translateLimits( interval, nSigmas = 2 )
 
                 pullParameterMetaDict["pullParameters_%iGeV" %massPoint ] = pullParamDict
@@ -1066,12 +1066,12 @@ if __name__ == '__main__':
 
             writeTFile = ROOT.TFile( outputFileName,  "RECREATE")# "UPDATE")
             writeTFile.cd()
-            bestEstimatesTTree   = fillTTreeWithDictOfList(bestEstimateDict, treeName = "bestEstimates_"+limitType)
-            upperLimits1SigTTree = fillTTreeWithDictOfList(upperLimits1SigDict, treeName = "upperLimits1Sig_"+limitType)
-            upperLimits2SigTTree = fillTTreeWithDictOfList(upperLimits2SigDict, treeName = "upperLimits2Sig_"+limitType)
+            if likelihoodLimitObserved is not None: bestEstimatesTTree   = fillTTreeWithDictOfList(bestEstimateDict, treeName = "bestEstimates_"+limitType)
+            if likelihoodLimit         is not None: upperLimits1SigTTree = fillTTreeWithDictOfList(upperLimits1SigDict, treeName = "upperLimits1Sig_"+limitType)
+            if likelihoodLimit_2Sig    is not None: upperLimits2SigTTree = fillTTreeWithDictOfList(upperLimits2SigDict, treeName = "upperLimits2Sig_"+limitType)
 
-            lowLimits1SigTTree = fillTTreeWithDictOfList(lowLimits1SigDict, treeName = "lowLimits1Sig_"+limitType)
-            lowLimits2SigTTree = fillTTreeWithDictOfList(lowLimits2SigDict, treeName = "lowLimits2Sig_"+limitType)
+            if likelihoodLimit         is not None: lowLimits1SigTTree = fillTTreeWithDictOfList(lowLimits1SigDict, treeName = "lowLimits1Sig_"+limitType)
+            if likelihoodLimit_2Sig    is not None: lowLimits2SigTTree = fillTTreeWithDictOfList(lowLimits2SigDict, treeName = "lowLimits2Sig_"+limitType)
 
             calculationTimeTTree = fillTTreeWithDictOfList(timingDict, treeName = "calclationTime")
 
