@@ -15,10 +15,23 @@ sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) ) # need
 
 import functions.tGraphHelpers as graphHelper
 import functions.RootTools as RootTools
+import functions.rootDictAndTDirTools as TDirTools
 
 from functions.getArrayConfInterval import getArrayConfInterval
 
-def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , colorScheme = ROOT.kRed, writeTo = False, YAxisLimits = None):
+def getCanvasAndLegendFromList( inputList):
+
+    if inputList is None: return None, None
+    legend = None
+    canvas = None
+
+    for element in inputList:
+        if isinstance(element,ROOT.TCanvas): canvas = element
+        elif isinstance(element,ROOT.TLegend): legend = element
+
+    return canvas , legend
+
+def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , colorScheme = ROOT.kRed, writeTo = False, YAxisLimits = None, keepInScopeList = [] ):
 
     def setupTLegend():
         # set up a TLegend, still need to add the different entries
@@ -32,8 +45,14 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
         TLegend.SetBorderSize(0); # and remove its border without a border
         return TLegend
 
-    canv = ROOT.TCanvas("GraphOverview", "GraphOverview",1920, 1080)
 
+    reuseCanvas = False
+
+    canv, legend = getCanvasAndLegendFromList( keepInScopeList )
+
+    if legend is None: legend = setupTLegend()
+    if canv   is None: canv = ROOT.TCanvas("GraphOverview", "GraphOverview",1920/2, 1080)
+    else:  reuseCanvas = True
     canv.SetLeftMargin(0.15)
     canv.SetBottomMargin(0.1)
 
@@ -52,12 +71,14 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
     expectedLimit2Sig.GetXaxis().SetTitleOffset(0.85)
     #expectedLimit2Sig.GetXaxis().CenterTitle()
 
-    expectedLimit2Sig.SetFillColor(colorScheme-10)  # https://root.cern.ch/doc/master/classTAttFill.html
+    expectedLimit2Sig.SetFillColorAlpha(colorScheme-10,0.6) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
+    #expectedLimit2Sig.SetFillColor(colorScheme-10)  # https://root.cern.ch/doc/master/classTAttFill.html
     #expectedLimit2Sig.SetFillStyle(3001)  # https://root.cern.ch/doc/master/classTAttFill.html
-    expectedLimit2Sig.Draw("A3") # use 'A' option only for first TGraph apparently
+    if reuseCanvas: expectedLimit2Sig.Draw("3 same") # use 'A' option only for first TGraph apparently
+    else:           expectedLimit2Sig.Draw("A3 same") # use 'A' option only for first TGraph apparently
 
-    #expectedLimit1Sig.SetFillColorAlpha(ROOT.kRed+1,0.5) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
-    expectedLimit1Sig.SetFillColor(colorScheme-9)
+    expectedLimit1Sig.SetFillColorAlpha(colorScheme-9,0.6) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
+    #expectedLimit1Sig.SetFillColor(colorScheme-9)
     #expectedLimit1Sig.SetFillStyle(3001)  # https://root.cern.ch/doc/master/classTAttFill.html
     expectedLimit1Sig.Draw("3 same")
 
@@ -75,7 +96,7 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
         extractedLimit.SetLineColor(colorScheme)
         extractedLimit.Draw("same")
 
-    legend = setupTLegend()
+
     if extractedLimit is not None: legend.AddEntry(extractedLimit , "observed Limit"  , "l");
     legend.AddEntry(expectedLimitMedian , "expected limit"  , "l");
     legend.AddEntry(expectedLimit1Sig , "#pm1#sigma expected limit"  , "f");
@@ -91,7 +112,7 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
 
     if writeTo: writeTo.cd(); canv.Write()
 
-    keepInScopeList = [expectedLimit2Sig, expectedLimit1Sig, expectedLimitMedian, extractedLimit, legend]
+    keepInScopeList.extend( [canv, expectedLimit2Sig, expectedLimit1Sig, expectedLimitMedian, extractedLimit, legend] )
 
     return canv, keepInScopeList
 
