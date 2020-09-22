@@ -54,8 +54,8 @@ def visualizeEnvelopeHistogram( upperHist, lowerHist, listHist, outputDir, nomin
 
     def setupTLegend():
         # set up a TLegend, still need to add the different entries
-        xOffset = 0.6; yOffset = 0.4
-        xWidth  = 0.3; ywidth = 0.3
+        xOffset = 0.5; yOffset = 0.4
+        xWidth  = 0.4; ywidth = 0.3
         TLegend = ROOT.TLegend(xOffset, yOffset ,xOffset + xWidth, yOffset+ ywidth)
         TLegend.SetFillColor(ROOT.kWhite)
         TLegend.SetLineColor(ROOT.kWhite)
@@ -91,6 +91,7 @@ def visualizeEnvelopeHistogram( upperHist, lowerHist, listHist, outputDir, nomin
         hist.SetStats( False) # remove stats box
         hist.GetYaxis().SetTitle("#Events")
         hist.Draw("SAME HIST")
+        hist.SetTitle("")
         histMaximumValues.append( hist.GetMaximum())
 
     upperHist.Draw("SAMEHIST")
@@ -98,9 +99,12 @@ def visualizeEnvelopeHistogram( upperHist, lowerHist, listHist, outputDir, nomin
 
     legend = setupTLegend()
 
-    legend.AddEntry(upperHist , upperHist.GetName().split("_")[2] + " variation, yield: %.2f"  %upperHist.Integral(), "l");
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+
+    legend.AddEntry(upperHist , upperHist.GetName().split("_")[2] + " variation Up, yield: %.2f"  %upperHist.Integral(), "l");
     legend.AddEntry(listHist[0] , title.split("_")[-2] + " variations", "l");
-    legend.AddEntry(lowerHist , lowerHist.GetName().split("_")[2] + " variation, yield: %.2f"  %lowerHist.Integral(), "l");
+    legend.AddEntry(lowerHist , lowerHist.GetName().split("_")[2] + " variation Down, yield: %.2f"  %lowerHist.Integral(), "l");
 
     legend.Draw()
 
@@ -120,13 +124,14 @@ def visualizeEnvelopeHistogram( upperHist, lowerHist, listHist, outputDir, nomin
     upperRatioHist  = upperHist.Clone( "RatioUp")
     lowerRatioHist  = lowerHist.Clone( "RatioDown")
 
-    upperRatioHist.Divide(nominalHist)
-    lowerRatioHist.Divide(nominalHist)
+    #upperRatioHist.Divide(nominalHist)
+    #lowerRatioHist.Divide(nominalHist)
 
     for hist in [upperRatioHist, lowerRatioHist]:
         hist.SetStats( False) # remove stats box
         hist.SetTitle("")
-        hist.GetYaxis().SetTitle(" % change to nominal")
+        #hist.GetYaxis().SetTitle(" % change to nominal")
+        hist.GetYaxis().SetTitle("variation - nominal")
         hist.GetXaxis().SetLabelSize(0.06)
         hist.GetXaxis().SetTitleSize(0.1)
         hist.GetXaxis().SetTitleOffset(0.7)
@@ -134,10 +139,12 @@ def visualizeEnvelopeHistogram( upperHist, lowerHist, listHist, outputDir, nomin
         hist.GetYaxis().SetLabelSize(0.065)
         hist.GetYaxis().SetTitleSize(0.1)
         hist.GetYaxis().SetTitleOffset(0.3)
+        hist.GetYaxis().SetLabelSize(0.1)
 
         for binNr in xrange(1,hist.GetNbinsX()+1): 
             hist.SetBinError(binNr,0)
-            if hist.GetBinContent(binNr) > 0 : hist.SetBinContent(binNr, (hist.GetBinContent(binNr) -1)*100 )
+            #if hist.GetBinContent(binNr) > 0 : hist.SetBinContent(binNr, (hist.GetBinContent(binNr) -1)*100 )
+            if hist.GetBinContent(binNr) > 0 : hist.SetBinContent(binNr, (hist.GetBinContent(binNr) - nominalHist.GetBinContent(binNr)))
 
 
 
@@ -156,6 +163,7 @@ def visualizeEnvelopeHistogram( upperHist, lowerHist, listHist, outputDir, nomin
     canvasPrintPath = os.path.join(outputDir,title)
     tCanvas.Print(canvasPrintPath+".pdf")
     tCanvas.Print(canvasPrintPath+".png")
+    tCanvas.Print(canvasPrintPath+".root")
 
     ROOT.gROOT.SetBatch(initialBatchStatus)
 
@@ -249,9 +257,9 @@ def getWeightVariationNames():
     #intraPDFDict = {}
     for aNumber in xrange(0,101):   PDFDict[ "PDFset=%04d" % aNumber ] = [ "MUR1_MUF1_PDF261%03d" % aNumber, "PDFset=260%03d" % aNumber]
 
-    weightVariationDict = {"QCDScale" : QCDScaleDict, 
+    weightVariationDict = {"QCD_Shape" : QCDScaleDict, 
                            #"interPDF" : interPDFDict, 
-                           "PDFVariations" : PDFDict }
+                           "PDF_Shape" : PDFDict }
 
     nominalList = ['MUR1_MUF1_PDF261000', 'muR=0.10000E+01muF=0.10000E+01']
 
