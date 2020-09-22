@@ -24,6 +24,16 @@
 # ignore compressed folders that I might have
 *.zip
 
+# ignote files related to condor submissions
+*.sh
+*.sub
+*.err
+*.log
+
+# ignore files related to setting up the athena environment
+*.save
+*.BAK
+
 # but we wanna commit all the files related to the data driven reducible backgrounds
 !limitSetting/dataDrivenBackgroundsFromH4l/*
 # aswell files I use to demonstrate the impact on the ZZd cross section estimates from changing reducible background norms
