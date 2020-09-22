@@ -478,6 +478,12 @@ def makePreAndPostFitImpact(data, refModelConfig, confidenceLevel, referenceInte
         upperLimit = translateLimits( interval, nSigmas = 1 ).getMax()
         return upperLimit
 
+    def copyRooRealVarRangeValError( target, source):
+        target.setRange( source.getMin() , source.getMax()     )
+        target.setVal(   source.getVal()   )
+        target.setError( source.getError() )
+        return None
+
     prePostFitImpactDict = collections.defaultdict(list) 
 
     if referenceInterval is not None: 
@@ -487,7 +493,8 @@ def makePreAndPostFitImpact(data, refModelConfig, confidenceLevel, referenceInte
 
     postFitNuisanceParameters = TDirTools.rooArgSetToList(refModelConfig.GetNuisanceParameters())
 
-    prePostFitNameMapping = getMapBetweenNuisanceParametersAndGlobalObservables(refModelConfig)
+    # we use this to decide whether a given nuisance has a prefit equivalent, without one we can't calculate the prefit impact
+    prePostFitNameMapping = getMapBetweenNuisanceParametersAndGlobalObservables(refModelConfig) 
 
     # RooRealVar::SigXsecOverSM_1SigmaLimit_ProfileLikelihood = 3.46046e-09  L(0 - 0.473894)
 
@@ -497,31 +504,56 @@ def makePreAndPostFitImpact(data, refModelConfig, confidenceLevel, referenceInte
 
         impactModelConfig = refModelConfig.Clone( "fitModelConfig_"+nuisanceParameter.GetName())
 
+        # clone the model confic, so that fixing nuisance parameter A does not persist when we concern us with nuisance parameter B
+        impactModelConfig = refModelConfig.Clone( "fitModelConfig_"+nuisanceParameter.GetName()) 
 
-        relevantNuianceParam = TDirTools.getElementFromRooArgSetByName( nuisanceParameter.GetName() , impactModelConfig.GetNuisanceParameters() )
+        savedNuisanceParameter = nuisanceParameter.Clone( nuisanceParameter.GetName() + "saved")
+
+        nuisanceSetValueUP   = nuisanceParameter.getVal() + nuisanceParameter.getErrorHi()
+        nuisanceSetValueDOWN = nuisanceParameter.getVal() - nuisanceParameter.getErrorHi()
+
+        prePostFitImpactDict["mu_postFitUp_"+nuisanceParameter.GetName()] = [getNuisanceParamVariationImpact(nuisanceParameter, nuisanceSetValueUP , refModelConfig.Clone() , data)]
+        print( nuisanceParameter.GetName()  +" "+ str(nuisanceSetValueUP)   +" mu_postFitUp_"+nuisanceParameter.GetName()   +" "+  str(prePostFitImpactDict["mu_postFitUp_"+nuisanceParameter.GetName()] ) )
         
-        nuisanceSetValue = nuisanceParameter.getVal() + nuisanceParameter.getErrorHi()
-        prePostFitImpactDict["mu_postFitUp_"+nuisanceParameter.GetName()] = [getNuisanceParamVariationImpact(relevantNuianceParam, nuisanceSetValue , impactModelConfig , data)]
-        print( nuisanceParameter.GetName()  +" "+ str(nuisanceSetValue)  +" "+   "mu_postFitUp_"+nuisanceParameter.GetName()   +" "+  str(prePostFitImpactDict["mu_postFitUp_"+nuisanceParameter.GetName()] ) )
-
-        nuisanceSetValue = nuisanceParameter.getVal() - nuisanceParameter.getErrorHi()
-        prePostFitImpactDict["mu_postFitDown_"+nuisanceParameter.GetName()] = [getNuisanceParamVariationImpact(relevantNuianceParam, nuisanceSetValue , impactModelConfig , data)]
-        print( nuisanceParameter.GetName()  +" "+ str(nuisanceSetValue)  +" "+   "mu_postFitDown_"+nuisanceParameter.GetName()   +" "+  str(prePostFitImpactDict["mu_postFitDown_"+nuisanceParameter.GetName()] ) )
-
-
         prefitNuisanceVarName = prePostFitNameMapping[nuisanceParameter.GetName()] # get name of the associarated variable that holds the prefit uncertainty
 
         if prefitNuisanceVarName is not None: 
 
             prefitNuisanceVar = TDirTools.getElementFromRooArgSetByName( prefitNuisanceVarName , refModelConfig.GetGlobalObservables() )
 
-            nuisanceSetValue = nuisanceParameter.getVal() + (prefitNuisanceVar.getMax() - prefitNuisanceVar.getVal() ) / 10.
-            prePostFitImpactDict["mu_preFitUp_"+nuisanceParameter.GetName()] = [getNuisanceParamVariationImpact(relevantNuianceParam, nuisanceSetValue , impactModelConfig , data)]
-            print( nuisanceParameter.GetName()  +" "+ str(nuisanceSetValue)  +" "+   "mu_preFitUp_"+nuisanceParameter.GetName()   +" "+  str(prePostFitImpactDict["mu_preFitUp_"+nuisanceParameter.GetName()] ) )
+            nuisancePrefitSetValueUP   = prefitNuisanceVar.getVal() + (prefitNuisanceVar.getMax() - prefitNuisanceVar.getVal() ) / 10. # prefit uncertainties on the nuisance parameters aappear to be stored oddly
+            nuisancePrefitSetValueDOWN = prefitNuisanceVar.getVal() - (prefitNuisanceVar.getMax() - prefitNuisanceVar.getVal() ) / 10.
 
-            nuisanceSetValue = nuisanceParameter.getVal() - (prefitNuisanceVar.getMax() - prefitNuisanceVar.getVal() ) / 10.
-            prePostFitImpactDict["mu_preFitDown_"+nuisanceParameter.GetName()] = [getNuisanceParamVariationImpact(relevantNuianceParam, nuisanceSetValue , impactModelConfig , data)]
-            print( nuisanceParameter.GetName()  +" "+ str(nuisanceSetValue)  +" "+   "mu_preFitDown_"+nuisanceParameter.GetName()   +" "+  str(prePostFitImpactDict["mu_preFitDown_"+nuisanceParameter.GetName()] ) )
+            #
+            prePostFitImpactDict["mu_preFitUp_"+nuisanceParameter.GetName()] = [getNuisanceParamVariationImpact(nuisanceParameter, nuisancePrefitSetValueUP , refModelConfig.Clone() , data)]
+            print( nuisanceParameter.GetName()  +" "+ str(nuisancePrefitSetValueUP)   + " mu_preFitUp_"+nuisanceParameter.GetName()   +" "+  str(prePostFitImpactDict["mu_preFitUp_"+nuisanceParameter.GetName()] ) )
+
+        copyRooRealVarRangeValError( nuisanceParameter, savedNuisanceParameter) # reset the nuisance paramter back to its original value
+        runProfileLikelihoodCalculator(data, impactModelConfig, confidenceLevel)
+
+        prePostFitImpactDict["mu_postFitDown_"+nuisanceParameter.GetName()] = [getNuisanceParamVariationImpact(nuisanceParameter, nuisanceSetValueDOWN , refModelConfig.Clone() , data)]
+        print( nuisanceParameter.GetName()  +" "+ str(nuisanceSetValueDOWN) +" mu_postFitDown_"+nuisanceParameter.GetName() +" "+  str(prePostFitImpactDict["mu_postFitDown_"+nuisanceParameter.GetName()] ) )
+
+
+        prefitNuisanceVarName = prePostFitNameMapping[nuisanceParameter.GetName()] # get name of the associarated variable that holds the prefit uncertainty
+
+        if prefitNuisanceVarName is not None: 
+
+            #continue
+
+            copyRooRealVarRangeValError( nuisanceParameter, savedNuisanceParameter) # reset the nuisance paramter back to its original value
+            runProfileLikelihoodCalculator(data, impactModelConfig, confidenceLevel)
+
+            prefitNuisanceVar = TDirTools.getElementFromRooArgSetByName( prefitNuisanceVarName , refModelConfig.GetGlobalObservables() )
+
+            nuisancePrefitSetValueUP   = prefitNuisanceVar.getVal() + (prefitNuisanceVar.getMax() - prefitNuisanceVar.getVal() ) / 10. # prefit uncertainties on the nuisance parameters aappear to be stored oddly
+            nuisancePrefitSetValueDOWN = prefitNuisanceVar.getVal() - (prefitNuisanceVar.getMax() - prefitNuisanceVar.getVal() ) / 10.
+
+            prePostFitImpactDict["mu_preFitDown_"+nuisanceParameter.GetName()] = [getNuisanceParamVariationImpact(nuisanceParameter, nuisancePrefitSetValueDOWN , refModelConfig.Clone() , data)]
+            print( nuisanceParameter.GetName()  +" "+ str(nuisancePrefitSetValueDOWN) + " mu_preFitDown_"+nuisanceParameter.GetName() +" "+  str(prePostFitImpactDict["mu_preFitDown_"+nuisanceParameter.GetName()] ) )
+
+        copyRooRealVarRangeValError( nuisanceParameter, savedNuisanceParameter) # reset the nuisance paramter back to its original value
+        runProfileLikelihoodCalculator(data, impactModelConfig, confidenceLevel)
 
 
         #import pdb; pdb.set_trace()
