@@ -49,6 +49,67 @@ def getYieldTableEntry(yieldVariationDict , systematic, flavor):
     return textBox
 
 
+def addTotalVariationYields(yieldDict, systematicNames):
+
+    for flavor in masterHistDict["ZXSR"]["H4l"]["Nominal"].keys():
+
+        totalVariation1Up = 0.
+        totalVariation1Down = 0.
+        for systeamticName in systematicNames: 
+            #                  math.copysign(           use this number                     ,   with the sign of this number              )
+            totalVariation1Up   +=  math.copysign(yieldDict[systeamticName + "1up"][flavor]**2  , yieldDict[systeamticName + "1up"][flavor])
+            totalVariation1Down +=  math.copysign(yieldDict[systeamticName + "1down"][flavor]**2, yieldDict[systeamticName + "1down"][flavor])
+
+            yieldDict[ "Total_" + "1up"][flavor]   = math.copysign( abs(totalVariation1Up)**0.5, totalVariation1Up)
+            yieldDict[ "Total_" + "1down"][flavor] = math.copysign( abs(totalVariation1Down)**0.5, totalVariation1Down)
+
+    return yieldDict
+
+
+def outputYieldTableForLatex(listOfYieldDicts, outputFileName):
+
+    outputLines = []
+
+    for systeamticName in systematicNames: 
+
+        outputLine = re.sub( "_" , "\\_" ,systeamticName.strip("_"))
+
+
+        for yieldDict in listOfYieldDicts:
+            for flavor in ["4e", "2mu2e" , "2e2mu", "4mu"]:
+                outputLine += "\t&"
+                outputLine += getYieldTableEntry(yieldDict , systeamticName, flavor)
+
+        outputLine += " \\tabularnewline \hline"
+
+        outputLines.append(outputLine)
+    outputLines.append("\hline" )
+
+    outputLine = "Total "
+    for yieldDict in listOfYieldDicts:
+        for flavor in ["4e", "2mu2e" , "2e2mu", "4mu"]:
+            outputLine += "\t&"
+            outputLine += getYieldTableEntry(yieldDict , "Total_", flavor)
+
+    outputLine += " \\tabularnewline \hline"
+    outputLines.append( outputLine )
+
+
+        
+    for line in outputLines:  print( line )
+
+    outputFile = open( outputFileName, "w")
+
+
+    for line in outputLines: 
+      # write line to output file
+      outputFile.write(line ) 
+      outputFile.write("\n")
+    outputFile.close()
+
+    return None
+
+
 
 
 if __name__ == '__main__':
@@ -124,11 +185,13 @@ if __name__ == '__main__':
         if nRelevantHistsProcessed %100 == 0:  print( path, myTObject)
 
 
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
-    for flavor in masterHistDict["ZXSR"]["H4l"]["Nominal"].keys():
-
-        H4lYieldDict = getBackgroundYieldVariations( masterHistDict["ZXSR"]["H4l"] )
-        ZZYieldDict  = getBackgroundYieldVariations( masterHistDict["ZXSR"]["ZZ"] )
+    H4lYieldDict = getBackgroundYieldVariations( masterHistDict["ZXSR"]["H4l"] )
+    ZZYieldDict  = getBackgroundYieldVariations( masterHistDict["ZXSR"]["ZZ"] )
+    signalYieldDict15GeV  = getBackgroundYieldVariations( masterHistDict["ZXSR"]["ZZd, m_{Zd} = 15GeV"] )
+    signalYieldDict35GeV  = getBackgroundYieldVariations( masterHistDict["ZXSR"]["ZZd, m_{Zd} = 35GeV"] )
+    signalYieldDict55GeV  = getBackgroundYieldVariations( masterHistDict["ZXSR"]["ZZd, m_{Zd} = 55GeV"] )
 
     systematicNameList = [ re.sub('(1down)|(1up)', '', sysVariation) for sysVariation in H4lYieldDict ] 
 
@@ -137,64 +200,23 @@ if __name__ == '__main__':
 
     systematicNames = sorted(list(systematicNameSet))
 
+    backgroundYieldDicts = [H4lYieldDict, ZZYieldDict]
+    signalYieldDicts = [signalYieldDict15GeV, signalYieldDict35GeV, signalYieldDict55GeV]
 
-    ## add total variation yields
-
-    for yieldDict in [H4lYieldDict, ZZYieldDict]:
-
-        for flavor in masterHistDict["ZXSR"]["H4l"]["Nominal"].keys():
-
-            totalVariation1Up = 0.
-            totalVariation1Down = 0.
-            for systeamticName in systematicNames: 
-                #                  math.copysign(           use this number                     ,   with the sign of this number              )
-                totalVariation1Up   +=  math.copysign(yieldDict[systeamticName + "1up"][flavor]**2  , yieldDict[systeamticName + "1up"][flavor])
-                totalVariation1Down +=  math.copysign(yieldDict[systeamticName + "1down"][flavor]**2, yieldDict[systeamticName + "1down"][flavor])
-
-                yieldDict[ "Total_" + "1up"][flavor]   = math.copysign( abs(totalVariation1Up)**0.5, totalVariation1Up)
-                yieldDict[ "Total_" + "1down"][flavor] = math.copysign( abs(totalVariation1Down)**0.5, totalVariation1Down)
+    allYieldDicts = []
+    allYieldDicts.extend(backgroundYieldDicts)
+    allYieldDicts.extend(signalYieldDicts)
 
 
 
-    outputLines = []
-
-    
-
-    for systeamticName in systematicNames: 
-
-        outputLine = re.sub( "_" , " \\_" ,systeamticName.strip("_"))
+    #   add the total impact of the experimental variations
+    for yieldDict in allYieldDicts:    addTotalVariationYields(yieldDict, systematicNames)
 
 
-        for yieldDict in [H4lYieldDict, ZZYieldDict]:
-            for flavor in ["4e", "2mu2e" , "2e2mu", "4mu"]:
-                outputLine += "\t&"
-                outputLine += getYieldTableEntry(yieldDict , systeamticName, flavor)
 
-        outputLine += " \\tabularnewline \hline"
+    # output the table parts to I can copy them over to the support note
+    outputYieldTableForLatex(backgroundYieldDicts, "H4l_and_ZZ_yieldVariationTable.txt")
+    outputYieldTableForLatex(signalYieldDicts, "signal_yieldVariationTable_15_35_55Gev.txt")
 
-        outputLines.append(outputLine)
-    outputLines.append("\hline" )
-
-    outputLine = "Total "
-    for yieldDict in [H4lYieldDict, ZZYieldDict]:
-        for flavor in ["4e", "2mu2e" , "2e2mu", "4mu"]:
-            outputLine += "\t&"
-            outputLine += getYieldTableEntry(yieldDict , "Total_", flavor)
-
-    outputLine += " \\tabularnewline \hline"
-    outputLines.append( outputLine )
-
-
-        
-    for line in outputLines:  print( line )
-
-    outputFile = open( args.outputTo, "w")
-
-
-    for line in outputLines: 
-      # write line to output file
-      outputFile.write(line ) 
-      outputFile.write("\n")
-    outputFile.close()
 
     import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
