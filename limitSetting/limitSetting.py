@@ -453,7 +453,10 @@ def getProfileLikelihoodLimits(workspace, confidenceLevel = 0.95, drawLikelihood
 
     pullParamDict = getPullRelevantedParametersFromModelConfig(mc)
 
-    prePostFitImpactDict = makePreAndPostFitImpact(data, mc, confidenceLevel, referenceInterval = interval)
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    if args.doPrePostFitImpacts: prePostFitImpactDict = makePreAndPostFitImpact(data, mc, confidenceLevel, referenceInterval = interval)
+    else:                        prePostFitImpactDict = None
 
     return interval , pullParamDict, prePostFitImpactDict
 
@@ -855,6 +858,9 @@ if __name__ == '__main__':
 
     parser.add_argument("--nMassPoints", type=int, nargs='*',
         help="list of mass points that we run over " )
+
+    parser.add_argument( "--doPrePostFitImpacts", default=False, action='store_true' , 
+        help = "If this command line option is invoked, we will do the calculation of the pre- and post-fit impacts of the nuisance parameters, when limits with the ProfileLikelihoodCalculator" ) 
 
     parser.add_argument( "--dataToOperateOn", type=str ,  default="expectedData" , 
         help = "Use this to specify the histogram that contains the data, or is interpreted to be containing the data, e.g. 'data' or 'expectedData' " ) 
