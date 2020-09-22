@@ -10,7 +10,7 @@ import ROOT
 from array import array # to fill the TTree eventally
 import argparse # to parse command line options
 import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
-
+import math
 
 
 def calculateInvariantMass(lep1, lep2):
@@ -20,7 +20,8 @@ def calculateInvariantMass(lep1, lep2):
     py = lep1.py() + lep2.py()
     pz = lep1.pz() + lep2.pz()
 
-    invariantMass = (E**2 - px**2 - py**2 - pz**2)**.5
+    invariantMassSq = (E**2 - px**2 - py**2 - pz**2)
+    invariantMass =  math.copysign( abs(invariantMassSq)**0.5, invariantMassSq)
 
     return invariantMass
 
@@ -131,6 +132,8 @@ if __name__ == '__main__':
 
     if args.nEventsToProcess < 0 : nEvents = evt.getEntries()
     else:                          nEvents = args.nEventsToProcess
+
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
     for n in range(0, nEvents): 
 
