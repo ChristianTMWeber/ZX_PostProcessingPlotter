@@ -25,8 +25,6 @@ import sys
 from os import path
 sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) ) # need to append the parent directory here explicitly to be able to import plotPostProcess
 import functions.rootDictAndTDirTools as TDirTools
-import plotPostProcess as postProcess
-import functions.histHelper as histHelper
 import functions.tGraphHelpers as graphHelper
 
 import limitFunctions.reportMemUsage as reportMemUsage
@@ -41,161 +39,6 @@ def activateATLASPlotStyle():
     else:                                warnings.warn("Did not load ATLAS style properly")
 
     return None
-
-
-def drawNominalHists(inputFileName, drawDict, myDrawDSIDHelper = postProcess.DSIDHelper(), writeToFile = False ):
-
-    def setupTLegend():
-        # set up a TLegend, still need to add the different entries
-        xOffset = 0.6; yOffset = 0.5
-        xWidth  = 0.3; ywidth = 0.4
-        TLegend = ROOT.TLegend(xOffset, yOffset ,xOffset + xWidth, yOffset+ ywidth)
-        TLegend.SetFillColor(ROOT.kWhite)
-        TLegend.SetLineColor(ROOT.kWhite)
-        TLegend.SetNColumns(1);
-        TLegend.SetFillStyle(0);  # make legend background transparent
-        TLegend.SetBorderSize(0); # and remove its border without a border
-        return TLegend
-
-    def scaleByRooRealVar(hist, aRooRealVar):
-        factor = aRooRealVar.getVal()
-        error  = aRooRealVar.getError()
-
-        hist.Scale(factor)
-        for x in xrange(1,hist.GetNbinsX()+1): 
-            oldBinError = hist.GetBinError(x)
-            newBinError = oldBinError*(factor + error) / factor  # hist.Scale( ) scalesthe bin contents as well as the error. So we have to do it this way
-            hist.SetBinError(x, newBinError )
-        return None
-
-    nominalHistStack = ROOT.THStack("nominalStack","nominalStack")
-
-    if isinstance(drawDict,list): drawDict = { x: None for x in drawDict }
-
-    legend = setupTLegend()
-
-    
-
-    histDict={}
-
-    sortedDrawKeys = drawDict.keys()
-    sortedDrawKeys.sort()
-
-    for histPath in sortedDrawKeys:
-
-        histogram = inputTFile.Get(histPath)
-        currentTH1 = histogram.Clone()
-        eventType = histPath.split("/")[1]
-
-        scaleString = ""
-
-        if  "data" in histPath.lower() : # make all characters lowercase to avoid missing "Data" or so
-            dataHist = currentTH1
-            #dataHist.SetLineWidth(1)
-            #dataHist.SetLineColor(1)
-        else:
-            if isinstance(drawDict[histPath], ROOT.RooRealVar): # do scaling if we send a RooRealVar along with the histogram path
-                fittedRooReal = drawDict[histPath]
-                scaleByRooRealVar(currentTH1, fittedRooReal)
-                scaleString = ", scaled by %.2f #pm %.2f" %( fittedRooReal.getVal(), fittedRooReal.getError() )
-            elif isinstance(drawDict[histPath],ROOT.RooStats.LikelihoodInterval): # do scaling if we send a ROOT.RooStats.LikelihoodInterval along with the histogram path
-                interval = drawDict[histPath]
-                intervalVariables = {x.GetName() : x for x in TDirTools.rooArgSetToList(interval.GetParameters())}
-
-                upperLimit = interval.UpperLimit(intervalVariables["SigXsecOverSM"])
-                currentTH1.Scale(upperLimit)
-                scaleString = ", #sigma = %.2f fb" %( upperLimit )
-
-            elif isinstance(drawDict[histPath],float): # do scaling if we send a ROOT.RooStats.LikelihoodInterval along with the histogram path
-                factor = drawDict[histPath]
-                currentTH1.Scale(factor)
-                scaleString = ", XS scaled by %.2f" %( factor )
-
-
-
-
-            #currentTH1.SetBinError(12,1)
-            #currentTH1.GetBinError(12)  
-            currentTH1.SetMarkerStyle(0 ) # SetMarkerStyle(0 ) remove marker from combined backgroun
-            nominalHistStack.Add(currentTH1)
-            histDict[eventType] = currentTH1
-
-        legend.AddEntry(currentTH1 , eventType + scaleString  , "f");
-
-        #TDirTools.generateTDirContents(inputTFile.Get(histPath))
-   
-    myDrawDSIDHelper.colorizeHistsInDict(histDict) # sets fill color to solid and pics consistent color scheme
-    
-    # prepare the canvas and histpad for the histograms, we'll have another for the ratio TPad
-    canvas = ROOT.TCanvas("overviewCanvas","overviewCanvas",1300/2,1300/2);
-
-    histPadYStart = 3./13
-    histPad = ROOT.TPad("histPad", "histPad", 0, histPadYStart, 1, 1);
-    #histPad.SetBottomMargin(0.06); # Seperation between upper and lower plots
-    histPad.Draw();              # Draw the upper pad: pad1
-    histPad.cd();                # pad1 becomes the current pad
-
-    # prepare scaling of the x axis
-    axRangeLow, axRangeHigh = histHelper.getFirstAndLastNonEmptyBinInHist(nominalHistStack, offset = 1)
-
-    # draw the 'regular' histograms
-    dataHist.GetXaxis().SetRange(axRangeLow,axRangeHigh) # let's scale the first histogram we draw
-    dataHist.Draw()
-
-    dataHist.GetYaxis().SetTitle("Events / " + str(dataHist.GetBinWidth(1) )+" GeV" )
-    dataHist.GetYaxis().SetTitleSize(0.05)
-    dataHist.GetYaxis().SetTitleOffset(1.0)
-    dataHist.GetYaxis().CenterTitle()
-
-    nominalHistStack.Draw("Hist same")
-    nominalHistStack.Draw("same E2 ")   # "E2" Draw error bars with rectangles:  https://root.cern.ch/doc/v608/classTHistPainter.html
-    dataHist.Draw("same E1")
-    legend.Draw(); # do legend things
-
-    canvas.cd()
-    
-    # setup and draw the ratio pad
-    ratioPad = ROOT.TPad("ratioPad", "ratioPad", 0, 0, 1, histPadYStart);
-    ROOT.SetOwnership(ratioPad, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
-    #ratioPad.SetTopMargin(0.)
-    ratioPad.SetBottomMargin(0.3)
-    ratioPad.SetGridy(); #ratioPad.SetGridx(); 
-    ratioPad.Draw();              # Draw the upper pad: pad1
-    ratioPad.cd();                # pad1 becomes the current pad
-
-    ratioHist = dataHist.Clone( dataHist.GetName()+"_Clone" )
-    backgroundMergedTH1 = histHelper.mergeTHStackHists(nominalHistStack) # get a merged background to draw uncertainty bars on the total backgroun
-    ratioHist.Divide(backgroundMergedTH1)
-    #ratioHist.GetXaxis().SetRange(axRangeLow, axRangeHigh)
-    ratioHist.SetStats( False) # remove stats box
-    
-    ratioHist.SetTitle("")
-    
-    ratioHist.GetYaxis().SetNdivisions( 506, True)  # XYY x minor divisions YY major ones, optimizing around these values = TRUE
-    ratioHist.GetYaxis().SetLabelSize(0.1)
-
-    ratioHist.GetYaxis().SetTitle("Data / MC")
-    ratioHist.GetYaxis().SetTitleSize(0.13)
-    ratioHist.GetYaxis().SetTitleOffset(0.4)
-    ratioHist.GetYaxis().CenterTitle()
-
-    ratioHist.GetXaxis().SetLabelSize(0.12)
-    ratioHist.GetXaxis().SetTitleSize(0.12)
-    ratioHist.GetXaxis().SetTitleOffset(1.0)
-    ratioHist.Draw()
-
-    canvas.Update()
-    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-    if writeToFile:
-        canvas.Write()
-        canvas.Print("overview.pdf")
-    canvas.Close()
-
-    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-
-    return None
-
-
 
 def prepHistoSys(eventDict, flavor = "All"):
 
@@ -1084,33 +927,6 @@ if __name__ == '__main__':
             # let's try delete these objects here to stem the growing memory demand with increasing 'limitIteration' count
             del chan, meas
 
-
-            #################################################################
-            # Draw the fitted m34 distribututions
-            #################################################################
-            #histHelper.fillBin(overviewHist, massPoint, interval.UpperLimit(intervalVariables["SigXsecOverSM"]) )
-            #
-            #
-            ##allWorkspaceVariables = TDirTools.rooArgSetToList( workspace.allVars() )
-            ##workspaceVarDict = {x.GetName() : x for x in allWorkspaceVariables}
-            ##keysafeDictReturn = lambda x,aDict : aDict[x] if x in aDict else None # returns none if x is not among the dict's keys
-            ##keysafeDictReturn("H4lNorm", workspaceVarDict)
-            #
-            #drawDict = {templatePaths["Data"]   : None, 
-            #            templatePaths["H4l"]    : keysafeDictReturn("H4lNorm", workspaceVarDict),
-            #            templatePaths["ZZ"]     : None,
-            #            templatePaths["Signal"] : interval}
-            #
-            #
-            #writeTFile.mkdir( signalSample ); 
-            #writeTDir = writeTFile.Get( signalSample )
-            #writeTDir.cd()
-            #
-            #
-            #drawNominalHists(inputFileName, drawDict, writeToFile =  None)
-            ##drawNominalHists(inputFileName, drawDict, writeToFile =  writeTDir)
-            #
-            ##ROOT.RooStats.HistFactory.GetChannelEstimateSummaries(meas,chan)
 
         ###############################################
         # end of "for massPoint in ... "
