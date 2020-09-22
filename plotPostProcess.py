@@ -667,11 +667,13 @@ def make1UpAnd1DownSystVariationHistogram( BackgroundVariationDict , flavor = "A
 
         nominalHist = BackgroundVariationDict["Nominal"][flavor]
         nominalVector= histNumpyTools.histToNPArray(nominalHist) # 1-d numpy matrix that contains the nominal bin counts
-        nominalMatrix = np.tile(nominalVector, (len(systematicNames),1) ) # 2-d numpy matrix, axis = 1 indexes the bins, same shape as the sysYieldMatrix
+        nominalMatrix = np.tile(nominalVector, (sysYieldMatrix.shape[0],1) ) # 2-d numpy matrix, axis = 1 indexes the bins, same shape as the sysYieldMatrix
 
 
         relativeYieldDifference = (sysYieldMatrix - nominalMatrix)/nominalMatrix
         relativeYieldDifference = np.nan_to_num(relativeYieldDifference) # replace the NaN with zeros
+
+        relativeYieldDifference = relativeYieldDifference * ( abs(relativeYieldDifference) <2 )
 
         relativeYieldUncertainty = np.sqrt( np.sum( np.square( relativeYieldDifference) , axis=0) ) # add the same bin over different systematics in quadrature
 
@@ -691,9 +693,16 @@ def make1UpAnd1DownSystVariationHistogram( BackgroundVariationDict , flavor = "A
 
         return sysHist
 
-    systematicNameSet = set()
-    for sysVariation in BackgroundVariationDict :     systematicNameSet.add( re.sub('(1down)|(1up)', '', sysVariation) )
+    
+    #for sysVariation in BackgroundVariationDict :     systematicNameSet.add( re.sub('(1down)|(1up)', '', sysVariation) )
+    systematicNameList = [ re.sub('(1down)|(1up)', '', sysVariation) for sysVariation in BackgroundVariationDict if not sysVariation.startswith("PMG_") ] 
+
+    systematicNameSet = set(systematicNameList)
     systematicNameSet.discard("Nominal") # remove the Nominal variation from list
+
+    removeList = [x for x in systematicNameSet if re.search("(UncorrUncertaintyNP)|(CorrUncertaintyNP)", x) ]
+
+    for x in removeList: systematicNameSet.discard(x)
     systematicNames = sorted(list(systematicNameSet))
 
     upSysHist   = makeVariationHist( upOrDown = "1up"   , inlcudeStatUncertainty = False)
@@ -718,9 +727,16 @@ def make1UpAnd1DownSystVariationYields( BackgroundVariationDict , flavor = "All"
 
         return yieldVariation
 
-    systematicNameSet = set()
-    for sysVariation in BackgroundVariationDict :     systematicNameSet.add( re.sub('(1down)|(1up)', '', sysVariation) )
+    #for sysVariation in BackgroundVariationDict :     systematicNameSet.add( re.sub('(1down)|(1up)', '', sysVariation) )
+    systematicNameList = [ re.sub('(1down)|(1up)', '', sysVariation) for sysVariation in BackgroundVariationDict if not sysVariation.startswith("PMG_") ] 
+
+    systematicNameSet = set(systematicNameList)
     systematicNameSet.discard("Nominal") # remove the Nominal variation from list
+
+    removeList = [x for x in systematicNameSet if re.search("(UncorrUncertaintyNP)|(CorrUncertaintyNP)", x) ]
+
+    for x in removeList: systematicNameSet.discard(x)
+
     systematicNames = sorted(list(systematicNameSet))
 
     upSysYield   = makeVariationYield( upOrDown = "1up"   )
@@ -1040,7 +1056,7 @@ if __name__ == '__main__':
             backgroundMergedTH1.SetFillStyle(3244)#(3001) # fill style: https://root.cern.ch/doc/v614/classTAttFill.html#F2
             backgroundMergedTH1.SetFillColor(1)    # black: https://root.cern.ch/doc/v614/classTAttFill.html#F2
 
-            legend.AddEntry(backgroundMergedTH1 , "MC stat. uncertainty" , "f");
+            legend.AddEntry(backgroundMergedTH1 , "stat. uncertainty" , "f");
 
             #if "eta"   in backgroundMergedTH1.getTitle: yAxisUnit = ""
             #elif "phi" in backgroundMergedTH1.getTitle: yAxisUnit = " radians"
