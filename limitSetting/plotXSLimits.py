@@ -229,22 +229,13 @@ def getToyLimits( filename , TTreeName = "upperLimits1Sig_toys", graphName = "to
     return toyLimitTGrapah
 
 
-def getAsymptoticTGraphs(filename):
-    expectedLimitTFile = ROOT.TFile(filename, "OPEN")
-
-    observedLimitGraph         = expectedLimitTFile.Get("observedLimitGraph")
-    expectedLimitsGraph_1Sigma = expectedLimitTFile.Get("expectedLimits_1Sigma")
-    expectedLimitsGraph_2Sigma = expectedLimitTFile.Get("expectedLimits_2Sigma")
-
-    return 
-
-
 if __name__ == '__main__':
 
 
 
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=str, help="name or path to the input files")
+    parser.add_argument( "--observedLimitFile", type=str, help="option to provide alternative file take the observed limit from", )
     parser.add_argument( "--limitType", type=str, help = "type of the limit we are plotting ", choices=["asymptotic","toyBased"] )
     parser.add_argument( "--outputName", type=str, help = "filename for the output", default= None )
     parser.add_argument( "--YAxis", type=float, nargs=2, help = "lower and upper limit for the plot Y axis, --YAxis 0 2.5", default= None )
@@ -263,7 +254,6 @@ if __name__ == '__main__':
 
         #asympFileName = "toyResults_MC16adeV2.root"
         #asympFileName = "asymptotiveLimitV3_AsimovData.root"
-        asympFileName = args.input
         #                                                                    TTreeName = "upperLimits2Sig_observed"
         #observedLimitTGraph =  getToyLimits( asympFileName , TTreeName = "bestEstimates_asymptotic", graphName = "observedLimits_upperLimit" ,nSigma = 1, intervalType = "standardDeviation")
         #observedLimitTGraph =  getToyLimits( "asymptotiveLimitV3_AsimovData.root" , TTreeName = "upperLimits2Sig_observed", graphName = "observedLimits_upperLimit" ,nSigma = 1, intervalType = "standardDeviation")
@@ -271,23 +261,35 @@ if __name__ == '__main__':
         #observedLimitTGraphNoErrors = graphHelper.getTGraphWithoutError( observedLimitTGraph )
 
         #########  plotExpectedLimitsFromTGraph   ### specifically just asymptotic case
-        expectedLimitTFile = ROOT.TFile(asympFileName, "OPEN")
-
-        observedLimitTGraph = None
-
-        observedLimitGraph         = expectedLimitTFile.Get("observedLimitGraph")
+        expectedLimitTFile = ROOT.TFile(args.input, "OPEN")
         expectedLimitsGraph_1Sigma = expectedLimitTFile.Get("expectedLimits_1Sigma")
         expectedLimitsGraph_2Sigma = expectedLimitTFile.Get("expectedLimits_2Sigma")
 
-        
+
+
+        if args.observedLimitFile is not None:  observedLimitTFile = ROOT.TFile(args.observedLimitFile , "OPEN")
+        else :                                  observedLimitTFile = expectedLimitTFile
+
 
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
+        if "observedLimitGraph" in [tObject.GetName() for tObject in TDirTools.TDirToList(observedLimitTFile)]:
+            observedLimitGraph         = observedLimitTFile.Get("observedLimitGraph")
+            if isinstance(observedLimitGraph, ROOT.TGraphAsymmErrors): # for some limit setting schemes the upperlimit is given by the upper error of the TGraph. 
+                observedLimitGraph = graphHelper.getTGraphWithoutError( observedLimitGraph , ySetpoint = "yHigh")
 
 
-        outputTFile = ROOT.TFile("XSLimitPlot.root", "RECREATE")
+        outputTFile = ROOT.TFile(outputFileName, "RECREATE")
         #makeGraphOverview( observedLimitTGraphNoErrors , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile)
-        canv, keepInScopeList = makeGraphOverview(  observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile, YAxisLimits = args.YAxis)
+        canv, keepInScopeList = makeGraphOverview(  None   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile, YAxisLimits = args.YAxis, keepInScopeList = [])
+
+        ### use this if I wanna plot a second set of limits on top of the first set ###
+        #expectedLimitTFile = ROOT.TFile( "asymptotiveLimitV4_PMGweights_NormsCorr_All.root", "OPEN")
+        #expectedLimitsGraph_1SigmaB = expectedLimitTFile.Get("expectedLimits_1Sigma")
+        #expectedLimitsGraph_2SigmaB = expectedLimitTFile.Get("expectedLimits_2Sigma")
+        #canv, keepInScopeList = makeGraphOverview(  None   , expectedLimitsGraph_1SigmaB, expectedLimitsGraph_2SigmaB , colorScheme = ROOT.kRed , writeTo = outputTFile, YAxisLimits = args.YAxis, keepInScopeList = keepInScopeList)
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
         outputTFile.Close()
 
 
