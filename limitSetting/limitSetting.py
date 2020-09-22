@@ -314,6 +314,7 @@ def prepMeasurement( templatePaths, region, flavor, inputFileName, inputTFile, d
     ### We do a similar thing for our background
     if "reducibleDataDriven" in templatePaths.keys():
         reducible = ROOT.RooStats.HistFactory.Sample("reducible", templatePaths["reducibleDataDriven"], inputFileName)
+        #addSystematicsToSample(reducible, inputTFile, region = region, eventType = "reducibleDataDriven", flavor = flavor, finishAfterNSystematics = doNSystematics)
         if doStatError: reducible.ActivateStatError()# It looks like this setting makes it so that the binerror in the background template is taken into account
         if doNSystematics != 0 : reducible.AddOverallSys("reducible_Syst", 1.-(0.0822 + 0.1), 1.+(0.0822 + 0.1)) # add extra 10% norm uncertainty for differences between H4l and ZX 
 
@@ -378,6 +379,8 @@ def addSystematicsToSample(histFactorySample, inputFileOrName, region = "ZXSR", 
         # determine the systematics name
         filenameUpToSystematic = re.search("(?:(?!(1down|1up)).)*", path).group() # systematics ends with 1up or 1down, find the string parts beforehand
         systematicsName = filenameUpToSystematic.split("/")[-1] # we split at the slash to get the systematics name (and we do it this way because regex is hard :-/ )
+
+        #if "MUONS_SAGITTA" in systematicsName: continue
 
         # find out if this the up or down variation of the given systematic
         variationType = re.search("(?<="+systematicsName+")(.*?)(?=\/)", path).group() # find smallest stringt between the systematics name and a '/', should be the up or down variation signifier
@@ -612,6 +615,7 @@ def expectedLimitsAsimov(workspace, confidenceLevel = 0.95, drawLimitPlot = Fals
     inverter.SetFixedScan(60,0.0,6.0); # set number of points , xmin and xmax
 
     result =  inverter.GetInterval();
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
     if drawLimitPlot: 
         hypoCanvas = ROOT.TCanvas("hypoCanvas", "hypoCanvas", 1300/2,1300/2)
@@ -834,6 +838,8 @@ if __name__ == '__main__':
     parser.add_argument("--nMassPoints", type=int, nargs='*',
         help="list of mass points that we run over " )
 
+    parser.add_argument( "--dataToOperateOn", type=str ,  default="expectedData" , 
+        help = "Use this to specify the histogram that contains the data, or is interpreted to be containing the data, e.g. 'data' or 'expectedData' " ) 
 
     args = parser.parse_args()
 
@@ -912,17 +918,18 @@ if __name__ == '__main__':
         # setup data hist
 
         if limitType == "toys" or limitType == "HypoTestInverter" or limitType == "writeOutWorkspaces":
-            dataHistPath = getFullTDirPath(masterDict, region, "expectedData" , "Nominal",  flavor)
+            dataHistPath = getFullTDirPath(masterDict, region, args.dataToOperateOn , "Nominal",  flavor)
             expectedDataHist = inputTFile.Get( dataHistPath )
 
             dataHist = myHistSampler.sampleFromTH1(expectedDataHist)
 
         elif limitType == "asimov" or limitType == "asymptotic": # asimov dataset, data has been set to the expectation value from backgrounds
-            dataHistPath = getFullTDirPath(masterDict, region, "expectedData" , "Nominal",  flavor)
+            dataHistPath = getFullTDirPath(masterDict, region, args.dataToOperateOn , "Nominal",  flavor)
+            #dataHistPath = getFullTDirPath(masterDict, region, "expectedData_signal55GeV" , "Nominal",  flavor)
             dataHist = inputTFile.Get( dataHistPath )
 
         elif limitType == "observed" :  # either do asymptotic expected limits, or get real data limits
-            dataHistPath = getFullTDirPath(masterDict, region, "data" , "Nominal",  flavor)
+            dataHistPath = getFullTDirPath(masterDict, region, args.dataToOperateOn , "Nominal",  flavor)
             dataHist = inputTFile.Get( dataHistPath )
 
         else: raise ValueError("specific limittype '%s' has not been implemented" %limitType)
