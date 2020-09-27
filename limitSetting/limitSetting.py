@@ -473,11 +473,8 @@ def getMapBetweenNuisanceParametersAndGlobalObservables(modelConfig):
 
     return correspondenceDict
 
-def expectedLimitsAsimov(workspace, confidenceLevel = 0.95, drawLimitPlot = False ):
-    # get expected upper limits on the parameter of interest using the 'AsymptoticCalculator'
-    # provides also +/- n sigma intervals on the expected limits
-    # I don't understand this 'AsymptoticCalculator' fully yet, but the expected limits look reasonable 
-    # I based this here on the following tutorial: https://roostatsworkbook.readthedocs.io/en/latest/docs-cls.html#
+
+def prepAsymptoticCalculator(workspace ):
 
     modelConfig = workspace.obj("ModelConfig") # modelConfig = modelConfig
     data = workspace.data("obsData")
@@ -499,10 +496,21 @@ def expectedLimitsAsimov(workspace, confidenceLevel = 0.95, drawLimitPlot = Fals
 
     #  AsymptoticCalculator(data, alternativeModel, nullModel)
     asympCalc = ROOT.RooStats.AsymptoticCalculator(data, bModel, modelConfigClone ) # asymptotic calculator is for the profile likelihood ratio
-    asympCalc.SetOneSided(True);
+    #asympCalc.SetOneSided(True);
     asympCalc.SetPrintLevel(0) # suppress command line output 
 
+    keepInScopeList = [modelConfig, data, modelConfigClone, mcClonePOI, bModel, bModelPOI]
 
+    return asympCalc , keepInScopeList
+
+def expectedLimitsAsimov(workspace, confidenceLevel = 0.95, drawLimitPlot = False ):
+    # get expected upper limits on the parameter of interest using the 'AsymptoticCalculator'
+    # provides also +/- n sigma intervals on the expected limits
+    # I don't understand this 'AsymptoticCalculator' fully yet, but the expected limits look reasonable 
+    # I based this here on the following tutorial: https://roostatsworkbook.readthedocs.io/en/latest/docs-cls.html#
+
+    asympCalc, keepInScopeList = prepAsymptoticCalculator( workspace )
+    asympCalc.SetOneSided(True);
 
     inverter = ROOT.RooStats.HypoTestInverter(asympCalc)
     inverter.SetConfidenceLevel( confidenceLevel );
@@ -522,6 +530,34 @@ def expectedLimitsAsimov(workspace, confidenceLevel = 0.95, drawLimitPlot = Fals
         import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
     return result
+
+def p0SignifianceCalculation(workspace):
+
+    asympCalc , keepInScopeList = prepAsymptoticCalculator( workspace )
+    asympCalc.SetOneSidedDiscovery(True);
+
+    asymCalcResult = asympCalc.GetHypoTest()
+    #asymCalcResult.Print()
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here 
+
+    # asymCalcResult.NullPValue()
+    #expectedP0 = ROOT.RooStats.AsymptoticCalculator.GetExpectedPValues(   asymCalcResult.NullPValue(),  asymCalcResult.AlternatePValue(), 0, False)
+
+    #name = "asymptoticSignificance"
+    #title = name
+    #value    = asymCalcResult.Significance()
+    #lowLimit = asymCalcResult.Significance()
+    #highLimit = asymCalcResult.Significance()
+
+    name = "asymptoticNullPValue"
+    title = name
+    value    = asymCalcResult.NullPValue()
+    lowLimit = asymCalcResult.NullPValue()
+    highLimit = asymCalcResult.NullPValue()
+
+    outputRooRealvar = ROOT.RooRealVar( name, title ,value,lowLimit , highLimit)
+
+    return outputRooRealvar
 
 def toyHypoTestInverter(workspace, confidenceLevel = 0.95, drawLimitPlot = False ):
     # get expected upper limits on the parameter of interest using the 'AsymptoticCalculator'
@@ -719,7 +755,8 @@ if __name__ == '__main__':
     parser.add_argument("--nIterations", type=int, default=1 ,
         help="number of iterations over all the masspoints " )
 
-    parser.add_argument("--limitType", type=str, default="toys" , choices=["toys","asymptotic","observed", "HypoTestInverter", "writeOutWorkspaces", "asimov"],
+    parser.add_argument("--limitType", type=str, default="toys" , 
+        choices=["toys","asymptotic","observed", "HypoTestInverter", "writeOutWorkspaces", "asimov", "p0Calculation"],
         help = "Determines what kind of limit setting we do. \
         'observed' provides limtis on the cross section, based on the data provided. \
         'toys' provides expected limits by sampleing histograms from the 'expected data' but requires many iterations and \
@@ -794,6 +831,7 @@ if __name__ == '__main__':
     observedLimitGraph    = graphHelper.createNamedTGraphAsymmErrors("observedLimitGraph")
     expectedLimitsGraph_1Sigma = graphHelper.createNamedTGraphAsymmErrors("expectedLimits_1Sigma")
     expectedLimitsGraph_2Sigma = graphHelper.createNamedTGraphAsymmErrors("expectedLimits_2Sigma")
+    nullHypoThesisPValueGraph = graphHelper.createNamedTGraph("nullHypoThesisPValueGraph")
 
     bestEstimateDict   = collections.defaultdict(list)
     upperLimits1SigDict = collections.defaultdict(list)
@@ -822,7 +860,7 @@ if __name__ == '__main__':
 
             dataHist = myHistSampler.sampleFromTH1(expectedDataHist)
 
-        elif limitType == "asimov" or limitType == "asymptotic": # asimov dataset, data has been set to the expectation value from backgrounds
+        elif limitType == "asimov" or limitType == "asymptotic" or limitType == "p0Calculation": # asimov dataset, data has been set to the expectation value from backgrounds
             dataHistPath = getFullTDirPath(masterDict, region, args.dataToOperateOn , "Nominal",  flavor)
             #dataHistPath = getFullTDirPath(masterDict, region, "expectedData_signal55GeV" , "Nominal",  flavor)
             dataHist = inputTFile.Get( dataHistPath )
@@ -873,6 +911,7 @@ if __name__ == '__main__':
             likelihoodLimit = None
             likelihoodLimit_2Sig = None
             likelihoodLimitObserved = None
+            nullHypoThesisPValue = None
 
             if limitType == "asymptotic":
                 # from: https://roostatsworkbook.readthedocs.io/en/latest/docs-cls.html
@@ -883,6 +922,10 @@ if __name__ == '__main__':
                 likelihoodLimit_2Sig = translateLimits(asymptoticResuls, nSigmas = 2)
 
                 likelihoodLimitObserved = translateLimits( asymptoticResuls, nSigmas = 1 , getObservedAsymptotic = True)
+
+            elif limitType == "p0Calculation":
+
+                nullHypoThesisPValue = p0SignifianceCalculation(workspace)
 
             elif limitType == "HypoTestInverter":
 
@@ -911,6 +954,8 @@ if __name__ == '__main__':
             graphHelper.fillTGraphWithRooRealVar(observedLimitGraph, massPoint, likelihoodLimitObserved)
             graphHelper.fillTGraphWithRooRealVar(expectedLimitsGraph_1Sigma, massPoint, likelihoodLimit)
             graphHelper.fillTGraphWithRooRealVar(expectedLimitsGraph_2Sigma, massPoint, likelihoodLimit_2Sig)
+            graphHelper.fillTGraphWithRooRealVar(nullHypoThesisPValueGraph, massPoint, nullHypoThesisPValue)
+
 
 
             if likelihoodLimitObserved is not None: bestEstimateDict[signalSample].append( likelihoodLimitObserved.getVal() )
@@ -959,6 +1004,10 @@ if __name__ == '__main__':
             observedLimitGraph.Write()
             expectedLimitsGraph_1Sigma.Write()
             expectedLimitsGraph_2Sigma.Write()
+
+
+            if limitType == "p0Calculation":
+                nullHypoThesisPValueGraph.Write()
 
             
             writeTFile.Write()
