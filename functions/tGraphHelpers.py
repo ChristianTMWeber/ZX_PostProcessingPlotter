@@ -18,6 +18,10 @@ def getTGraphWithoutError( errorTGraph , ySetpoint = "median"):
 
     return noErrorTGraph
 
+def createNamedTGraph( objectName):
+    graph = ROOT.TGraph()
+    graph.SetName(objectName)
+    return graph
 
 def createNamedTGraphAsymmErrors( objectName):
     graph = ROOT.TGraphAsymmErrors()
@@ -32,9 +36,11 @@ def fillTGraphWithRooRealVar(graph, xFill, yFill):
 
     graph.SetPoint( pointNr, xFill, yFill.getVal() )
 
-    yErrorHi = abs( yFill.getMax()-yFill.getVal() )
-    yErrorLo = abs( -yFill.getMin() + yFill.getVal() )
-    graph.SetPointError( pointNr, 0,0, yErrorLo , yErrorHi )
+    if isinstance(graph,ROOT.TGraphAsymmErrors):
+
+        yErrorHi = abs( yFill.getMax()-yFill.getVal() )
+        yErrorLo = abs( -yFill.getMin() + yFill.getVal() )
+        graph.SetPointError( pointNr, 0,0, yErrorLo , yErrorHi )
 
     return graph
 
