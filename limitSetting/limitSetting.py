@@ -533,12 +533,63 @@ def expectedLimitsAsimov(workspace, confidenceLevel = 0.95, drawLimitPlot = Fals
 
 def p0SignifianceCalculation(workspace):
 
-    asympCalc , keepInScopeList = prepAsymptoticCalculator( workspace )
-    asympCalc.SetOneSidedDiscovery(True);
+    #asympCalc , keepInScopeList = prepAsymptoticCalculator( workspace )
 
-    asymCalcResult = asympCalc.GetHypoTest()
+    modelConfig = workspace.obj("ModelConfig") # modelConfig = modelConfig
+    data = workspace.data("obsData")
+
+
+
+    sbModel = modelConfig.Clone("BackgroundOnlyModel")
+    sbModelPOI = sbModel.GetParametersOfInterest().first()
+    sbModelPOI.setVal(1)
+    sbModel.SetSnapshot( ROOT.RooArgSet( sbModelPOI )  )
+
+
+    # setup the cloned modelConfig
+    bModel = modelConfig.Clone()
+    bModel.SetName("B_only_model" )
+    #mcClonePOI = bModel.GetParametersOfInterest().first()
+    sbModelPOI.setVal(0)
+    bModel.SetSnapshot( ROOT.RooArgSet( sbModelPOI ) )
+
+    #setup the background only model
+
+
+    #  AsymptoticCalculator(data, alternativeModel, nullModel)
+    #asympCalc = ROOT.RooStats.AsymptoticCalculator(data, sbModel, bModel ) # asymptotic calculator is for the profile likelihood ratio
+    #asympCalc.SetOneSided(True);
+    #asympCalc.SetPrintLevel(-1) # suppress command line output 
+
+    #sbModel.Print()
+    #bModel.Print()
+
+
+    #asympCalc.SetOneSidedDiscovery(True);
+    ## asympCalc.SetOneSided(True)
+
+    #asymCalcResult = asympCalc.GetHypoTest()
     #asymCalcResult.Print()
+
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here 
+
+
+    freqCalculator = ROOT.RooStats.FrequentistCalculator(data, sbModel, bModel);
+    freqCalculator.SetToys(2000,500);
+
+    profileLikeTestStat = ROOT.RooStats.ProfileLikelihoodTestStat( sbModel.GetPdf() ) # ? do we need the bModel here, or rather the S+B model?
+    profileLikeTestStat.SetOneSidedDiscovery(True);
+    profileLikeTestStat.SetPrintLevel(-1) # higher values provide more output, any value bigger than 3 might apears to give the same result as 3
+    profileLikeTestStat.EnableDetailedOutput()
+
+    aToyMCSampler = freqCalculator.GetTestStatSampler()
+    aToyMCSampler.SetTestStatistic(profileLikeTestStat)
+
+    fqResult = freqCalculator.GetHypoTest();
+    fqResult.Print()
+
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
 
     # asymCalcResult.NullPValue()
     #expectedP0 = ROOT.RooStats.AsymptoticCalculator.GetExpectedPValues(   asymCalcResult.NullPValue(),  asymCalcResult.AlternatePValue(), 0, False)
@@ -551,9 +602,9 @@ def p0SignifianceCalculation(workspace):
 
     name = "asymptoticNullPValue"
     title = name
-    value    = asymCalcResult.NullPValue()
-    lowLimit = asymCalcResult.NullPValue()
-    highLimit = asymCalcResult.NullPValue()
+    value    = fqResult.NullPValue()
+    lowLimit = fqResult.NullPValueError()
+    highLimit = fqResult.NullPValueError()
 
     outputRooRealvar = ROOT.RooRealVar( name, title ,value,lowLimit , highLimit)
 
@@ -831,7 +882,7 @@ if __name__ == '__main__':
     observedLimitGraph    = graphHelper.createNamedTGraphAsymmErrors("observedLimitGraph")
     expectedLimitsGraph_1Sigma = graphHelper.createNamedTGraphAsymmErrors("expectedLimits_1Sigma")
     expectedLimitsGraph_2Sigma = graphHelper.createNamedTGraphAsymmErrors("expectedLimits_2Sigma")
-    nullHypoThesisPValueGraph = graphHelper.createNamedTGraph("nullHypoThesisPValueGraph")
+    nullHypoThesisPValueGraph = graphHelper.createNamedTGraphAsymmErrors("nullHypoThesisPValueGraph")
 
     bestEstimateDict   = collections.defaultdict(list)
     upperLimits1SigDict = collections.defaultdict(list)
