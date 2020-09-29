@@ -203,7 +203,8 @@ def getReducibleTH1s(TH1Template = None , convertXAxisFromMeVToGeV = False):
     # 4l: 10.6 +- 2.84% (stat.) +- 8.22% (syst.)
 
     # make sure that we use the same keys in llNorms and TH1Dict
-    llNorms = { "llmumu" : 2.29+2.57 , "llee" : 2.54+3.19, "all" : 10.6}
+    llNorms = { "llmumu" : 2.29+2.57 , "llee" : 2.54+3.19, "all" : 10.6, 
+                "4mu" : 2.29 , "4e" : 2.54 , "2mu2e" : 3.19 , "2e2mu" :  2.57  }
 
     # adjust norms to mc16a luminosities
     #for key in llNorms: llNorms[key]= llNorms[key] * 36.3/139
@@ -211,8 +212,9 @@ def getReducibleTH1s(TH1Template = None , convertXAxisFromMeVToGeV = False):
     # add stat error only. Add syst error to limitSetting.py instead
     statErrorDict = { "llmumu" : (2.29*0.0152 + 2.57*0.0152)/(2.29+2.57) , 
                       "llee"   : (2.54*0.0843 + 3.19*0.0597)/(2.54+3.19), 
-                      "all"     : 0.0284}
-
+                      "all"     : 0.0284, 
+                      "4mu" : 0.0152 , "2e2mu" :  0.0152 ,
+                      "4e"  : 0.0843 , "2mu2e" : 0.0597 }
 
     TH1Dict = {}
 
@@ -269,8 +271,12 @@ def getReducibleTH1s(TH1Template = None , convertXAxisFromMeVToGeV = False):
 
 
     TH1Dict["llmumu"] = llmumuPDF.createHistogram(m34.GetName(),nBins)
-    TH1Dict["llee"] = lleePDF.createHistogram(m34.GetName(),nBins)
+    TH1Dict["4mu"]   = TH1Dict["llmumu"].Clone( re.sub("llmumu", "4mu", TH1Dict["llmumu"].GetName() )  )
+    TH1Dict["2e2mu"] = TH1Dict["llmumu"].Clone( re.sub("llmumu", "2e2mu", TH1Dict["llmumu"].GetName() )  )
 
+    TH1Dict["llee"]  = lleePDF.createHistogram(m34.GetName(),nBins)
+    TH1Dict["4e"]    = TH1Dict["llee"].Clone( re.sub("llee", "4e", TH1Dict["llee"].GetName() )  )
+    TH1Dict["2mu2e"] = TH1Dict["llee"].Clone( re.sub("llee", "2mu2e", TH1Dict["llee"].GetName() )  )
     
 
 
@@ -309,6 +315,10 @@ def getReducibleTH1s(TH1Template = None , convertXAxisFromMeVToGeV = False):
     TH1Dict["all"].Add(TH1Dict["llee"])
 
     for finalState in TH1Dict: addRelativeHistError( TH1Dict[finalState]  ,  statErrorDict[finalState] , errorIsOnIntegral = True )
+
+    TH1Dict["All"] = TH1Dict["all"]
+    TH1Dict["2l2mu"] = TH1Dict["llmumu"]
+    TH1Dict["2l2e"] = TH1Dict["llee"]
 
     #for flavor in TH1Dict: TH1Dict[flavor].Integral()
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
