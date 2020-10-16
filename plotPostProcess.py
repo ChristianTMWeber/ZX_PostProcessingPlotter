@@ -380,6 +380,8 @@ def mergeHistsByMapping(backgroundSamples, mappingDict) :
 
         DSIDTarget = mappingDict[int(DSID)]
 
+        if not isinstance(histogram,ROOT.TH1): continue
+
         if DSIDTarget in mergedSamplesDICT.keys():  mergedSamplesDICT[DSIDTarget].Add(histogram)
         else:                                       mergedSamplesDICT[DSIDTarget]=histogram.Clone();
 
@@ -666,10 +668,10 @@ def makelleeAndllmumuPlots(dictTree):
     return None
 
 
-def make1UpAnd1DownSystVariationHistogram( BackgroundVariationDict , flavor = "All" ):
+def make1UpAnd1DownSystVariationHistogram( BackgroundVariationDict , flavor = "All" , nominalBackgroundHist = None):
     #make1UpAnd1DownSystVariationHistogram( altMasterHistDict["ZXSR"]["Background"] )
 
-    def makeVariationHist( upOrDown = "1up" , inlcudeStatUncertainty = False):
+    def makeVariationHist( upOrDown = "1up" , inlcudeStatUncertainty = False, nominalBackgroundHist = None):
 
         sysVarHists = [BackgroundVariationDict[sysName+upOrDown][flavor] for sysName in systematicNames]
         sysYieldMatrix =  histNumpyTools.listOfTH1ToNumpyMatrix(sysVarHists)  # numpy matrix, entries are event counts, axis = 0 indexes the systeamatic variations, axis = 1 indexes the bins
@@ -692,13 +694,18 @@ def make1UpAnd1DownSystVariationHistogram( BackgroundVariationDict , flavor = "A
 
             relativeYieldUncertainty = np.sqrt(relativeYieldUncertainty**2 + relStatError**2)
 
-        if upOrDown == "1up": yieldVariation = (1+relativeYieldUncertainty) *nominalVector
-        else:                 yieldVariation = (1-relativeYieldUncertainty) *nominalVector
+        if upOrDown == "1up": yieldVariation = (+relativeYieldUncertainty) *nominalVector
+        else:                 yieldVariation = (-relativeYieldUncertainty) *nominalVector
 
-        sysHist = nominalHist.Clone( nominalHist.GetName() + "_systVar_"+upOrDown)
-        sysHist.Reset()
+        if nominalBackgroundHist is None: nominalBackgroundHist = BackgroundVariationDict["Nominal"][flavor]
 
-        for binNr in xrange(0, len(yieldVariation)): sysHist.SetBinContent( binNr+1 ,yieldVariation[binNr] )
+        sysHist = nominalBackgroundHist.Clone( nominalBackgroundHist.GetName() + "_systVar_"+upOrDown)
+        #sysHist.Reset()
+
+        for binNr in xrange(0, len(yieldVariation)):
+            oldBinContent = sysHist.GetBinContent(binNr+1 )
+            sysHist.SetBinContent( binNr+1 , oldBinContent  +  yieldVariation[binNr] )
+            sysHist.SetBinError(binNr+1 , 0)
 
         return sysHist
 
@@ -714,25 +721,30 @@ def make1UpAnd1DownSystVariationHistogram( BackgroundVariationDict , flavor = "A
     for x in removeList: systematicNameSet.discard(x)
     systematicNames = sorted(list(systematicNameSet))
 
-    upSysHist   = makeVariationHist( upOrDown = "1up"   , inlcudeStatUncertainty = False)
-    downSysHist = makeVariationHist( upOrDown = "1down" , inlcudeStatUncertainty = False)
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    upSysHist   = makeVariationHist( upOrDown = "1up"   , inlcudeStatUncertainty = False , nominalBackgroundHist = nominalBackgroundHist  )
+    downSysHist = makeVariationHist( upOrDown = "1down" , inlcudeStatUncertainty = False , nominalBackgroundHist = nominalBackgroundHist  )
 
     return upSysHist, downSysHist
 
-def make1UpAnd1DownSystVariationYields( BackgroundVariationDict , flavor = "All" ):
+def make1UpAnd1DownSystVariationYields( BackgroundVariationDict , flavor = "All" , nominalHist = None):
 
-    def makeVariationYield( upOrDown = "1up" ):
+    def makeVariationYield( upOrDown = "1up" , nominalHist = None):
 
         sysVarYieldList = np.array([BackgroundVariationDict[sysName+upOrDown][flavor].Integral() for sysName in systematicNames])
-        nominalYield = BackgroundVariationDict["Nominal"][flavor].Integral()
+
+        if nominalHist is None: nominalHist = BackgroundVariationDict["Nominal"][flavor]
+
+        nominalYield = nominalHist.Integral()
 
         relativeYieldDifference = (sysVarYieldList - nominalYield)/nominalYield
         relativeYieldDifference = np.nan_to_num(relativeYieldDifference) # replace the NaN with zeros
 
         relativeYieldUncertainty = np.sqrt( np.sum( np.square( relativeYieldDifference) , axis=0) ) # add the same bin over different systematics in quadrature
 
-        if upOrDown == "1up": yieldVariation = (1+relativeYieldUncertainty) *nominalYield
-        else:                 yieldVariation = (1-relativeYieldUncertainty) *nominalYield
+        if upOrDown == "1up": yieldVariation = (+relativeYieldUncertainty) *nominalYield
+        else:                 yieldVariation = (-relativeYieldUncertainty) *nominalYield
 
         return yieldVariation
 
@@ -748,10 +760,10 @@ def make1UpAnd1DownSystVariationYields( BackgroundVariationDict , flavor = "All"
 
     systematicNames = sorted(list(systematicNameSet))
 
-    upSysYield   = makeVariationYield( upOrDown = "1up"   )
-    downSysYield = makeVariationYield( upOrDown = "1down" )
+    upSysYieldChange   = makeVariationYield( upOrDown = "1up"   )
+    downSysYieldChange = makeVariationYield( upOrDown = "1down" )
 
-    return upSysYield, downSysYield
+    return upSysYieldChange, downSysYieldChange
 
 if __name__ == '__main__':
 
@@ -932,7 +944,7 @@ if __name__ == '__main__':
 
         baseHist.Rebin(args.rebin)
 
-        if addSystematicUncertaintyToNominal:
+        if addSystematicUncertaintyToNominal and not  int(DSID) in myDSIDHelper.analysisMapping["Reducible"] :
             altMasterHistDict = makeHistDict.fillHistDict(path, baseHist , args.mcCampaign, myDSIDHelper, channelMap = { "ZXSR" : "ZXSR" , "ZXVR1" : "ZZCR"} , masterHistDict = altMasterHistDict, customMapping = myDSIDHelper.BackgroundAndSignalByDSID) 
 
         # store the histograms for binning and and plotting in the master HistDict
@@ -948,15 +960,16 @@ if __name__ == '__main__':
     # Do the data processing from here on
     ######################################################
 
-
-    makelleeAndllmumuPlots(masterHistDict)
-    makeHistDict.add2l2eAnd2l2muHists(altMasterHistDict)
+    if args.flavorsToPlot == parser.get_default("flavorsToPlot"): 
+        makelleeAndllmumuPlots(masterHistDict)
+        makeHistDict.add2l2eAnd2l2muHists(altMasterHistDict)
 
     combinedMCTagHistDict = masterHistDict
 
     canvasList = []
 
     for systematicChannel in combinedMCTagHistDict.keys():
+        if re.search("(UncorrUncertaintyNP)|(CorrUncertaintyNP)|(PMG_)", systematicChannel): continue # skip generator weight variations when plottins systematics
 
         #if "Nominal" != systematicChannel: continue
 
@@ -1088,12 +1101,16 @@ if __name__ == '__main__':
 
                 inferredFlavor  = re.search("(All)|(2e2mu)|(4mu)|(4e)|(2mu2e)|(2l2e)|(2l2mu)", histEnding).group()
 
-                upSysHist, downSysHist = make1UpAnd1DownSystVariationHistogram( altMasterHistDict["ZXSR"]["Background"]  , flavor =  inferredFlavor)
+                #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+                upSysHist, downSysHist = make1UpAnd1DownSystVariationHistogram( altMasterHistDict["ZXSR"]["Background"]  , flavor =  inferredFlavor , nominalBackgroundHist = backgroundMergedTH1ForRatioHist.Clone())
                 upSysYield, downSysYield = make1UpAnd1DownSystVariationYields(  altMasterHistDict["ZXSR"]["Background"]  , flavor = inferredFlavor )
+                #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
                 for sysHist in [upSysHist, downSysHist]: 
                     sysHist.SetLineColor(ROOT.kGray+2 )
                     sysHist.SetLineStyle(ROOT.kDashed )
+                    sysHist.SetFillStyle(0)#(3001) # fill style: https://root.cern.ch/doc/v614/classTAttFill.html#F2
+
                     #sysHist.SetLineWidth( 2 )
 
                 upSysHist.Draw("same")
@@ -1103,7 +1120,7 @@ if __name__ == '__main__':
 
                 nominalYield = backgroundMergedTH1.Integral()
 
-                backgroundSystAddendum += "_{stat} #pm %.2f_{sys}" %(   (upSysYield-nominalYield + nominalYield-downSysYield)/2)
+                backgroundSystAddendum += "_{stat} #pm %.2f_{sys}" %(   (upSysYield - downSysYield)/2)
 
                 # include the systematic error in the backgroundMergedTH1, so that it is reflected in the ratio hist
                 for binNr in xrange(1,backgroundMergedTH1ForRatioHist.GetNbinsX()+1): 
