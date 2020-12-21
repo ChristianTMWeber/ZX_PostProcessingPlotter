@@ -127,8 +127,11 @@ if __name__ == '__main__':
     #   25 = Higgs
     #   23 = Z-boson
     #   32 = Zd boson
+    #   36 = pseudoscalar a
     #   11 = electron
     #   13 = muon
+
+    pdIdTag = 36
 
     if args.nEventsToProcess < 0 : nEvents = evt.getEntries()
     else:                          nEvents = args.nEventsToProcess
@@ -144,13 +147,14 @@ if __name__ == '__main__':
         # print out all (?) the information of the truth particles in the given event
         #for p in truthParticles: ROOT.AAH.printAuxElement(p)
 
-        for particle in truthParticles: particle.pdgId()
+        #for particle in truthParticles: particle.pdgId()
+
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
         # print out pdgid of the truthParticles in the event
         for particle in truthParticles: 
 
-            if particle.pdgId() != 32: continue
-            # we found the Zd if particle.pdgId() == 32
+            if particle.pdgId() != pdIdTag: continue   # we found the Zd if particle.pdgId() == 32, and pseudoscalar a if particle.pdgId() == 36
 
             higgs = particle.parent()
 
