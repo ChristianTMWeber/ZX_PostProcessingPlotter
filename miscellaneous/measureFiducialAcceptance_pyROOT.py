@@ -108,9 +108,28 @@ def makeLeptonPairs(leptonList):
 
 def quadruplets( leptonPairs):
 
+    ZBosonMass = 91187.6 # MeV
+    quadrupletList = []
+
     for pair1, pair2 in getAllPairs( leptonPairs ):
         if (pair1[0] is pair2[0]) or (pair1[1] is pair2[1]): continue # can't reuse a lepton to make a quadruplet. Use 'is' to check against memory location
-        yield pair1[0], pair1[1], pair2[0], pair2[1]           
+
+
+        massPair1 = (pair1[0] + pair1[1]).M()
+        massPair2 = (pair2[0] + pair2[1]).M()
+
+        # first two leptons should be the ones whoese invariant mass is closer to the Z-boson mass
+        if abs(massPair1-ZBosonMass) <= abs(massPair2-ZBosonMass): quadrupletList.append( (pair1[0], pair1[1], pair2[0], pair2[1]) ) 
+        else:                                                      quadrupletList.append( (pair2[0], pair2[1], pair1[0], pair1[1]) )
+
+
+    #quadrupletList.sort( key = lambda x:x[0].pdgId() , reverse=True) # i.e. we
+    #quadrupletList.sort( key = lambda x:x[2].pdgId() , reverse=True) # i.e. we
+
+    return quadrupletList
+
+
+
 
 #def quadruplets( leptonPairs):
 #
@@ -177,9 +196,7 @@ def checkDileptonMasses(lep1, lep2, lep3, lep4):
     return diLeptonMassesOK
 
 
-def makeOutputHistogram(eventsProcessed, nEventsInFiducialRegionDict, histName = "outputHist"):
-
-    nEventsInFiducialRegionDict["eventsProcessed"] = eventsProcessed
+def makeOutputHistogram( nEventsInFiducialRegionDict, histName = "outputHist"):
 
     nOutPuts = len( nEventsInFiducialRegionDict) 
 
@@ -192,6 +209,16 @@ def makeOutputHistogram(eventsProcessed, nEventsInFiducialRegionDict, histName =
         outputHist.SetBinContent(binCounter,nEventsInFiducialRegionDict[eventType])
 
     return outputHist
+
+
+def getDecayFlavorOfZd(truthParticles):
+
+    ZdCandicates = [ particle for particle in truthParticles if particle.pdgId() == 32 ] 
+
+    if len(ZdCandicates) > 0 : return( abs(ZdCandicates[0].child(0).pdgId()) )
+    #else:  import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    return None
 
 
 if __name__ == '__main__':
@@ -239,7 +266,8 @@ if __name__ == '__main__':
 
     leptonParents = set()
 
-    nEventsInFiducialRegionDict = {"all" : 0, "4e" : 0 , "2e2mu" : 0, "2mu2e" : 0, "4mu" : 0 } # split by signal region flavor
+    nEventsInFiducialRegionDict = {"all" : 0, "4e" : 0 , "2e2mu" : 0, "2mu2e" : 0, "4mu" : 0 , # split by signal region flavor
+                                   "ZdTruthFlavor_2l2mu" : 0 , "ZdTruthFlavor_2l2e" : 0} 
 
     for eventCounter in range(0, nEvents): 
 
@@ -247,12 +275,51 @@ if __name__ == '__main__':
 
         truthParticles = evt.retrieve("xAOD::TruthParticleContainer","TruthParticles")  
 
+
+        ZdDecayFalvor = getDecayFlavorOfZd(truthParticles)
+
+        if   ZdDecayFalvor == 11: nEventsInFiducialRegionDict["ZdTruthFlavor_2l2e"]  += 1
+        elif ZdDecayFalvor == 13: nEventsInFiducialRegionDict["ZdTruthFlavor_2l2mu"] += 1
+
+
+
         # print out all (?) the information of the truth particles in the given event
         #for p in truthParticles: ROOT.AAH.printAuxElement(p)
 
         #leptonsPDGIDs = [ particle.pdgId() for particle in truthParticles if (abs(particle.pdgId()) == 11 or abs(particle.pdgId()) == 13) and not particle.child(0)]
 
-        leptons = [ particle for particle in truthParticles if (abs(particle.pdgId()) == 11 or abs(particle.pdgId()) == 13) and not particle.child(0)] # look for not particle.child(0) to find final state leptons
+
+        ZdList = [ particle for particle in truthParticles if abs(particle.pdgId()) == 32 ] # look for not particle.child(0) to find final state leptons
+
+        if len(ZdList) >= 0:
+            Zd = ZdList[0]
+            higgs = Zd.parent()
+
+        else : higgs = None
+
+        if higgs is None: import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+        #print( eventCounter)
+
+        if higgs is None:            noHiggsChild = True
+        try: 
+            higgs.child(1); noHiggsChild = False
+        except:             noHiggsChild = True
+
+
+        if higgs is None or noHiggsChild: 
+            leptons = [ particle for particle in truthParticles if (abs(particle.pdgId()) == 11 or abs(particle.pdgId()) == 13) and not particle.child(0)] # look for not particle.child(0) to find final state leptons
+
+        else:
+
+            leptons = [Zd.child(0), Zd.child(1)]
+
+            if   higgs.child(0).pdgId()==23 : ZBoson = higgs.child(0)
+            elif higgs.child(1).pdgId()==23 : ZBoson = higgs.child(1)
+            leptons.append(ZBoson.child(0)) 
+            leptons.append(ZBoson.child(1)) 
+
+
 
         photons = [ particle for particle in truthParticles if (abs(particle.pdgId()) == 22 and not particle.child(0)) ]
 
@@ -272,7 +339,6 @@ if __name__ == '__main__':
 
         fiducialRegionQuadruplet = quadrupletSelection( leptonPairs)
 
-
         if fiducialRegionQuadruplet:
 
             lep1PDGId = fiducialRegionQuadruplet[0].pdgId()
@@ -290,9 +356,12 @@ if __name__ == '__main__':
 
     
     tFile = ROOT.TFile(args.outputName, 'recreate')   # https://wiki.physik.uzh.ch/cms/root:pyroot_ttree
+
+    nEventsInFiducialRegionDict["eventsProcessed"] = eventCounter
+
         
 
-    makeOutputHistogram = makeOutputHistogram( eventCounter, nEventsInFiducialRegionDict, outputHistName)
+    makeOutputHistogram = makeOutputHistogram( nEventsInFiducialRegionDict, outputHistName)
 
     #makeOutputHistogram.Write()
 
