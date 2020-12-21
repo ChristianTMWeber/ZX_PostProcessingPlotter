@@ -579,23 +579,32 @@ def getDataDrivenReducibleShape(canvasName, sortedSampleKey, rebin):
     return False
 
 
-def getDataDrivenReducibleShape2(canvasName, sortedSampleKey, referenceHist):
+def getDataDrivenReducibleShape2(canvasName, sortedSampleKey, referenceHist , meomizeDict = {} ):
 
     # this is super crude :(
     # but should work for now
 
     #makeReducibleShapes.getReducibleTH1s(TH1Template = None , convertXAxisFromMeVToGeV = False)
 
+    # use the fact that the meomizeDict is only initialized once - at the launch of the programm  and not at function call 
+    # to meomize the output getReducibleTH1s thus we only need to call getReducibleTH1s once 
+    # and me might safe some time after when calling getDataDrivenReducibleShape2 repeatedly
+    if len(meomizeDict) == 0:  
+        reducibleShapeDict = makeReducibleShapes.getReducibleTH1s(TH1Template = referenceHist , convertXAxisFromMeVToGeV = True)
+        for flavor in reducibleShapeDict: meomizeDict[flavor] = reducibleShapeDict[flavor]
 
 
-    if "ZXSR_All_HWindow_m34" in canvasName  :
+    #if  "ZXSR_2mu2e_HWindow_m34" in canvasName: import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    if re.search( "ZXSR_\w+_HWindow_m34", canvasName) :
     #for key in sortedSamples.keys(): # add merged samples to the backgroundTHStack
         if "Reducible" in sortedSampleKey: 
 
-            
 
-            th1Dict = makeReducibleShapes.getReducibleTH1s(TH1Template = referenceHist , convertXAxisFromMeVToGeV = True)
-            mergedHist = th1Dict["all"]
+            inferredFlavor  = re.search("(All)|(2e2mu)|(4mu)|(4e)|(2mu2e)|(2l2e)|(2l2mu)", canvasName).group()
+
+            #th1Dict = makeReducibleShapes.getReducibleTH1s(TH1Template = referenceHist , convertXAxisFromMeVToGeV = True)
+            mergedHist = meomizeDict[inferredFlavor]
  
             mergedHist.Scale(   myDSIDHelper.lumiMap[args.mcCampaign] / myDSIDHelper.lumiMap["mc16ade"])
             #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
