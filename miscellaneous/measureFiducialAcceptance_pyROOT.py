@@ -7,39 +7,34 @@
 #   python truthPlots_pyROOT.py /direct/usatlas+u/chweber/usatlasdata/signalDAODs/mc16_13TeV.343234.MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd15.deriv.DAOD_HIGG2D1.e4551_e5984_a875_r9364_r9315_p3654/DAOD_HIGG2D1.16330910._000004.pool.root.1 --nEventsToProcess 100
 
 import ROOT
-from array import array # to fill the TTree eventally
 import argparse # to parse command line options
-import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
-import math
+import re
 
 
 #def particleToLorenzVector(particle): return ROOT.Math.PxPyPzEVector(particle.px(), particle.py(), particle.pz() , particle.e())
 def particleToLorenzVector(particle): return lorentzVectorWithPDGId(particle.px(), particle.py(), particle.pz() , particle.e(), particle.pdgId())
 
 
-class lorentzVectorWithPDGId(ROOT.Math.PxPyPzEVector):
+class lorentzVectorWithPDGId(ROOT.Math.PxPyPzEVector): 
+    # I need a Lorentz vector that also stores the particle Id Number, so that I can keep track pf flavor and charge
+    # let's make such an object, by inheriting from ROOT.Math.PxPyPzEVector
 
     m_pdgId = None
 
     def __init__(self,px,py,pz,E, pdgId=None):
-        super(lorentzVectorWithPDGId,self).__init__(px,py,pz,E)
+        super(lorentzVectorWithPDGId,self).__init__(px,py,pz,E) # I believe super(...) makes it that I inherit all of the methods from 
         self.m_pdgId = pdgId
 
     def setPdgId(self,pdgId): self.m_pdgId = pdgId
     #def getPdgId(self,pdgId): return self.m_pdgId
     def pdgId(self): return self.m_pdgId
 
-
-    #def add(self, otherLorentzVector):
-    #    tempLorentzVector = self+otherLorentzVector
-    #    return tempLorentzVector
-
-    def __add__(self, other):
+    def __add__(self, other): # redefine the addition operator '+'. I want to keep the pdgId under certain circumstances
 
         outputLorentzVec = lorentzVectorWithPDGId( self.px()+other.px(), self.py()+other.py(), self.pz()+other.pz(), self.e()+other.e())
 
         if self.m_pdgId == other.pdgId(): outputLorentzVec.setPdgId(self.m_pdgId)
-        elif self.m_pdgId == 22 : outputLorentzVec.setPdgId(other.pdgId())
+        elif self.m_pdgId == 22 : outputLorentzVec.setPdgId(other.pdgId()) # pdgId 22 = photon
         elif other.pdgId() == 22: outputLorentzVec.setPdgId(self.m_pdgId)
 
         return outputLorentzVec
@@ -104,6 +99,7 @@ def makeLeptonPairs(leptonList):
 
     for lepton1, lepton2 in getAllPairs( leptonList ):
         if lepton1.pdgId() +  lepton2.pdgId() == 0:  
+            if lepton1 is lepton2: import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
             if lepton1.pdgId() > 0: leptonPairList.append( (lepton1,lepton2) )            
             else :                  leptonPairList.append( (lepton2,lepton1) )            
 
@@ -113,6 +109,7 @@ def makeLeptonPairs(leptonList):
 def quadruplets( leptonPairs):
 
     for pair1, pair2 in getAllPairs( leptonPairs ):
+        if (pair1[0] is pair2[0]) or (pair1[1] is pair2[1]): continue # can't reuse a lepton to make a quadruplet. Use 'is' to check against memory location
         yield pair1[0], pair1[1], pair2[0], pair2[1]           
 
 #def quadruplets( leptonPairs):
@@ -131,18 +128,20 @@ def quadrupletSelection( leptonPairList):
 
     for lep1, lep2, lep3, lep4 in quadruplets( leptonPairList):
 
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
         transverseMomenta = sorted([lep1.pt(), lep2.pt(), lep3.pt(), lep4.pt()], reverse = True)
 
         leptonPTOk = transverseMomenta[0] > 20000 and transverseMomenta[1] > 15000 and transverseMomenta[2] > 10000
 
         if not leptonPTOk: continue
 
-        diLeptonMassesOK = checkDileptonMasses
+        diLeptonMassesOK = checkDileptonMasses(lep1, lep2, lep3, lep4)
         if not diLeptonMassesOK: continue
 
         pairwiseDeltaROK = [ getDeltaR(lepA, lepB) > 0.1  for lepA, lepB in  getAllPairs( [lep1, lep2, lep3, lep4] )]
 
-        if not pairwiseDeltaROK: continue
+        if not all(pairwiseDeltaROK): continue
 
         if abs(lep1.pdgId()) == abs(lep3.pdgId()): altPairingOK = (lep1+lep4).M() > 5000 and (lep2+lep3).M() > 5000
         else: altPairingOK = True
@@ -150,9 +149,12 @@ def quadrupletSelection( leptonPairList):
         if not altPairingOK: continue
 
         m4l = (lep1+lep2+lep3+lep4).M()
-        withinHiggsMassWindow = m4l > 150000 and m4l < 130000
+        withinHiggsMassWindow = m4l > 115000 and m4l < 130000
 
         if not withinHiggsMassWindow: continue
+
+
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
         # all cuts passed, return quadruplet
         return lep1, lep2, lep3, lep4
@@ -175,59 +177,21 @@ def checkDileptonMasses(lep1, lep2, lep3, lep4):
     return diLeptonMassesOK
 
 
+def makeOutputHistogram(eventsProcessed, nEventsInFiducialRegionDict, histName = "outputHist"):
 
+    nEventsInFiducialRegionDict["eventsProcessed"] = eventsProcessed
 
+    nOutPuts = len( nEventsInFiducialRegionDict) 
 
-def calculateInvariantMass(lep1, lep2):
+    outputHist = ROOT.TH1I(histName,histName, nOutPuts, 0 , nOutPuts)
 
-    E  = lep1.e()  + lep2.e()
-    px = lep1.px() + lep2.px()
-    py = lep1.py() + lep2.py()
-    pz = lep1.pz() + lep2.pz()
+    binCounter = 0
+    for eventType in sorted(nEventsInFiducialRegionDict.keys()) :         
+        binCounter +=1  ;         
+        outputHist.GetXaxis().SetBinLabel(binCounter, eventType) ;        
+        outputHist.SetBinContent(binCounter,nEventsInFiducialRegionDict[eventType])
 
-    invariantMassSq = (E**2 - px**2 - py**2 - pz**2)
-    invariantMass =  math.copysign( abs(invariantMassSq)**0.5, invariantMassSq)
-
-    return invariantMass
-
-def getEtaPtPdgId(truthParticle): return { "pT" : truthParticle.pt() / 1000 , "eta" : truthParticle.eta(), "pdgId" : truthParticle.pdgId()} 
-# divide by 1000 to convert MeV to GeV
-
-
-def propertiesOfVectorBosonAndDoughterLeptons( vectorBoson):
-
-    outputDict = collections.defaultdict(dict)
-
-    lepton1 = vectorBoson.child(0)
-    lepton2 = vectorBoson.child(1)
-
-    if lepton1 == None or lepton2 == None: return None
-
-    outputDict["vBoson"]  = getEtaPtPdgId(vectorBoson) 
-    outputDict["vBoson"]["m"] = vectorBoson.m() / 1000  # convert to GeV
-    outputDict["vBoson"]["mInv"] = calculateInvariantMass(lepton1, lepton2) / 1000 # convert to GeV
-
-    outputDict["lepton1"] = getEtaPtPdgId( lepton1 )
-    outputDict["lepton2"] = getEtaPtPdgId( lepton2 )
-
-    return outputDict
-
-
-def getOrderedZAndZdFromHiggs(higgsBoson):
-    # first output is regular Z-boson, second output is Zd - dark Z boson
-
-    # pdgId 23 = Z-boson
-    # pdgId 32 = Zd boson
-
-    vectorBoson1 = higgsBoson.child(0)
-    vectorBoson2 = higgsBoson.child(1)
-
-    if vectorBoson1.pdgId() == 23:  
-        ZBoson  = vectorBoson1 ;  ZdBoson = vectorBoson2
-    else: 
-        ZBoson  = vectorBoson2 ;  ZdBoson = vectorBoson1
-
-    return ZBoson , ZdBoson
+    return outputHist
 
 
 if __name__ == '__main__':
@@ -237,58 +201,28 @@ if __name__ == '__main__':
     parser.add_argument("input", type=str, help="name or path to the input files")
 
     parser.add_argument( "--outputName", type=str, default="tree.root" , help = "Pick the name of the output TFile." )
-    parser.add_argument( "--tTreeName", type=str, default="Zd_TruthTree" , help = "Pick the name of the TTree" )
+    parser.add_argument( "--outputHistName", type=str, default=None , help = "Pick the name of the TTree" )
     parser.add_argument( "--nEventsToProcess", type=int, default=-1 , help = "Pick the name of the TTree" )
 
     args = parser.parse_args()
 
     print( args.input ) # print the event for debug purposes when running on condor
     print( args.outputName )
-    print( args.tTreeName)
+    print( args.outputHistName)
 
     #AAA  = lorentzVectorWithPDGId(0,0,0,1)
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    if args.outputHistName is None : 
+        reMatchObject = re.search( "mZd\d\d", args.input)
+        if reMatchObject: outputHistName = reMatchObject.group()
+        else: outputHistName = "fiducialEventNumbers"
+    else: outputHistName = args.outputHistName
 
     evt = ROOT.POOL.TEvent(ROOT.POOL.TEvent.kClassAccess) #argument is optional, but ClassAccess is faster than the default POOLAccess
 
     evt.readFrom(args.input)
 
-    tFile = ROOT.TFile(args.outputName, 'recreate')   # https://wiki.physik.uzh.ch/cms/root:pyroot_ttree
-    TTree = ROOT.TTree(args.tTreeName, args.outputName)
-
-    # create 1 dimensional float arrays as fill variables, in this way the float
-    # array serves as a pointer which can be passed to the branch
-    #px  = array('f',[0])
-    #phi = array('f',[0])
-
-    # create the branches and assign the fill-variables to them as doubles (D)
-    #tree.Branch("px",  px , 'normal/f')
-    #tree.Branch("phi", phi, 'uniform/f')
-
-    Z_pT      = array('f',[0]) ; TTree.Branch("Z_pT"  ,    Z_pT   , 'Z_pT/F')
-    Z_eta     = array('f',[0]) ; TTree.Branch("Z_eta" ,    Z_eta  , 'Z_eta/F')
-    Z_pdgId   = array('i',[0]) ; TTree.Branch("Z_pdgId",   Z_pdgId  , 'Z_pdgId/I')
-    Z_m       = array('f',[0]) ; TTree.Branch("Z_m"   ,    Z_m    , 'Z_m/F')
-    ll12_mInv = array('f',[0]) ; TTree.Branch("ll12_mInv", ll12_mInv , 'll12_mInv/F')
-    l1_pT     = array('f',[0]) ; TTree.Branch("l1_pT"  ,   l1_pT   , 'l1_pT/F')
-    l1_eta    = array('f',[0]) ; TTree.Branch("l1_eta" ,   l1_eta  , 'l1_eta/F')
-    l1_pdgId  = array('i',[0]) ; TTree.Branch("l1_pdgId",  l1_pdgId, 'l1_pdgId/I')
-    l2_pT     = array('f',[0]) ; TTree.Branch("l2_pT"  ,   l2_pT   , 'l2_pT/F')
-    l2_eta    = array('f',[0]) ; TTree.Branch("l2_eta" ,   l2_eta  , 'l2_eta/F')
-    l2_pdgId  = array('i',[0]) ; TTree.Branch("l2_pdgId",  l2_pdgId, 'l2_pdgId/I')
-
-    Zd_pT     = array('f',[0]) ; TTree.Branch("Zd_pT"   ,  Zd_pT    , 'Zd_pT/F')
-    Zd_eta    = array('f',[0]) ; TTree.Branch("Zd_eta"  ,  Zd_eta   , 'Zd_eta/F')
-    Zd_pdgId  = array('i',[0]) ; TTree.Branch("Zd_pdgId",  Zd_pdgId , 'Zd_pdgId/I')
-    Zd_m      = array('f',[0]) ; TTree.Branch("Zd_m"    ,  Zd_m     , 'Zd_m/F')
-    ll34_mInv = array('f',[0]) ; TTree.Branch("ll34_mInv", ll34_mInv , 'll34_mInv/F')
-    l3_pT     = array('f',[0]) ; TTree.Branch("l3_pT"  ,   l3_pT   , 'l3_pT/F')
-    l3_eta    = array('f',[0]) ; TTree.Branch("l3_eta" ,   l3_eta  , 'l3_eta/F')
-    l3_pdgId  = array('i',[0]) ; TTree.Branch("l3_pdgId",  l3_pdgId, 'l3_pdgId/I')
-    l4_pT     = array('f',[0]) ; TTree.Branch("l4_pT"  ,   l4_pT   , 'l4_pT/F')
-    l4_eta    = array('f',[0]) ; TTree.Branch("l4_eta" ,   l4_eta  , 'l4_eta/F')
-    l4_pdgId  = array('i',[0]) ; TTree.Branch("l4_pdgId",  l4_pdgId, 'l4_pdgId/I')
-    
 
 
     # PdgIds: http://pdg.lbl.gov/2010/download/rpp-2010-JPhys-G-37-075021.pdf
@@ -305,9 +239,11 @@ if __name__ == '__main__':
 
     leptonParents = set()
 
-    for n in range(0, nEvents): 
+    nEventsInFiducialRegionDict = {"all" : 0, "4e" : 0 , "2e2mu" : 0, "2mu2e" : 0, "4mu" : 0 } # split by signal region flavor
 
-        evt.getEntry(n) #would call this method inside a loop if you want to loop over events .. argument is the entry number
+    for eventCounter in range(0, nEvents): 
+
+        evt.getEntry(eventCounter) #would call this method inside a loop if you want to loop over events .. argument is the entry number
 
         truthParticles = evt.retrieve("xAOD::TruthParticleContainer","TruthParticles")  
 
@@ -334,66 +270,33 @@ if __name__ == '__main__':
 
         leptonPairs = makeLeptonPairs(baselineLeptons)
 
-        quadruplet = quadrupletSelection( leptonPairs)
-
-        if not quadruplet: continue
+        fiducialRegionQuadruplet = quadrupletSelection( leptonPairs)
 
 
-        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+        if fiducialRegionQuadruplet:
 
-        # print out pdgid of the truthParticles in the event
-        for particle in truthParticles: 
+            lep1PDGId = fiducialRegionQuadruplet[0].pdgId()
+            lep2PDGId = fiducialRegionQuadruplet[1].pdgId()
+            lep3PDGId = fiducialRegionQuadruplet[2].pdgId()
+            lep4PDGId = fiducialRegionQuadruplet[3].pdgId()
 
-            if particle.pdgId() != 32: continue
-            # we found the Zd if particle.pdgId() == 32
+            nEventsInFiducialRegionDict["all"] += 1
 
-            higgs = particle.parent()
-
-            if higgs == None: break # sometimes the truth associations between the truthHiggs and its vector children seem to be broken. Just skip the event in this case.
-
-            ZBoson, darkZBoson = getOrderedZAndZdFromHiggs(higgs)
-
-            ZProperties = propertiesOfVectorBosonAndDoughterLeptons( ZBoson)
-            darkZProperties = propertiesOfVectorBosonAndDoughterLeptons( darkZBoson)
-
-            if ZProperties == None or darkZProperties == None: break # sometimes the truth associations break, then we discard the event
+            if   abs(lep1PDGId) == 11 and abs(lep3PDGId) == 11 : nEventsInFiducialRegionDict["4e"]    +=1
+            elif abs(lep1PDGId) == 13 and abs(lep3PDGId) == 11 : nEventsInFiducialRegionDict["2mu2e"] +=1
+            elif abs(lep1PDGId) == 11 and abs(lep3PDGId) == 13 : nEventsInFiducialRegionDict["2e2mu"] +=1
+            elif abs(lep1PDGId) == 13 and abs(lep3PDGId) == 13 : nEventsInFiducialRegionDict["4mu"]   +=1
 
 
-            Z_pT[0]       = ZProperties["vBoson"]["pT"]
-            Z_eta[0]      = ZProperties["vBoson"]["eta"]
-            Z_pdgId[0]    = ZProperties["vBoson"]["pdgId"]
-            Z_m[0]        = ZProperties["vBoson"]["m"]
-            ll12_mInv[0]  = ZProperties["vBoson"]["mInv"]
-            l1_pT[0]      = ZProperties["lepton1"]["pT"]
-            l1_eta[0]     = ZProperties["lepton1"]["eta"]
-            l1_pdgId[0]   = ZProperties["lepton1"]["pdgId"]
-            l2_pT[0]      = ZProperties["lepton2"]["pT"]
-            l2_eta[0]     = ZProperties["lepton2"]["eta"]
-            l2_pdgId[0]   = ZProperties["lepton2"]["pdgId"]
-            
-            Zd_pT[0]      = darkZProperties["vBoson"]["pT"]
-            Zd_eta[0]     = darkZProperties["vBoson"]["eta"]
-            Zd_pdgId[0]   = darkZProperties["vBoson"]["pdgId"]
-            Zd_m[0]       = darkZProperties["vBoson"]["m"]
-            ll34_mInv[0]  = darkZProperties["vBoson"]["mInv"]
-            l3_pT[0]      = darkZProperties["lepton1"]["pT"]
-            l3_eta[0]     = darkZProperties["lepton1"]["eta"]
-            l3_pdgId[0]   = darkZProperties["lepton1"]["pdgId"]
-            l4_pT[0]      = darkZProperties["lepton2"]["pT"]
-            l4_eta[0]     = darkZProperties["lepton2"]["eta"]
-            l4_pdgId[0]   = darkZProperties["lepton2"]["pdgId"]
+    
+    tFile = ROOT.TFile(args.outputName, 'recreate')   # https://wiki.physik.uzh.ch/cms/root:pyroot_ttree
+        
 
-            #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    makeOutputHistogram = makeOutputHistogram( eventCounter, nEventsInFiducialRegionDict, outputHistName)
+
+    #makeOutputHistogram.Write()
 
 
-            TTree.Fill()
-
-            break # once we found the Z and Zd no need to go over the other truthParticles, better go on with the next event
-
-            #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-
-
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     tFile.Write()
     tFile.Close()
 
