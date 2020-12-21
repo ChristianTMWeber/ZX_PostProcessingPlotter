@@ -29,14 +29,25 @@ def makeSubmitScript( shellScriptName):
 
 if __name__ == '__main__':
 
-    paretnDir = "/direct/usatlas+u/chweber/usatlasdata/signalDAODs"
+    #paretnDir = "/usatlas/u/chweber/usatlasdata/Za_signalDAOD/"
+    paretnDir = "/usatlas/u/chweber/usatlasdata/ZX_signalDAOD"
 
     count = 0
+
+    doZX = True
+    doZa = False
+
+    doTruthPlots = False
+    doFiducialmeasruement = True
 
     for (root,dirs,files) in os.walk(paretnDir): 
         for file in files:
 
-            regexMatch =  re.search("(?<=Zd)\d\d",root)
+
+            if doZX:  regexMatch =  re.search("(?<=Zd)\d\d",root)
+            elif doZa:
+                alteredRoot = re.sub("_a_", "_a", root)
+                regexMatch =  re.search("(?<=_a)\d+",alteredRoot)
 
             if not regexMatch : continue
 
@@ -44,11 +55,17 @@ if __name__ == '__main__':
 
             inputLocation = os.path.join(root,file)
 
-            tTreeName = "truthTree_Zd_" + regexMatch.group() + "_GeV"
 
-            outputName = "ZX_truthTTree_%03i.root" % count
+            if doTruthPlots: 
+                tTreeName = "truthTree_Zd_" + regexMatch.group() + "_GeV"
+                outputName = "ZX_truthTTree_%03i.root" % count
+                submitLine = "python truthPlots_pyROOT.py %s --outputName %s --tTreeName %s --nEventsToProcess %i" %(inputLocation, outputName, tTreeName, -1)
 
-            submitLine = "python truthPlots_pyROOT.py %s --outputName %s --tTreeName %s --nEventsToProcess %i" %(inputLocation, outputName, tTreeName, -1)
+            elif doFiducialmeasruement: 
+                outputName = outputName = "ZX_Fiducial_%03i.root" % count
+                submitLine = "python measureFiducialAcceptance_pyROOT.py %s --outputName %s --nEventsToProcess %i" %(inputLocation, outputName, -1)
+
+
 
             #import pdb; pdb.set_trace()
             shellScript = "truthOnGrid_%03i.sh" % count
