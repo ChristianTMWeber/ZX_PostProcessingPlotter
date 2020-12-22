@@ -1077,7 +1077,7 @@ if __name__ == '__main__':
             backgroundMergedTH1.SetMarkerStyle(0 ) # SetMarkerStyle(0 ) remove marker from combined backgroun
             backgroundMergedTH1.SetFillStyle(3244)#(3001) # fill style: https://root.cern.ch/doc/v614/classTAttFill.html#F2
             backgroundMergedTH1.SetFillColor(1)    # black: https://root.cern.ch/doc/v614/classTAttFill.html#F2
-            if "m34" in  backgroundTHStack.GetName() :  backgroundTHStack.GetXaxis().SetRangeUser(10, 70)
+            #if "m34" in  backgroundTHStack.GetName() :  backgroundTHStack.GetXaxis().SetRangeUser(10, 70)
 
             legend.AddEntry(backgroundMergedTH1 , "stat. uncertainty" , "f");
 
@@ -1140,7 +1140,7 @@ if __name__ == '__main__':
 
             if gotDataSample: # add data samples
                 dataTH1.Draw("same")
-                if "m34" in  backgroundTHStack.GetName() :  dataTH1.GetXaxis().SetRangeUser(10, 70)
+                #if "m34" in  backgroundTHStack.GetName() :  dataTH1.GetXaxis().SetRangeUser(10, 70)
                 #if max(getBinContentsPlusError(dataTH1)) > backgroundTHStack.GetMaximum(): backgroundTHStack.SetMaximum( max(getBinContentsPlusError(dataTH1)) +1 ) # rescale Y axis limit
                 #backgroundTHStack.SetMaximum( max(getBinContentsPlusError(dataTH1)*1.3) )
 
@@ -1217,10 +1217,13 @@ if __name__ == '__main__':
 
                 ratioHist.Draw()
 
-                if "m34" in  ratioHist.GetName() :  ratioHist.GetXaxis().SetRangeUser(10, 70)
+                #if "m34" in  ratioHist.GetName() :  ratioHist.GetXaxis().SetRangeUser(10, 70)
             else: backgroundTHStack.GetXaxis().SetTitle( sortedSamples.values()[0].GetXaxis().GetTitle()  )
 
-            if "m34" in  backgroundTHStack.GetName() :  backgroundTHStack.GetXaxis().SetRangeUser(10, 70)
+            #if "m34" in  backgroundTHStack.GetName() :  backgroundTHStack.GetXaxis().SetRangeUser(10, 70)
+
+
+
 
             canvas.Update() # we need to update the canvas, so that changes to it (like the drawing of a legend get reflected in its status)
             canvasList.append( copy.deepcopy(canvas) ) # save a deep copy of the canvas for later use
