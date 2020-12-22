@@ -115,7 +115,7 @@ class DSIDHelper:
                                             364104, 364105, 364106, 364107, 364108, 364109, 364110, 364111, 364112, 
                                             364113, 364128, 364129, 364130, 364131, 364132, 364133, 364134, 364135, 
                                             364136, 364137, 364138, 364139, 364140, 364141, 361601, 410472],
-                            "VVV_Z+ll" : [364248, 364247, 364245, 364243, 364364.,
+                            "VVV_Z+ll" : [364248, 364247, 364245, 364243, 364364,
                                            410142],
                 }
 
@@ -880,6 +880,10 @@ if __name__ == '__main__':
 
     #postProcessedData = inputFileDict.values()[0]["TFile"]
 
+    mainBackgrounds = []
+
+    mainBackgrounds.extend( myDSIDHelper.analysisMapping["H4l"])
+    mainBackgrounds.extend( myDSIDHelper.analysisMapping["ZZ"])
 
     postProcessedData = ROOT.TFile(args.input,"READ"); # open the file with te data from the ZdZdPostProcessing
 
@@ -924,6 +928,13 @@ if __name__ == '__main__':
 
         if skipReducible and int(DSID) in myDSIDHelper.analysisMapping["Reducible"]: continue
 
+        #if int(DSID) not in myDSIDHelper.analysisMapping["H4l"]: continue
+        #if int(DSID) not in myDSIDHelper.analysisMapping["ZZ"]: continue
+        #if int(DSID) not in myDSIDHelper.analysisMapping["Reducible"]: continue
+        #if int(DSID) not in myDSIDHelper.analysisMapping["VVV_Z+ll"]: continue
+        
+        
+
          
 
         # higgs only
@@ -944,6 +955,8 @@ if __name__ == '__main__':
         # make cuts on flavors
         if len(args.flavorsToPlot) >0 :
             if not any([ "_"+flavor+"_" in path for flavor in args.flavorsToPlot]): continue
+
+        #if not "ZXSR" in path: continue
 
         ROOT.SetOwnership(baseHist, False)  # if we pass irrelevantTObject the histogram is relevant, so we change the ownership here to False in the attempt to prevent deletion
 
