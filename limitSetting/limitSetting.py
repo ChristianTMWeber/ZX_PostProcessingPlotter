@@ -575,7 +575,7 @@ def p0SignifianceCalculation(workspace):
 
 
     freqCalculator = ROOT.RooStats.FrequentistCalculator(data, sbModel, bModel);
-    freqCalculator.SetToys(2000,500);
+    freqCalculator.SetToys(200,50);
 
     profileLikeTestStat = ROOT.RooStats.ProfileLikelihoodTestStat( sbModel.GetPdf() ) # ? do we need the bModel here, or rather the S+B model?
     profileLikeTestStat.SetOneSidedDiscovery(True);
