@@ -123,8 +123,8 @@ def quadruplets( leptonPairs):
         else:                                                      quadrupletList.append( (pair2[0], pair2[1], pair1[0], pair1[1]) )
 
 
-    #quadrupletList.sort( key = lambda x:x[0].pdgId() , reverse=True) # i.e. we
-    #quadrupletList.sort( key = lambda x:x[2].pdgId() , reverse=True) # i.e. we
+    quadrupletList.sort( key = lambda x:x[0].pdgId() , reverse=True) # i.e. we
+    quadrupletList.sort( key = lambda x:x[2].pdgId() , reverse=True) # i.e. we
 
     return quadrupletList
 
@@ -281,44 +281,7 @@ if __name__ == '__main__':
         if   ZdDecayFalvor == 11: nEventsInFiducialRegionDict["ZdTruthFlavor_2l2e"]  += 1
         elif ZdDecayFalvor == 13: nEventsInFiducialRegionDict["ZdTruthFlavor_2l2mu"] += 1
 
-
-
-        # print out all (?) the information of the truth particles in the given event
-        #for p in truthParticles: ROOT.AAH.printAuxElement(p)
-
-        #leptonsPDGIDs = [ particle.pdgId() for particle in truthParticles if (abs(particle.pdgId()) == 11 or abs(particle.pdgId()) == 13) and not particle.child(0)]
-
-
-        ZdList = [ particle for particle in truthParticles if abs(particle.pdgId()) == 32 ] # look for not particle.child(0) to find final state leptons
-
-        if len(ZdList) >= 0:
-            Zd = ZdList[0]
-            higgs = Zd.parent()
-
-        else : higgs = None
-
-        if higgs is None: import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-
-        #print( eventCounter)
-
-        if higgs is None:            noHiggsChild = True
-        try: 
-            higgs.child(1); noHiggsChild = False
-        except:             noHiggsChild = True
-
-
-        if higgs is None or noHiggsChild: 
-            leptons = [ particle for particle in truthParticles if (abs(particle.pdgId()) == 11 or abs(particle.pdgId()) == 13) and not particle.child(0)] # look for not particle.child(0) to find final state leptons
-
-        else:
-
-            leptons = [Zd.child(0), Zd.child(1)]
-
-            if   higgs.child(0).pdgId()==23 : ZBoson = higgs.child(0)
-            elif higgs.child(1).pdgId()==23 : ZBoson = higgs.child(1)
-            leptons.append(ZBoson.child(0)) 
-            leptons.append(ZBoson.child(1)) 
-
+        leptons = [ particle for particle in truthParticles if (abs(particle.pdgId()) == 11 or abs(particle.pdgId()) == 13) and not particle.child(0)] # look for not particle.child(0) to find final state leptons
 
 
         photons = [ particle for particle in truthParticles if (abs(particle.pdgId()) == 22 and not particle.child(0)) ]
