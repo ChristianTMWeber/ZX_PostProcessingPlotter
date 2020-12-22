@@ -4,6 +4,8 @@ import re
 import difflib # to help me match strings via 'difflib.get_close_matches'
 import numpy as np
 
+import math
+
 # import sys and os.path to be able to import things from the parent directory
 import sys 
 from os import path
@@ -134,24 +136,42 @@ def setupTLegend():
     TLegend.SetBorderSize(0); # and remove its border without a border
     return TLegend
 
+
+def scalePrePostFit( mass ):
+
+    if mass >= 50: scale = 150
+    elif mass >= 35 : scale = 50
+    else: scale = 60
+
+    return scale
+
+
+def floorToPowerOfTen(numberToFloor, powerOfTen ):
+
+    scaleFactor = 10**powerOfTen
+
+    return   math.floor(numberToFloor/scaleFactor)*scaleFactor
+
 if __name__ == '__main__':
 
-    inputFileName = "pullPlot_PostFit_55GeV_rebin2.root"
+    inputFileName = "prePostFitImpact5_PGM_All_Combined.root"
 
     inputTFile = ROOT.TFile(inputFileName, "OPEN")
 
     pullParamDict, impactParamDict = getPullAndImpactTTreeDicts(inputTFile)
 
-    impactScaleDict = {15: 30, 35:50, 55:150  }
+    H4lNormDict = {}
 
 
-    #ROOT.gROOT.SetBatch(True)
+    ROOT.gROOT.SetBatch(True)
     
 
     #for x in sorted(pullParamDict.keys()) : pullParamDict[x]
     for mass in sorted(pullParamDict.keys()) :
         pullTTree = pullParamDict[mass]
         impactTTree = impactParamDict[mass]
+
+        H4lNormDict[mass] = RootTools.GetValuesFromTree(pullTTree, "H4lNorm")[0]
 
 
         pullMeanDict, pullErrorDict = calculatePulls(pullTTree); 
@@ -170,8 +190,12 @@ if __name__ == '__main__':
 
         offset = 0.5
 
-        impactScale = 30
-        if mass in impactScaleDict: impactScale = impactScaleDict[mass]
+        nuisanceParameterListSorted = impactVarDict.keys()
+
+        #def getMuPostFitUpValue(prameterName): return impactVarDict[prameterName]['mu_postFitUp_']
+        nuisanceParameterListSorted.sort( key =  lambda x: abs((impactVarDict[x]['mu_postFitUp_'])) + abs((impactVarDict[x]['mu_postFitDown_'])) ) # alternative use 'mu_postFitUp_'
+
+        impactScale =  floorToPowerOfTen( 1/ max(abs(np.array( impactVarDict[ nuisanceParameterListSorted[-1] ].values() ))), 1)
 
         th2Name = "Pull and fit impact, m_{Z_{d}} = %i GeV" %mass
         # TH2F (                   *name,  *title, Int_t nbinsx, Double_t xlow, Double_t xup, Int_t nbinsy, Double_t ylow, Double_t yup)
@@ -181,11 +205,10 @@ if __name__ == '__main__':
 
         impactTH2 = ROOT.TH2F("impactTH2", "impactTH2", 1, -0.2, +.2,                         nLabels + 1, +offset, nLabels + 1 + offset);
 
-        nuisanceParameterListSorted = impactVarDict.keys()
 
-        #def getMuPostFitUpValue(prameterName): return impactVarDict[prameterName]['mu_postFitUp_']
-        nuisanceParameterListSorted.sort( key =  lambda x: abs((impactVarDict[x]['mu_postFitUp_'])) + abs((impactVarDict[x]['mu_postFitDown_'])) ) # alternative use 'mu_postFitUp_'
+        # 
 
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
         barYWidth = 0.5
 
@@ -394,7 +417,7 @@ if __name__ == '__main__':
         #for x in sorted(prefitMeans):   ( x, prefitMeans[x] )
         #for x in sorted(postfitValues): ( x, postfitValues[x] )
         #for x in sorted(postfitErrors): ( x, postfitErrors[x] )
-        import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
 
 
@@ -416,5 +439,5 @@ if __name__ == '__main__':
 
 
 
-    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
