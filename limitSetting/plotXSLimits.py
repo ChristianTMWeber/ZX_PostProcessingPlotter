@@ -31,7 +31,6 @@ def getCanvasAndLegendFromList( inputList):
 
     return canvas , legend
 
-def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , colorScheme = ROOT.kRed, writeTo = False, YAxisLimits = None, keepInScopeList = [] ):
 def activateATLASPlotStyle():
     # runs the root macro that defines the ATLAS style, and checks that it is active
     # relies on a seperate style macro
@@ -61,6 +60,10 @@ def addATLASBlurp(filename):
     return statsTPave
 
 
+def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , colorScheme = ROOT.kRed, writeTo = False, YAxisLimits = None, 
+                       keepInScopeList = [], smoothPlot = False , yAxisTitle = "Upper 95% CL on #sigma_{H #rightarrow ZZ_{d} #rightarrow 4l} [fb] ",
+                       makeYAxisLogarithmic = False):
+
     def setupTLegend():
         # set up a TLegend, still need to add the different entries
         xOffset = 0.6; yOffset = 0.7
@@ -79,17 +82,24 @@ def addATLASBlurp(filename):
     canv, legend = getCanvasAndLegendFromList( keepInScopeList )
 
     if legend is None: legend = setupTLegend()
-    if canv   is None: canv = ROOT.TCanvas("GraphOverview", "GraphOverview",1920/2, 1080)
+    if canv   is None: canv = ROOT.TCanvas("GraphOverview", "GraphOverview",720, 720) #,1920/1, 1080)
     else:  reuseCanvas = True
     canv.SetLeftMargin(0.15)
     canv.SetBottomMargin(0.1)
-
-    
+    if makeYAxisLogarithmic: canv.SetLogy()
+    #canv.SetLogx()
 
     if YAxisLimits is not None: expectedLimit2Sig.GetYaxis().SetRangeUser(YAxisLimits[0], YAxisLimits[1])
+
+    if smoothPlot:  
+        errorBarDrawOption = "4 "
+        regularTGraphDrawOption = "C "
+    else:
+        errorBarDrawOption = "3 "
+        regularTGraphDrawOption = ""
  
 
-    expectedLimit2Sig.GetYaxis().SetTitle("Upper 95% CL on #sigma_{H #rightarrow ZZ_{d} #rightarrow 4l} [fb] ")
+    expectedLimit2Sig.GetYaxis().SetTitle(yAxisTitle)
     expectedLimit2Sig.GetYaxis().SetTitleSize(0.06)
     expectedLimit2Sig.GetYaxis().SetTitleOffset(0.8)
     expectedLimit2Sig.GetYaxis().CenterTitle()
@@ -99,30 +109,36 @@ def addATLASBlurp(filename):
     expectedLimit2Sig.GetXaxis().SetTitleOffset(0.85)
     #expectedLimit2Sig.GetXaxis().CenterTitle()
 
-    expectedLimit2Sig.SetFillColorAlpha(colorScheme-10,0.6) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
+    #expectedLimit2Sig.SetFillColorAlpha(colorScheme-10,0.6) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
+    #expectedLimit2Sig.SetFillColorAlpha(ROOT.kYellow,1) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
+    expectedLimit2Sig.SetFillColor(ROOT.kYellow)
     #expectedLimit2Sig.SetFillColor(colorScheme-10)  # https://root.cern.ch/doc/master/classTAttFill.html
     #expectedLimit2Sig.SetFillStyle(3001)  # https://root.cern.ch/doc/master/classTAttFill.html
-    if reuseCanvas: expectedLimit2Sig.Draw("3 same") # use 'A' option only for first TGraph apparently
-    else:           expectedLimit2Sig.Draw("A3 same") # use 'A' option only for first TGraph apparently
+    if reuseCanvas: expectedLimit2Sig.Draw(errorBarDrawOption + " same") # use 'A' option only for first TGraph apparently
+    else:           expectedLimit2Sig.Draw(errorBarDrawOption + " A same") # use 'A' option only for first TGraph apparently
 
-    expectedLimit1Sig.SetFillColorAlpha(colorScheme-9,0.6) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
+    #expectedLimit1Sig.SetFillColorAlpha(colorScheme-9,0.6) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
+    #expectedLimit1Sig.SetFillColorAlpha(ROOT.kGreen,1) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
+    expectedLimit1Sig.SetFillColor(ROOT.kGreen)
     #expectedLimit1Sig.SetFillColor(colorScheme-9)
     #expectedLimit1Sig.SetFillStyle(3001)  # https://root.cern.ch/doc/master/classTAttFill.html
-    expectedLimit1Sig.Draw("3 same")
+    expectedLimit1Sig.Draw(errorBarDrawOption + " same")
 
     expectedLimitMedian = graphHelper.getTGraphWithoutError( expectedLimit1Sig  , ySetpoint = "median")
 
     expectedLimitMedian.SetLineStyle(2) # https://root.cern.ch/doc/master/classTAttLine.html#L3
     expectedLimitMedian.SetLineWidth(2)
-    expectedLimitMedian.SetLineColor(colorScheme)
-    expectedLimitMedian.Draw("same")
+    #expectedLimitMedian.SetLineColor(colorScheme)
+    expectedLimitMedian.SetLineColor(ROOT.kBlack)
+    expectedLimitMedian.Draw(regularTGraphDrawOption + "same")
 
     if extractedLimit is not None:
 
         extractedLimit.SetLineStyle(1) # https://root.cern.ch/doc/master/classTAttLine.html#L3
         extractedLimit.SetLineWidth(2)
-        extractedLimit.SetLineColor(colorScheme)
-        extractedLimit.Draw("same")
+        #extractedLimit.SetLineColor(colorScheme)
+        extractedLimit.SetLineColor(ROOT.kBlack)
+        extractedLimit.Draw(regularTGraphDrawOption + "same")
 
 
     if extractedLimit is not None: legend.AddEntry(extractedLimit , "observed Limit"  , "l");
@@ -131,8 +147,6 @@ def addATLASBlurp(filename):
     legend.AddEntry(expectedLimit2Sig , "#pm2#sigma expected limit"  , "f");    
 
     legend.Draw()
-
-    #canv.SetLogy()
 
     canv.Update() #"a3" also seems to work https://root.cern/doc/master/classTGraphPainter
 
@@ -342,14 +356,20 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=str, help="name or path to the input files")
     parser.add_argument( "--observedLimitFile", type=str, help="option to provide alternative file take the observed limit from", )
-    parser.add_argument( "--limitType", type=str, help = "type of the limit we are plotting ", choices=["asymptotic","toyBased"] )
+    parser.add_argument( "--limitType", type=str, help = "type of the limit we are plotting ", choices=["asymptotic","toyBased"] , default= "asymptotic")
     parser.add_argument( "--outputName", type=str, help = "filename for the output", default= None )
     parser.add_argument( "--YAxis", type=float, nargs=2, help = "lower and upper limit for the plot Y axis, --YAxis 0 2.5", default= None )
+    parser.add_argument( "--smooth",  default=False, action='store_true', help = "If selected, will smooth the plotted figures")
     parser.add_argument( "--makeMixingParameterPlot" , default=False, action='store_true', help = "Plot mixing prameter instead of cross section limit.")
     parser.add_argument( "--makeBranchingRatioPlot" , default=False, action='store_true', help = "Plot BranchingRatio prameter instead of cross section limit.")
+    parser.add_argument( "--logarithmixYAxis" , default=False, action='store_true', help = "make YAxis logarithmic")
+
     parser.add_argument( "--AddATLASBlurp" , default=False, choices=["all", "All", "2l2e", "2l2mu", False], help = "Add ATLAS blurp to the figure, include ")
 
+
     args = parser.parse_args()
+
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
     if args.outputName is None:  outputFileName = re.sub( ".root", "_XSPlot.root"  , args.input)
     else:                        outputFileName = args.outputName
@@ -387,16 +407,27 @@ if __name__ == '__main__':
             if isinstance(observedLimitGraph, ROOT.TGraphAsymmErrors): # for some limit setting schemes the upperlimit is given by the upper error of the TGraph. 
                 observedLimitGraph = graphHelper.getTGraphWithoutError( observedLimitGraph , ySetpoint = "yHigh")
 
+        yAxisTitle = "Upper 95% CL on #sigma_{H #rightarrow ZZ_{d} #rightarrow 4l} [fb] "
 
-        outputTFile = ROOT.TFile(outputFileName, "RECREATE")
+        #observedLimitGraph = None
+
         if args.makeMixingParameterPlot: 
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "mixingParameterLimit" )
             yAxisTitle = "#splitline{Upper 95% CL on kinetic}{mixing parameter #varepsilon [unitless]}"
         elif args.makeBranchingRatioPlot:
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "brachingRatioLimit")
             yAxisTitle = "Upper 95% CL on #frac{#sigma_{H}}{#sigma_{H}^{SM}}B(H #rightarrow ZZd)"  
+
+
+
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+        
         #makeGraphOverview( observedLimitTGraphNoErrors , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile)
-        canv, keepInScopeList = makeGraphOverview(  None   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile, YAxisLimits = args.YAxis, keepInScopeList = [])
+        canv, keepInScopeList = makeGraphOverview(  observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , 
+                                                    YAxisLimits = args.YAxis, keepInScopeList = [], smoothPlot = args.smooth ,
+                                                    yAxisTitle = yAxisTitle, makeYAxisLogarithmic = args.logarithmixYAxis)
+
 
         if args.AddATLASBlurp: atlasBlurb = addATLASBlurp(args.AddATLASBlurp) 
 
@@ -407,6 +438,11 @@ if __name__ == '__main__':
         #expectedLimitsGraph_2SigmaB = expectedLimitTFile.Get("expectedLimits_2Sigma")
         #canv, keepInScopeList = makeGraphOverview(  None   , expectedLimitsGraph_1SigmaB, expectedLimitsGraph_2SigmaB , colorScheme = ROOT.kRed , writeTo = outputTFile, YAxisLimits = args.YAxis, keepInScopeList = keepInScopeList)
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+
+        outputTFile = ROOT.TFile(outputFileName, "RECREATE")
+
+        canv.Write()
 
         outputTFile.Close()
 
@@ -448,6 +484,8 @@ if __name__ == '__main__':
         outputTFile.Close()
 
         import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    else: print("Comand line potion '--limitType' not choosen! Nothing has been plotted :(")
 
 
 
