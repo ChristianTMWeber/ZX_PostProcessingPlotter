@@ -43,6 +43,9 @@ if __name__ == '__main__':
     for (root,dirs,files) in os.walk(paretnDir): 
         for file in files:
 
+            #if "r9315" not in root: continue # select only mc16a
+            #if "r10201" not in root: continue # select only mc16d
+            #if "r10724" not in root: continue # select only mc16e
 
             if doZX:  regexMatch =  re.search("(?<=Zd)\d\d",root)
             elif doZa:
@@ -63,6 +66,7 @@ if __name__ == '__main__':
 
             elif doFiducialmeasruement: 
                 outputName = outputName = "ZX_Fiducial_%03i.root" % count
+                #outputName = outputName = "ZX_Fiducial_%03i_mc16e.root" % count
                 submitLine = "python measureFiducialAcceptance_pyROOT.py %s --outputName %s --nEventsToProcess %i" %(inputLocation, outputName, -1)
 
 
