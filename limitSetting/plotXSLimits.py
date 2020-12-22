@@ -32,6 +32,34 @@ def getCanvasAndLegendFromList( inputList):
     return canvas , legend
 
 def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , colorScheme = ROOT.kRed, writeTo = False, YAxisLimits = None, keepInScopeList = [] ):
+def activateATLASPlotStyle():
+    # runs the root macro that defines the ATLAS style, and checks that it is active
+    # relies on a seperate style macro
+    ROOT.gROOT.ProcessLine(".x ../atlasStyle.C")
+
+    if "ATLAS" in ROOT.gStyle.GetName(): print("ROOT.gStyle: ATLAS style loaded!")
+    else:                                warnings.warn("Did not load ATLAS style properly")
+
+    return None
+
+def addATLASBlurp(filename):
+
+    activateATLASPlotStyle()
+    statsTexts = []
+
+    statsTexts.append( "#font[72]{ATLAS} internal")
+    statsTexts.append( "#sqrt{s} = 13 TeV, %.0f fb^{-1}" %( 139. ) ) 
+
+    if "2l2e" in filename:                         statsTexts.append( "2#mu2e, 4e final states" )
+    elif "2l2mu" in filename:                      statsTexts.append( "4#mu, 2e2#mu final states" )
+    elif "all" in filename or "All" in filename:   statsTexts.append( "4#mu, 2e2#mu, 2#mu2e, 4e final states" )
+
+    statsTPave=ROOT.TPaveText(0.5,0.59,0.9,0.69,"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
+    for stats in statsTexts:   statsTPave.AddText(stats);
+    statsTPave.Draw();
+
+    return statsTPave
+
 
     def setupTLegend():
         # set up a TLegend, still need to add the different entries
@@ -319,6 +347,7 @@ if __name__ == '__main__':
     parser.add_argument( "--YAxis", type=float, nargs=2, help = "lower and upper limit for the plot Y axis, --YAxis 0 2.5", default= None )
     parser.add_argument( "--makeMixingParameterPlot" , default=False, action='store_true', help = "Plot mixing prameter instead of cross section limit.")
     parser.add_argument( "--makeBranchingRatioPlot" , default=False, action='store_true', help = "Plot BranchingRatio prameter instead of cross section limit.")
+    parser.add_argument( "--AddATLASBlurp" , default=False, choices=["all", "All", "2l2e", "2l2mu", False], help = "Add ATLAS blurp to the figure, include ")
 
     args = parser.parse_args()
 
@@ -369,6 +398,9 @@ if __name__ == '__main__':
         #makeGraphOverview( observedLimitTGraphNoErrors , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile)
         canv, keepInScopeList = makeGraphOverview(  None   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile, YAxisLimits = args.YAxis, keepInScopeList = [])
 
+        if args.AddATLASBlurp: atlasBlurb = addATLASBlurp(args.AddATLASBlurp) 
+
+        canv.Update()
         ### use this if I wanna plot a second set of limits on top of the first set ###
         #expectedLimitTFile = ROOT.TFile( "asymptotiveLimitV4_PMGweights_NormsCorr_All.root", "OPEN")
         #expectedLimitsGraph_1SigmaB = expectedLimitTFile.Get("expectedLimits_1Sigma")
