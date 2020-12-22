@@ -229,6 +229,84 @@ def getToyLimits( filename , TTreeName = "upperLimits1Sig_toys", graphName = "to
     return toyLimitTGrapah
 
 
+def convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "mixingParameterLimit"):
+
+
+    def XSLimitToKineticMixingParameter( massPointList, XSLimitList):
+
+        # mixing dict taken from "Illuminating dark photons with high-energy colliders", arXiv:1412.0018, Table 2
+        mixingDict =  { 14 : 0.00252 , 15 : 0.00295 , 16 : 0.00338 , 17 : 0.003885 , 18 : 0.00439 , 19 : 0.00497 , 20 : 0.00555 , 21 : 0.00618 , 22 : 0.00681 , 23 : 0.007475 , 24 : 0.00814 , 25 : 0.00877 , 26 : 0.0094 , 27 : 0.0099 , 28 : 0.0104 , 29 : 0.0106 , 30 : 0.0108 , 31 : 0.010205 , 32 : 0.00961 , 33 : 0.0078 , 34 : 0.00599 , 35 : 0.004895 , 36 : 0.0038 , 37 : 0.00346 , 38 : 0.00312 , 39 : 0.00296 , 40 : 0.0028 , 41 : 0.002715 , 42 : 0.00263 , 43 : 0.00258 , 44 : 0.00253 , 45 : 0.0025 , 46 : 0.00247 , 47 : 0.002445 , 48 : 0.00242 , 49 : 0.0024 , 50 : 0.00238 , 51 : 0.002365 , 52 : 0.00235 , 53 : 0.002335 , 54 : 0.00232 , 55 : 0.002305 , 56 : 0.00229 }
+        higgsXS = 4.858E+04 # femot barn
+        # kinetic mixing parameter **2 =  (sigma_{H->ZZd->4l} / sigma_H) / mixingDict[massPoint]  
+
+        mixingParameterList = []
+        XSLimitDict = {}
+
+        for x in xrange( len(massPointList) ):  XSLimitDict[ int(massPointList[x]) ]  =  XSLimitList[x] 
+
+        #for x in XSLimitDict.keys():
+        #    mixingParameterSquaredList.append(  mixingDict[int()]   )
+
+        for massPoint in sorted(XSLimitDict.keys()):  mixingParameterList.append(  ( XSLimitDict[massPoint] / higgsXS /mixingDict[massPoint] )**0.5)
+
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+        return mixingParameterList
+
+
+    def XSLimitToBRLimit( massPointList, XSLimitList):
+
+        # ZdToLLBranchingRatioDict  taken from "Illuminating dark photons with high-energy colliders", arXiv:1412.0018, Table 2
+        higgsXS = 4.858E+04 # femot barn
+        ZdToLLBranchingRatioDict = { 14 : 0.288  ,  15 : 0.288  ,  16 : 0.288  ,  17 : 0.2875 ,  18 : 0.287  ,  19 : 0.2865 ,  20 : 0.286  ,  21 : 0.2855 ,  22 : 0.285  ,  23 : 0.2845 ,  24 : 0.284  ,  25 : 0.2835 ,  26 : 0.283  ,  27 : 0.282  ,  28 : 0.281  ,  29 : 0.2805 ,  30 : 0.28   ,  31 : 0.279  ,  32 : 0.278  ,  33 : 0.2765 ,  34 : 0.275  ,  35 : 0.274  ,  36 : 0.273  ,  37 : 0.2715 ,  38 : 0.27   ,  39 : 0.2685 ,  40 : 0.267  ,  41 : 0.265  ,  42 : 0.263  ,  43 : 0.261  ,  44 : 0.259  ,  45 : 0.2565 ,  46 : 0.254  ,  47 : 0.2515 ,  48 : 0.249  ,  49 : 0.2465 ,  50 : 0.244  ,  51 : 0.241  ,  52 : 0.238  ,  53 : 0.2345 ,  54 : 0.231  ,  55 : 0.227  }
+        ZToLLBranchingRatio = 0.00673 
+
+        ZdBranchingRatioList = []
+        XSLimitDict = {}
+
+        for x in xrange( len(massPointList) ):  XSLimitDict[ int(massPointList[x]) ]  =  XSLimitList[x] 
+
+        #for x in XSLimitDict.keys():
+        #    mixingParameterSquaredList.append(  mixingDict[int()]   )
+
+        for massPoint in sorted(XSLimitDict.keys()):  ZdBranchingRatioList.append(  XSLimitDict[massPoint] / higgsXS /ZToLLBranchingRatio /ZdToLLBranchingRatioDict[massPoint] )
+
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+        return ZdBranchingRatioList
+
+
+    massPoints , observedLimits = graphHelper.tGraphToList(observedLimitGraph , ySetpoint = "median")
+    _ , expectedLimits = graphHelper.tGraphToList(expectedLimitsGraph_1Sigma , ySetpoint = "median")
+    _ , expectedLimits_1Sigma_Low  = graphHelper.tGraphToList(expectedLimitsGraph_1Sigma , ySetpoint = "yLow")
+    _ , expectedLimits_1Sigma_High = graphHelper.tGraphToList(expectedLimitsGraph_1Sigma , ySetpoint = "yHigh")
+    _ , expectedLimits_2Sigma_Low  = graphHelper.tGraphToList(expectedLimitsGraph_2Sigma , ySetpoint = "yLow")
+    _ , expectedLimits_2Sigma_High = graphHelper.tGraphToList(expectedLimitsGraph_2Sigma , ySetpoint = "yHigh")
+
+
+    if limitType == "mixingParameterLimit" :
+        observedLimits_mixingParameter              = XSLimitToKineticMixingParameter( massPoints , observedLimits             )
+        expectedLimits_mixingParameter              = XSLimitToKineticMixingParameter( massPoints , expectedLimits             )
+        expectedLimits_mixingParameter_1Sigma_Low   = XSLimitToKineticMixingParameter( massPoints , expectedLimits_1Sigma_Low  )
+        expectedLimits_mixingParameter_1Sigma_High  = XSLimitToKineticMixingParameter( massPoints , expectedLimits_1Sigma_High )
+        expectedLimits_mixingParameter_2Sigma_Low   = XSLimitToKineticMixingParameter( massPoints , expectedLimits_2Sigma_Low  )
+        expectedLimits_mixingParameter_2Sigma_High  = XSLimitToKineticMixingParameter( massPoints , expectedLimits_2Sigma_High )
+
+    elif limitType == "brachingRatioLimit" :
+        observedLimits_mixingParameter              = XSLimitToBRLimit( massPoints , observedLimits             )
+        expectedLimits_mixingParameter              = XSLimitToBRLimit( massPoints , expectedLimits             )
+        expectedLimits_mixingParameter_1Sigma_Low   = XSLimitToBRLimit( massPoints , expectedLimits_1Sigma_Low  )
+        expectedLimits_mixingParameter_1Sigma_High  = XSLimitToBRLimit( massPoints , expectedLimits_1Sigma_High )
+        expectedLimits_mixingParameter_2Sigma_Low   = XSLimitToBRLimit( massPoints , expectedLimits_2Sigma_Low  )
+        expectedLimits_mixingParameter_2Sigma_High  = XSLimitToBRLimit( massPoints , expectedLimits_2Sigma_High )
+
+
+    observedLimitGraph = graphHelper.listToTGraph( massPoints, observedLimits_mixingParameter  )
+    expectedLimitsGraph_1Sigma = graphHelper.listToTGraph( massPoints, expectedLimits_mixingParameter , yLowList = expectedLimits_mixingParameter_1Sigma_Low, yHighList = expectedLimits_mixingParameter_1Sigma_High )
+    expectedLimitsGraph_2Sigma = graphHelper.listToTGraph( massPoints, expectedLimits_mixingParameter , yLowList = expectedLimits_mixingParameter_2Sigma_Low, yHighList = expectedLimits_mixingParameter_2Sigma_High )
+
+    return observedLimitGraph, expectedLimitsGraph_1Sigma , expectedLimitsGraph_2Sigma
+
 if __name__ == '__main__':
 
 
@@ -239,6 +317,8 @@ if __name__ == '__main__':
     parser.add_argument( "--limitType", type=str, help = "type of the limit we are plotting ", choices=["asymptotic","toyBased"] )
     parser.add_argument( "--outputName", type=str, help = "filename for the output", default= None )
     parser.add_argument( "--YAxis", type=float, nargs=2, help = "lower and upper limit for the plot Y axis, --YAxis 0 2.5", default= None )
+    parser.add_argument( "--makeMixingParameterPlot" , default=False, action='store_true', help = "Plot mixing prameter instead of cross section limit.")
+    parser.add_argument( "--makeBranchingRatioPlot" , default=False, action='store_true', help = "Plot BranchingRatio prameter instead of cross section limit.")
 
     args = parser.parse_args()
 
@@ -280,6 +360,12 @@ if __name__ == '__main__':
 
 
         outputTFile = ROOT.TFile(outputFileName, "RECREATE")
+        if args.makeMixingParameterPlot: 
+            observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "mixingParameterLimit" )
+            yAxisTitle = "#splitline{Upper 95% CL on kinetic}{mixing parameter #varepsilon [unitless]}"
+        elif args.makeBranchingRatioPlot:
+            observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "brachingRatioLimit")
+            yAxisTitle = "Upper 95% CL on #frac{#sigma_{H}}{#sigma_{H}^{SM}}B(H #rightarrow ZZd)"  
         #makeGraphOverview( observedLimitTGraphNoErrors , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile)
         canv, keepInScopeList = makeGraphOverview(  None   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile, YAxisLimits = args.YAxis, keepInScopeList = [])
 
