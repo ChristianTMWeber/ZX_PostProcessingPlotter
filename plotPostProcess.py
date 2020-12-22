@@ -822,12 +822,15 @@ if __name__ == '__main__':
     help = "If we only want to list a subset of the kninematic variables, list them here.\
             Use like --kinematicsToPlot m4l m34. If none are specified, or argument is not used, we plot all kinematic variables" ) 
 
+    parser.add_argument( "--skipReducible", default=False, action='store_true' , 
+    help = "If run with '--skipReducible' we will not include any 'reducible' MC in the plots " ) 
+
     args = parser.parse_args()
 
-    skipZX = False
+    skipZX = True
     skipZdZd = True
     skipZjets = False
-    skipReducible = True#False
+    skipReducible = args.skipReducible
 
     if skipReducible: skipZjets = True
 
