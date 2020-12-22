@@ -955,7 +955,7 @@ if __name__ == '__main__':
         if histCounter %1000 == 0: print str(histCounter) + " relevant hists processed. \t Memory usage: %s (MB)" % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1000)
 
 
-
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     ######################################################
     # Do the data processing from here on
     ######################################################
@@ -971,19 +971,14 @@ if __name__ == '__main__':
     for systematicChannel in combinedMCTagHistDict.keys():
         if re.search("(UncorrUncertaintyNP)|(CorrUncertaintyNP)|(PMG_)", systematicChannel): continue # skip generator weight variations when plottins systematics
 
-        #if "Nominal" != systematicChannel: continue
+        if "Nominal" != systematicChannel: continue
 
         for histEnding in combinedMCTagHistDict[systematicChannel].keys():
 
-            backgroundTHStack = ROOT.THStack(histEnding,histEnding)
             backgroundSamples = [] # store the background samples as list of tuples [ (DSID, TH1) , ...] 
-            #backgroundTHStack.SetMaximum(25.)
-
             canvasName = systematicChannel +"_"+ histEnding
-            canvas = ROOT.TCanvas(canvasName,canvasName,1300/2,1300/2);
-            ROOT.SetOwnership(canvas, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
-            legend = setupTLegend()
-
+            backgroundTHStack = ROOT.THStack(histEnding,histEnding)
+            #backgroundTHStack.SetMaximum(25.)
 
             gotDataSample = False # change this to true later if we do have data samples
 
@@ -993,6 +988,8 @@ if __name__ == '__main__':
                         currentTH1 = combinedMCTagHistDict[systematicChannel][histEnding][DSID]
                         backgroundSamples.append( ( int(DSID), currentTH1) )
                     else:   # data has DSID 0 for us  \
+
+                        #continue
 
                         currentTH1 = copy.deepcopy(combinedMCTagHistDict["Nominal"][histEnding][DSID]) # do deppcopy here in case we rebin, otherwise we would rebin multiple times
 
@@ -1020,7 +1017,7 @@ if __name__ == '__main__':
             statsTexts.append( "#font[72]{ATLAS} internal")
             statsTexts.append( "#sqrt{s} = 13 TeV, %.1f fb^{-1}" %( myDSIDHelper.lumiMap[args.mcCampaign] ) ) 
 
-            regionAndChannelString = addRegionAndChannelToStatsText(canvas.GetName() )
+            regionAndChannelString = addRegionAndChannelToStatsText( canvasName )
             if systematicChannel != "Nominal" : regionAndChannelString = systematicChannel +" "+ regionAndChannelString
             statsTexts.append( regionAndChannelString ) 
 
@@ -1031,12 +1028,14 @@ if __name__ == '__main__':
             backgroundTallyTH1.Scale(0)
             signalTallyTH1 = backgroundTallyTH1.Clone("signalTally")
 
+            legend = setupTLegend()
+
             for key in myDSIDHelper.defineSequenceOfSortedSamples( sortedSamples  ): # add merged samples to the backgroundTHStack 
 
 
                 if replaceWithDataDriven: # insert data driven reducible hist if so desided
                     #dataDrivenReducibleHist = getDataDrivenReducibleShape(canvas.GetName(), key, args.rebin)
-                    dataDrivenReducibleHist = getDataDrivenReducibleShape2(canvas.GetName(), key, sortedSamples[key] )
+                    dataDrivenReducibleHist = getDataDrivenReducibleShape2(canvasName, key, sortedSamples[key] )
 
                     if dataDrivenReducibleHist: # false if we didn't find a match
                         dataDrivenReducibleHist.SetFillStyle( 1001 )  
@@ -1046,14 +1045,42 @@ if __name__ == '__main__':
 
                 mergedHist = sortedSamples[key]
 
-                backgroundTHStack.Add( mergedHist )
+                
 
                 keyProperArrow = re.sub('->', '#rightarrow ', key) # make sure the legend displays the proper kind of arrow
                 legend.AddEntry(mergedHist , keyProperArrow , "f");
                 statsTexts.append( keyProperArrow + ": %.2f #pm %.2f" %( getHistIntegralWithUnertainty(mergedHist)) )
 
                 if myDSIDHelper.isSignalSample( key ): signalTallyTH1.Add(sortedSamples[key])
-                else:                                  backgroundTallyTH1.Add(sortedSamples[key])
+                else:
+                    backgroundTHStack.Add( mergedHist )                                  
+                    backgroundTallyTH1.Add(sortedSamples[key])
+
+            backgroundClones = []
+            signalTHStacks = []
+            for key in myDSIDHelper.defineSequenceOfSortedSamples( sortedSamples  ): # add merged samples to the backgroundTHStack 
+                if myDSIDHelper.isSignalSample( key ): 
+                    signalHist = sortedSamples[key]
+
+                    signalTHStack = ROOT.THStack(key,key)
+                    backgroundForSignalStack = backgroundTallyTH1.Clone( key +"_signalBackground" )
+                    backgroundForSignalStack.SetFillStyle(0)
+                    backgroundClones.append(backgroundForSignalStack)
+
+                    signalTHStack.Add(backgroundForSignalStack)
+                    signalTHStack.Add(signalHist)
+
+                    signalTHStacks.append(signalTHStack)
+
+            #import pdb; pdb.set_trace() # import the debugger and instruct
+
+
+            
+            canvas = ROOT.TCanvas(canvasName,canvasName,1300/2,1300/2);
+            ROOT.SetOwnership(canvas, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
+
+
+            #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
             # create a pad for the CrystalBall fit + data
             if gotDataSample and not args.skipRatioHist: histPadYStart = 3.5/13
@@ -1069,6 +1096,13 @@ if __name__ == '__main__':
             backgroundTHStack.SetTitle("")
 
             backgroundTHStack.Draw("Hist")
+            drawPrefix = "SAME " # after we draw out first histogram(stack) we need to add 'same' to the draw command 
+            for signalStack in signalTHStacks:
+                signalStack.Draw(drawPrefix + "HIST")
+                drawPrefix = "SAME "
+
+
+            backgroundTHStack.Draw(drawPrefix+"Hist")
 
 
             backgroundMergedTH1 = histHelper.mergeTHStackHists(backgroundTHStack) # get a merged background to draw uncertainty bars on the total backgroun
@@ -1091,6 +1125,7 @@ if __name__ == '__main__':
             
             #backgroundTHStack.GetXaxis().SetTitleSize(0.12)
             backgroundTHStack.GetXaxis().SetTitleOffset(1.1)
+            
 
 
             backgroundSystAddendum = ""
@@ -1162,7 +1197,9 @@ if __name__ == '__main__':
             for stats in statsTexts:   statsTPave.AddText(stats);
             statsTPave.Draw();
             legend.Draw(); # do legend things
-
+            
+            ROOT.gPad.RedrawAxis("G") # to make sure that the Axis ticks are above the histograms
+            ROOT.gPad.RedrawAxis()
 
             canvas.cd()
 
