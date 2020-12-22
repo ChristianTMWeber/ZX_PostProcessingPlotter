@@ -25,7 +25,12 @@ if __name__ == '__main__':
 
     #skimmedToyResultsPath = "toyResults_MC16adeV2"
     #skimmedToyResultsPath = "toyResults_MC16aV2"
-    skimmedToyResultsPath = "toyResults_MC16aV2_moreSamplePoints"
+    #skimmedToyResultsPath = "mc16adeToyResultsV5.23"
+    #skimmedToyResultsPath = "mc16adeToyResultsV5.24"
+    #skimmedToyResultsPath = "mc16adeToyResultsV5.25"
+    skimmedToyResultsPath = "mc16adeToyResultsV6.30"
+
+    
 
     outputFileName = skimmedToyResultsPath +".root"
 
@@ -56,22 +61,26 @@ if __name__ == '__main__':
 
         hypoTestInvResult = toyResultTFile.Get("result_mu")
 
-        likelihoodLimit      = limitSetting.translateLimits( hypoTestInvResult, nSigmas = 1 )
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+        likelihoodLimit_observed      = limitSetting.translateLimits( hypoTestInvResult, nSigmas = 1 ,getObservedAsymptotic = True)
+
+        likelihoodLimit_1sig      = limitSetting.translateLimits( hypoTestInvResult, nSigmas = 1 )
         likelihoodLimit_2Sig = limitSetting.translateLimits( hypoTestInvResult, nSigmas = 2 )
 
         print(mass)
-        likelihoodLimit.Print()
+        likelihoodLimit_observed.Print()
 
 
-        bestEstimateDict[mass].append( likelihoodLimit.getVal() )
-        upperLimits1SigDict[mass].append(likelihoodLimit.getMax())
+        bestEstimateDict[mass].append( likelihoodLimit_observed.getVal() )
+        upperLimits1SigDict[mass].append(likelihoodLimit_1sig.getMax())
         upperLimits2SigDict[mass].append(likelihoodLimit_2Sig.getMax())
-        lowLimits1SigDict[mass].append(likelihoodLimit.getMin())
+        lowLimits1SigDict[mass].append(likelihoodLimit_1sig.getMin())
         lowLimits2SigDict[mass].append(likelihoodLimit_2Sig.getMin())
 
 
-        graphHelper.fillTGraphWithRooRealVar(observedLimitGraph, massPoint, likelihoodLimit)
-        graphHelper.fillTGraphWithRooRealVar(expectedLimitsGraph_1Sigma, massPoint, likelihoodLimit)
+        graphHelper.fillTGraphWithRooRealVar(observedLimitGraph, massPoint, likelihoodLimit_observed)
+        graphHelper.fillTGraphWithRooRealVar(expectedLimitsGraph_1Sigma, massPoint, likelihoodLimit_1sig)
         graphHelper.fillTGraphWithRooRealVar(expectedLimitsGraph_2Sigma, massPoint, likelihoodLimit_2Sig)
 
 
