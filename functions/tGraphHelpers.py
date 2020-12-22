@@ -29,8 +29,11 @@ def createNamedTGraphAsymmErrors( objectName):
     return graph
 
 def fillTGraphWithRooRealVar(graph, xFill, yFill):
+    #                                                                                           bestEstimate
+    def numberToRooRealVar(number): return ROOT.RooRealVar( "tempRooRealVar", "tempRooRealVar" , number     )
 
     if yFill is None: return graph
+    elif not isinstance( yFill , ROOT.RooRealVar): yFill  = numberToRooRealVar(yFill)
 
     pointNr = graph.GetN()
 
@@ -65,6 +68,49 @@ def fillTGraphWithTuple(graph, xFill, yFill):
     graph.SetPointError( pointNr, 0,0, yErrorLo , yErrorHi )
 
     return graph
+
+
+def tGraphToList(TGraph , ySetpoint = "median"):
+
+    xCopy =ROOT.Double() # use these for pass by reference
+    yCopy = ROOT.Double() # use these for pass by reference
+
+    xList = []
+    yList = []
+
+    for n in xrange(0,TGraph.GetN() ): 
+        TGraph.GetPoint(n,xCopy,yCopy)
+        if   ySetpoint == "yHigh": yCopy = ROOT.Double( yCopy + TGraph.GetErrorYhigh(n) )
+        elif ySetpoint == "yLow":  yCopy = ROOT.Double( yCopy - TGraph.GetErrorYlow(n) )
+
+        xList.append( float(xCopy))
+        yList.append( float(yCopy))
+
+    return xList, yList
+
+def listToTGraph( xList, yList, yLowList = None, yHighList = None ):
+
+    doErrors = True
+
+    if yLowList is None and yHighList is None: 
+        doErrors = False
+    elif yLowList is None:  
+        yLowList = []
+        for x in xrange( len(yList) ): yLowList.append(  yList[x] + ( yList[x] - yHighList[x] ) )
+    elif yHighList is None:  
+        yHighList = []
+        for x in xrange( len(yList) ): yHighList.append(  yList[x] + ( yList[x] - yLowList[x]) )
+
+    if doErrors: tGraph = ROOT.TGraphAsymmErrors()
+    else:        tGraph = ROOT.TGraph() 
+
+
+    for x in xrange( len(yList) ): 
+        tGraph.SetPoint( x, xList[x], yList[x])
+        if doErrors: tGraph.SetPointError( x, 0,0, yList[x] - yLowList[x], yHighList[x] - yList[x] )
+
+    return tGraph
+
 
 
 if __name__ == '__main__':
@@ -162,6 +208,49 @@ if __name__ == '__main__':
     legend.Draw()
 
     canv.Update() #"a3" also seems to work https://root.cern/doc/master/classTGraphPainter
+
+
+    ##########################################
+    #   test tGraphToList and listToTGraph      
+    ##########################################
+
+
+    exampleTGraph = ROOT.TGraphAsymmErrors()
+
+    for x in xrange(-9, 10):
+        
+        n = exampleTGraph.GetN()
+
+        exampleTGraph.SetPoint( n, x, x**2 )
+        exampleTGraph.SetPointError( n, 0,0, 1, 2)
+
+
+    xList , yList = tGraphToList(exampleTGraph , ySetpoint = "median")
+    _ , yHighErrorList =tGraphToList(exampleTGraph , ySetpoint = "yHigh")
+    _ , yLowError = tGraphToList(exampleTGraph , ySetpoint = "yLow")
+
+    exampleTGraph.SetLineColor( ROOT.kBlue )
+    #exampleTGraph.Draw() # use 'A' option only for first TGraph apparently
+
+    reassembledTGraph =  listToTGraph( xList, yList, yLowList = yLowError, yHighList = yHighErrorList )
+    reassembledTGraph.SetLineColor( ROOT.kRed )
+
+
+    xList2 , yList2 = tGraphToList(reassembledTGraph , ySetpoint = "median")
+    _ , yHighErrorList2 =tGraphToList(reassembledTGraph , ySetpoint = "yHigh")
+    _ , yLowError2 = tGraphToList(reassembledTGraph , ySetpoint = "yLow")
+
+    #canv2 = ROOT.TCanvas("canvas", "canvas")
+    #exampleTGraph.Draw()
+    #reassembledTGraph.Draw("same")
+    #canv2.Update()
+
+    assert xList == xList2
+    assert yList == yList2
+    assert yHighErrorList == yHighErrorList2
+    assert yLowError == yLowError2
+
+
 
 
     import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
