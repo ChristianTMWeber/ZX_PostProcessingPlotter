@@ -28,6 +28,8 @@ import functions.histNumpyTools as histNumpyTools # to convert ROOT.TH1 histogra
 
 import makeReducibleShapes.makeReducibleShapes as makeReducibleShapes
 
+from functions.varibleSizeRebinHelper import varibleSizeRebinHelper # to help me make variable sized bins
+
 
 class DSIDHelper:
 
@@ -943,6 +945,8 @@ if __name__ == '__main__':
         # build my tree structure here to house the relevant histograms, pre-sorted for plotting
 
         baseHist.Rebin(args.rebin)
+
+        #if "ZXVR2" in path:  baseHist = varibleSizeRebinHelper(baseHist, [(76,84)])
 
         if addSystematicUncertaintyToNominal and not  int(DSID) in myDSIDHelper.analysisMapping["Reducible"] :
             altMasterHistDict = makeHistDict.fillHistDict(path, baseHist , args.mcCampaign, myDSIDHelper, channelMap = { "ZXSR" : "ZXSR" , "ZXVR1" : "ZZCR"} , masterHistDict = altMasterHistDict, customMapping = myDSIDHelper.BackgroundAndSignalByDSID) 
