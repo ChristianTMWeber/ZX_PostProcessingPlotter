@@ -253,6 +253,8 @@ class DSIDHelper:
         # remember: the metadata stores the cross section in nano barn, and the luminosity if in 1/fb. Th 1E6 factor scales the cross section from nb to fb.
         scale = self.lumiMap[mcTag] * 1000000. * prod / self.sumOfEventWeightsDict[int(DSID)] 
 
+        #if  int(DSID) in self.analysisMapping["H4l"]: scale = scale * 1.2
+
         return scale
     
     def makeReverseDict(self, inputDict):
