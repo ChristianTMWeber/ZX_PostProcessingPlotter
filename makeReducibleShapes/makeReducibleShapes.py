@@ -209,12 +209,21 @@ def getReducibleTH1s(TH1Template = None , convertXAxisFromMeVToGeV = False):
     # adjust norms to mc16a luminosities
     #for key in llNorms: llNorms[key]= llNorms[key] * 36.3/139
 
-    # add stat error only. Add syst error to limitSetting.py instead
-    statErrorDict = { "llmumu" : (2.29*0.0152 + 2.57*0.0152)/(2.29+2.57) , 
-                      "llee"   : (2.54*0.0843 + 3.19*0.0597)/(2.54+3.19), 
+    # add stat error only. Add syst error to limitSetting.py instead, not that these errors are relative errors, not absolute ones
+    statErrorDict = { #"llmumu" : (2.29*0.0152 + 2.57*0.0152)/(2.29+2.57) , 
+                      #"llee"   : (2.54*0.0843 + 3.19*0.0597)/(2.54+3.19), 
                       "all"     : 0.0284, 
                       "4mu" : 0.0152 , "2e2mu" :  0.0152 ,
                       "4e"  : 0.0843 , "2mu2e" : 0.0597 }
+
+    statErrorDict["llmumu"] = ((statErrorDict["4mu"] *llNorms["4mu"])**2 + (statErrorDict["2e2mu"] *llNorms["2e2mu"])**2 )**0.5 / ( llNorms["4mu"] + llNorms["2e2mu"] )
+    statErrorDict["llee"] = ((statErrorDict["4e"] *llNorms["4e"])**2 + (statErrorDict["2mu2e"] *llNorms["2mu2e"])**2 )**0.5 / ( llNorms["4e"] + llNorms["2mu2e"] )
+
+    # add stat error only. Add syst error to limitSetting.py instead
+    # sysErrorDict = { "llmumu" : (2.29*0.0719 + 2.57*0.0719)/(2.29+2.57) , 
+    #                   "llee"   : (2.54*0.13 + 3.19*0.148)/(2.54+3.19), 
+    #                   "all"     : 0.0822, 
+    #                   }
 
     TH1Dict = {}
 
@@ -328,6 +337,18 @@ def getReducibleTH1s(TH1Template = None , convertXAxisFromMeVToGeV = False):
 
 
 if __name__ == '__main__':
+
+    def getHistIntegralWithUnertainty(hist, lowerLimit = 0, upperLimit = None ):
+
+        #TH1::Integral returns the integral of bins in the bin range (default(1,Nbins).
+        #If you want to include the Under/Overflow, use h.Integral(0,Nbins+1)
+        
+        if upperLimit is None: upperLimit = hist.GetNbinsX() +1
+        integralUncertainty = ROOT.Double()
+
+        integral = hist.IntegralAndError( lowerLimit , upperLimit, integralUncertainty)
+        return integral, integralUncertainty
+
 
 
     #testHist = ROOT.TH1D("TEST", "TEST", 200, 10000,150000 )
