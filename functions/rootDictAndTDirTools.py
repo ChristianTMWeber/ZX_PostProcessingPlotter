@@ -34,18 +34,20 @@ def generateTDirPathAndContentsRecursive(TDir, baseString = "" , newOwnership = 
 
     else: 
 
-        baseString += TDir.GetName() +"/"
+        #baseString += TDir.GetName() +"/"
 
         for TObject in generateTDirContents(TDir):
+
+            
             #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
             if newOwnership is not None: ROOT.SetOwnership(TObject, newOwnership) # do this to prevent an std::bad_alloc error, setting it to to 'True' gives permission to delete it, https://root.cern.ch/root/htmldoc/guides/users-guide/ObjectOwnership.html
             if isinstance(TObject, ROOT.TDirectoryFile ) and maxRecursionDepth != 0:
 
-                for recursiveTObject in generateTDirPathAndContentsRecursive(TObject, baseString = baseString, newOwnership = newOwnership, maxRecursionDepth = maxRecursionDepth -1):
+                for recursiveTObject in generateTDirPathAndContentsRecursive(TObject, baseString = baseString +"/"+ TObject.GetName() , newOwnership = newOwnership, maxRecursionDepth = maxRecursionDepth -1):
                     yield recursiveTObject
 
             else :
-                yield baseString + TObject.GetName() , TObject
+                yield baseString +"/"+  TObject.GetName() , TObject
 
 def getSubTDirList( currentTDir) : # provides a list of subdirectories in the current TDirectory
     listOfSubdirectories = [TObject.GetName() for TObject in generateTDirContents(currentTDir) if isinstance(TObject, ROOT.TDirectoryFile)]

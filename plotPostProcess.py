@@ -776,6 +776,45 @@ def make1UpAnd1DownSystVariationYields( BackgroundVariationDict , flavor = "All"
 
     return upSysYieldChange, downSysYieldChange
 
+def preselectTDirsForProcessing(postProcessedData , permittedDSIDs = None, systematicsTags = None, systematicsVetoes = None , newOwnership = None):
+
+    if permittedDSIDs is None:
+        reSearchString = ""
+    else:
+        reSearchOptions = [ "(%i)" %DSID for DSID in permittedDSIDs]
+
+        reSearchStringDSID = "|".join(reSearchOptions)
+
+    # preselect by systematic
+    if systematicsTags is None:                    reSearchStringSystematics = ""
+    elif isinstance(systematicsTags, list):        reSearchStringSystematics = "|".join(systematicsTags)
+    else:                                          reSearchStringSystematics = systematicsTags
+
+    if systematicsVetoes is None:                    reSearchStringSysVeto = False
+    elif isinstance(systematicsVetoes, list):        reSearchStringSysVeto = "|".join(systematicsVetoes)
+    else:                                            reSearchStringSysVeto = systematicsVetoes
+
+
+    for path_DSIDLevel, baseHist_DSIDLevel  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive( postProcessedData , newOwnership = newOwnership, maxRecursionDepth = 0) :        
+
+        if not isinstance(baseHist_DSIDLevel,ROOT.TDirectoryFile): continue
+        DSID = path_DSIDLevel.split("/")[-1]
+        if not re.search( reSearchStringDSID, DSID): continue
+
+        preselectedTDirs = []
+        for path_sysLevel, baseHist_sysLevel  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive( baseHist_DSIDLevel , baseString = path_DSIDLevel, newOwnership = newOwnership, maxRecursionDepth = 0) :
+
+            #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+            systematic = path_sysLevel.split("/")[-1]
+            if reSearchStringSysVeto and re.search( reSearchStringSysVeto, systematic): continue
+            if not re.search( reSearchStringSystematics, systematic): continue
+
+            for path, baseHist in rootDictAndTDirTools.generateTDirPathAndContentsRecursive( baseHist_sysLevel , baseString = path_sysLevel, newOwnership = newOwnership):
+                yield path, baseHist
+
+
+
 if __name__ == '__main__':
 
     from functions.compareVersions import compareVersions # to compare root versions
@@ -907,8 +946,29 @@ if __name__ == '__main__':
     histCounter = 0 # count how many relevant hists we have
     nonRelevantHistCounter = 0
 
+
+    DSIDsToConsider = []
+    DSIDsToConsider.append( 0) # data!
+    DSIDsToConsider.extend( myDSIDHelper.analysisMapping["H4l"])
+    DSIDsToConsider.extend( myDSIDHelper.analysisMapping["ZZ"])
+    DSIDsToConsider.extend( myDSIDHelper.analysisMapping["VVV_Z+ll"])
+    if not skipReducible: DSIDsToConsider.extend( myDSIDHelper.analysisMapping["Reducible"])
+    if skipZjets: # we remove the Z+Jet DSIDs after the fact, due to the way the analysisMappings are defined
+        for ZJetDISD in  myDSIDHelper.ZJetDSIDs: DSIDsToConsider.remove(ZJetDISD)
+
+    # ZZd samples                   m_Zd    15 GeV  20 GeV  25 GeV  30 GeV  35 GeV  40 GeV  45 GeV  50 GeV  55 GeV  
+    #                                       343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242
+    if not skipZX : DSIDsToConsider.extend([343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242])
+
+
+
+    if args.makeSystematicsPlots  : systematicsTags = "" # this way we tag all the systematics
+    else:                           systematicsTags =  "Nominal"
+
+
     # loop over all of the TObjects in the given ROOT file                         # newOwnership set to none for newer root versions, set to true for older ones
-    for path, baseHist  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = ownershipSetpoint): 
+    #for path, baseHist  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = ownershipSetpoint): 
+    for path, baseHist in preselectTDirsForProcessing(postProcessedData, permittedDSIDs = DSIDsToConsider, systematicsTags = systematicsTags, systematicsVetoes = ["UncorrUncertaintyNP" ,"CorrUncertaintyNP" ,"PMG_"], newOwnership = ownershipSetpoint):
 
         nonRelevantHistCounter += 1
         if nonRelevantHistCounter %1e5 == 0: print "%i irrelevant hists processed. \t Memory usage: %s (MB)" % (nonRelevantHistCounter, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1000)
@@ -916,50 +976,14 @@ if __name__ == '__main__':
 
         if irrelevantTObject(path, baseHist): continue # skip non-relevant histograms
 
-
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
         # discern DSID and plotTitle to use them when sorting into a tree structure
         DSID = myDSIDHelper.idDSID(path)
 
-        # 15GeV , 20GeV , 25GeV , 30GeV , 35GeV , 40GeV , 45GeV , 50GeV , 55GeV
-        # 343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242
-
-        # skip ZZd samples
-        #        m_Zd    15 GeV  20 GeV  25 GeV  30 GeV  35 GeV  40 GeV  45 GeV  50 GeV  55 GeV  
-        #                343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242
-        if skipZX   and  int(DSID) in [343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242]: continue 
-        # skip other, non-ZZd signal sample DSIDS, i.e. ZdZd signal sample DSIDs
-        if skipZdZd and  int(DSID) in [302073, 302074, 302075, 302076, 302077, 302078, 302079, 302080, 302081, 302082, 
-                                       302083, 302084, 302085, 302086, 302087, 302088, 302089, 302090, 309475, 309476, 
-                                       309477, 309478, 309479, 309480, 309481, 309482, 309483, 309484, 309485, 309709]: continue
-
-        # skip Z+jet samples
-        if skipZjets and int(DSID) in [364114, 364115, 364116, 364117, 364118, 364119, 364120, 364121, 364122, 364123, 
-                                       364124, 364125, 364126, 364127, 364100, 364101, 364102, 364103, 364104, 364105, 
-                                       364106, 364107, 364108, 364109, 364110, 364111, 364112, 364113]: continue
-
-        if skipReducible and int(DSID) in myDSIDHelper.analysisMapping["Reducible"]: continue
-
-        #if int(DSID) not in myDSIDHelper.analysisMapping["H4l"]: continue
-        #if int(DSID) not in myDSIDHelper.analysisMapping["ZZ"]: continue
-        #if int(DSID) not in myDSIDHelper.analysisMapping["Reducible"]: continue
-        #if int(DSID) not in myDSIDHelper.analysisMapping["VVV_Z+ll"]: continue
-        
-        
-
-         
-
-        # higgs only
-        #if int(DSID) not in [341964, 341947, 345060, 341488, 345046, 345047, 345048, 345066, 344973, 344974]: continue
-        #if int(DSID) == 0: continue #skip data
-
         plotTitle = idPlotTitle(path, myDSIDHelper, DSID=DSID)
 
         systematicChannel = path.split("/")[-2]
-
-        # skip the not 'nominal' histograms, unless we are doing systematic plots
-        if not args.makeSystematicsPlots  and "Nominal" != systematicChannel: continue
 
         # make cuts on kinematic variables
         if len(args.kinematicsToPlot) >0 :
@@ -989,6 +1013,8 @@ if __name__ == '__main__':
         histCounter += 1
         if histCounter %1000 == 0: print str(histCounter) + " relevant hists processed. \t Memory usage: %s (MB)" % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1000)
 
+
+    reportMemUsage.reportMemUsage(startTime)
 
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     ######################################################
