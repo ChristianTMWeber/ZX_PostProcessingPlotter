@@ -149,6 +149,10 @@ class DSIDHelper:
         for DISDList in self.physicsProcess.values()       : self.BackgroundAndSignal["Background"].extend( DISDList )
         for DISDList in self.physicsProcessSignal.values() : self.BackgroundAndSignal["Signal"].extend( DISDList )
         self.BackgroundAndSignalByDSID    = self.makeReverseDict( self.BackgroundAndSignal);
+
+        self.ZJetDSIDs = []
+        for subProcess in self.physicsSubProcess:
+            if "Z+Jets" in subProcess: self.ZJetDSIDs.extend( self.physicsSubProcess[subProcess] )
         
         # add the signal into the physics(Sub)Process
         self.physicsProcess.update( self.physicsProcessSignal )
