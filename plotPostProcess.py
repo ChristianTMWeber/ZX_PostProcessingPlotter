@@ -23,8 +23,11 @@ import numpy as np # good ol' numpy
 import os
 import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
 import resource # print 'Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+import time # for measuring execution time
+import limitSetting.limitFunctions.reportMemUsage as reportMemUsage
 
 import functions.histNumpyTools as histNumpyTools # to convert ROOT.TH1 histograms to numpy arrays
+from functions.TFileCache import TFileCache
 
 import makeReducibleShapes.makeReducibleShapes as makeReducibleShapes
 
@@ -827,6 +830,11 @@ if __name__ == '__main__':
     parser.add_argument( "--skipReducible", default=False, action='store_true' , 
     help = "If run with '--skipReducible' we will not include any 'reducible' MC in the plots " ) 
 
+    parser.add_argument( "--cacheForDockerOnWSL", default=False, action='store_true' , 
+    help = "Use when opening larger files, while operating in a docker container, on a Windows machine" ) 
+
+    startTime = time.time() 
+
     args = parser.parse_args()
 
     skipZX = True
@@ -885,7 +893,8 @@ if __name__ == '__main__':
     mainBackgrounds.extend( myDSIDHelper.analysisMapping["H4l"])
     mainBackgrounds.extend( myDSIDHelper.analysisMapping["ZZ"])
 
-    postProcessedData = ROOT.TFile(args.input,"READ"); # open the file with te data from the ZdZdPostProcessing
+    if args.cacheForDockerOnWSL : postProcessedData = TFileCache(args.input,"READ"); # open the file with te data from the ZdZdPostProcessing
+    else:                         postProcessedData = ROOT.TFile(args.input,"READ"); # open the file with te data from the ZdZdPostProcessing
 
     myDSIDHelper.fillSumOfEventWeightsDict(postProcessedData)
 
@@ -943,7 +952,7 @@ if __name__ == '__main__':
 
         plotTitle = idPlotTitle(path, myDSIDHelper, DSID=DSID)
 
-        systematicChannel = path.split("/")[2]
+        systematicChannel = path.split("/")[-2]
 
         # skip the not 'nominal' histograms, unless we are doing systematic plots
         if not args.makeSystematicsPlots  and "Nominal" != systematicChannel: continue
@@ -1326,6 +1335,8 @@ if __name__ == '__main__':
     indexFile.close()
 
     printSubsetOfHists( canvasList, searchStrings=["M34","M4l"], outputDir = "supportnoteFigs")
+
+    reportMemUsage.reportMemUsage(startTime)
 
     print("All plots processed!")
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
