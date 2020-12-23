@@ -21,22 +21,31 @@ def generateTDirContents(TDir):
         yield TKey.ReadObj() # this is how I access the element that belongs to the current TKey
 
 
-def generateTDirPathAndContentsRecursive(TDir, baseString = "" , newOwnership = None):
+def generateTDirPathAndContentsRecursive(TDir, baseString = "" , newOwnership = None, maxRecursionDepth = -1):
     # for a given TDirectory (remember that a TFile is also a TDirectory) get all non-directory objects
     # redturns a tuple ('rootFolderPath', TObject) and is a generator
 
-    baseString += TDir.GetName() +"/"
+    if isinstance(TDir, list): 
 
-    for TObject in generateTDirContents(TDir):
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-        if newOwnership is not None: ROOT.SetOwnership(TObject, newOwnership) # do this to prevent an std::bad_alloc error, setting it to to 'True' gives permission to delete it, https://root.cern.ch/root/htmldoc/guides/users-guide/ObjectOwnership.html
-        if isinstance(TObject, ROOT.TDirectoryFile ):
-
-            for recursiveTObject in generateTDirPathAndContentsRecursive(TObject, baseString = baseString, newOwnership = newOwnership):
+        for listElement in TDir: 
+            for recursiveTObject in generateTDirPathAndContentsRecursive(listElement, baseString = baseString, newOwnership = newOwnership, maxRecursionDepth = maxRecursionDepth):
                 yield recursiveTObject
 
-        else :
-            yield baseString + TObject.GetName() , TObject
+    else: 
+
+        baseString += TDir.GetName() +"/"
+
+        for TObject in generateTDirContents(TDir):
+            #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+            if newOwnership is not None: ROOT.SetOwnership(TObject, newOwnership) # do this to prevent an std::bad_alloc error, setting it to to 'True' gives permission to delete it, https://root.cern.ch/root/htmldoc/guides/users-guide/ObjectOwnership.html
+            if isinstance(TObject, ROOT.TDirectoryFile ) and maxRecursionDepth != 0:
+
+                for recursiveTObject in generateTDirPathAndContentsRecursive(TObject, baseString = baseString, newOwnership = newOwnership, maxRecursionDepth = maxRecursionDepth -1):
+                    yield recursiveTObject
+
+            else :
+                yield baseString + TObject.GetName() , TObject
 
 def getSubTDirList( currentTDir) : # provides a list of subdirectories in the current TDirectory
     listOfSubdirectories = [TObject.GetName() for TObject in generateTDirContents(currentTDir) if isinstance(TObject, ROOT.TDirectoryFile)]
