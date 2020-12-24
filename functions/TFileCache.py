@@ -13,8 +13,7 @@ As a workaround TFileCache copies the file to a folder in the linux file system,
 """
 
 
-def copyToTemp( inputFile, targetDir = os.path.join(os.path.expanduser("~"), "temp") ):
-
+def copyToTemp( inputFile, targetDir = os.path.expanduser("/tmp")):
     
 
     if not os.path.exists(targetDir): os.mkdir(targetDir)
