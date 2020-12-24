@@ -781,7 +781,7 @@ def preselectTDirsForProcessing(postProcessedData , permittedDSIDs = None, syste
     if permittedDSIDs is None:
         reSearchString = ""
     else:
-        reSearchOptions = [ "(%i)" %DSID for DSID in permittedDSIDs]
+        reSearchOptions = [ "(/%i)" %DSID for DSID in permittedDSIDs]
 
         reSearchStringDSID = "|".join(reSearchOptions)
 
@@ -799,7 +799,7 @@ def preselectTDirsForProcessing(postProcessedData , permittedDSIDs = None, syste
 
         if not isinstance(baseHist_DSIDLevel,ROOT.TDirectoryFile): continue
         DSID = path_DSIDLevel.split("/")[-1]
-        if not re.search( reSearchStringDSID, DSID): continue
+        if not re.search( reSearchStringDSID, path_DSIDLevel): continue
 
         preselectedTDirs = []
         for path_sysLevel, baseHist_sysLevel  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive( baseHist_DSIDLevel , baseString = path_DSIDLevel, newOwnership = newOwnership, maxRecursionDepth = 0) :
