@@ -813,7 +813,42 @@ def preselectTDirsForProcessing(postProcessedData , permittedDSIDs = None, syste
             for path, baseHist in rootDictAndTDirTools.generateTDirPathAndContentsRecursive( baseHist_sysLevel , baseString = path_sysLevel, newOwnership = newOwnership):
                 yield path, baseHist
 
+def makeSignificancePlots(referenceHist, dataHist, backgroundHist):
 
+    def makeP0Value(nObserved,nExpected):   return ROOT.Math.poisson_cdf_c( int(nObserved) , nExpected) # complimentary cumulative distribution function 
+    def getGaussSignificance(p0Value):      return ROOT.Math.normal_quantile(1-p0Value,1) # ROOT.Math.normal_quantile( Z , sigma)
+
+    # ROOT.Math.poisson_cdf_c( x , expectation value)   
+
+    dataArray          = histNumpyTools.histToNPArray(dataHist)
+    expectedYieldArray = histNumpyTools.histToNPArray(backgroundHist)
+
+    significanceListForHist = []
+    significanceListForPlotLimits = []
+
+    #for index in xrange(0,len(dataArray)):  int(dataArray[index]), expectedYieldArray[index], makeP0Value(  int(dataArray[index]), expectedYieldArray[index] ), getGaussSignificance( makeP0Value(  int(dataArray[index]), expectedYieldArray[index] ) )
+    for index in xrange(0,len(dataArray)):  
+        if dataArray[index] == 0 :  signifiance = -10 # I don't know how to exclde plotting 0-bin content bins outside of the "bar" option, but this might work
+        else:
+            signifiance = getGaussSignificance( makeP0Value(  int(dataArray[index]), expectedYieldArray[index] ) ) 
+            significanceListForPlotLimits.append(signifiance)
+
+        if np.isinf(signifiance ) : signifiance = -10
+        significanceListForHist.append( signifiance )
+
+    significanceHist = referenceHist.Clone( referenceHist.GetName() + "_signifiance" )
+    significanceHist.Reset()
+
+    histNumpyTools.fillHistWithNPArray( significanceHist, significanceListForHist)
+
+    significanceHist.SetMarkerColor(ROOT.kRed )
+    significanceHist.SetMarkerStyle( 3 ) # https://root.cern.ch/doc/master/classTAttMarker.html#M2
+
+    #significanceHist.SetMarkerStyle( 105 ) # https://root.cern.ch/doc/master/classTAttMarker.html#M2
+
+    significanceHist.GetYaxis().SetRangeUser(min(significanceListForPlotLimits)*1.1, max(significanceListForPlotLimits)*1.1)
+
+    return significanceHist, min(significanceListForPlotLimits)*1.1, max(significanceListForPlotLimits)*1.1
 
 if __name__ == '__main__':
 
@@ -887,7 +922,7 @@ if __name__ == '__main__':
 
     if skipReducible: skipZjets = True
 
-    replaceWithDataDriven = False
+    replaceWithDataDriven = True
 
     addSystematicUncertaintyToNominal = args.makeSystematicsPlots and (len(args.kinematicsToPlot)==1)
 
@@ -1314,6 +1349,29 @@ if __name__ == '__main__':
                 
 
                 ratioHist.Draw()
+
+                if "ZXSR" in backgroundTHStack.GetName(): #== "ZXSR_All_HWindow_m34": 
+                    significanceHist, minSignifiance, maxSignificance = makeSignificancePlots(ratioHist, dataTH1, backgroundMergedTH1ForRatioHist)
+
+                    newLowerAxisLimit = min(ratioHist.GetMinimum(), minSignifiance)
+                    newUpperAxisLimit = max(ratioHist.GetMaximum(), maxSignificance)
+
+                    ratioHist.GetYaxis().SetRangeUser(newLowerAxisLimit, newUpperAxisLimit)
+
+                    significanceHist.Draw("P same") 
+
+                    lowerLegend = setupTLegend()
+                    lowerLegend.AddEntry(ratioHist, "Data / MC", "p")
+                    lowerLegend.AddEntry(significanceHist, "sign.", "p")
+                    lowerLegend.Draw()
+
+                    lowerLegend.SetX2(.3)
+
+                    ratioHist.GetYaxis().SetTitle("#splitline{Data / MC,}{significance.}")
+                    #ratioHist.GetYaxis().SetTitle("Data / MC, significance")
+                    #ratioHist.GetYaxis().CenterTitle(True)
+                    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
 
                 #if "m34" in  ratioHist.GetName() :  ratioHist.GetXaxis().SetRangeUser(10, 70)
             else: backgroundTHStack.GetXaxis().SetTitle( sortedSamples.values()[0].GetXaxis().GetTitle()  )
