@@ -815,7 +815,12 @@ def preselectTDirsForProcessing(postProcessedData , permittedDSIDs = None, syste
 
 def makeSignificancePlots(referenceHist, dataHist, backgroundHist):
 
-    def makeP0Value(nObserved,nExpected):   return ROOT.Math.poisson_cdf_c( int(nObserved) , nExpected) # complimentary cumulative distribution function 
+
+    # complimentary cumulative distribution function 
+    # ROOT.Math.poisson_cdf_c( n, b ) gives the cumulative poisson distribution from n+1 to infinity. So that is equivalent to the probability of getting a value more extreme than n
+    # We want the probability of getting n or more, so we need to add in the valye for b
+    def makeP0Value(nObserved,nExpected):   return ROOT.Math.poisson_cdf_c( int(nObserved) , nExpected) + ROOT.Math.poisson_pdf( int(nObserved) , nExpected)# complimentary cumulative distribution function 
+    # ROOT.Math.poisson_pdf( int(0) , 5)
     def getGaussSignificance(p0Value):      return ROOT.Math.normal_quantile(1-p0Value,1) # ROOT.Math.normal_quantile( Z , sigma)
 
     # ROOT.Math.poisson_cdf_c( x , expectation value)   
@@ -847,7 +852,7 @@ def makeSignificancePlots(referenceHist, dataHist, backgroundHist):
     #significanceHist.SetMarkerStyle( 105 ) # https://root.cern.ch/doc/master/classTAttMarker.html#M2
 
     significanceHist.GetYaxis().SetRangeUser(min(significanceListForPlotLimits)*1.1, max(significanceListForPlotLimits)*1.1)
-
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     return significanceHist, min(significanceListForPlotLimits)*1.1, max(significanceListForPlotLimits)*1.1
 
 if __name__ == '__main__':
