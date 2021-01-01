@@ -215,7 +215,7 @@ def addSystematicsToSample(histFactorySample, inputFileOrName, region = "ZXSR", 
     eventTDir = inputTFile.Get(region).Get(eventType)
 
     # let's parste all the contents of the root file and select the relevant information
-    for path, myTObject  in TDirTools.generateTDirPathAndContentsRecursive(eventTDir, newOwnership = None):  
+    for path, myTObject  in TDirTools.generateTDirPathAndContentsRecursive(eventTDir, baseString = eventTDir.GetName(), newOwnership = None):  
         if not all([x in path for x in [flavor] ]): continue # ignore the regions, etc. that we are not concerned with are right now
         if "Nominal" in path: continue # nominal is not a systematic
         

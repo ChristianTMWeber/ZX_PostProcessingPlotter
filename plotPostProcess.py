@@ -24,7 +24,6 @@ import os
 import collections # so we can use collections.defaultdict to more easily construct nested dicts on the fly
 import resource # print 'Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 import time # for measuring execution time
-import limitSetting.limitFunctions.reportMemUsage as reportMemUsage
 
 import functions.histNumpyTools as histNumpyTools # to convert ROOT.TH1 histograms to numpy arrays
 from functions.TFileCache import TFileCache
@@ -32,7 +31,7 @@ from functions.TFileCache import TFileCache
 import makeReducibleShapes.makeReducibleShapes as makeReducibleShapes
 
 from functions.varibleSizeRebinHelper import varibleSizeRebinHelper # to help me make variable sized bins
-
+import functions.rootDictAndTDirTools as rootDictAndTDirTools
 
 class DSIDHelper:
 
@@ -858,9 +857,9 @@ def makeSignificancePlots(referenceHist, dataHist, backgroundHist):
 if __name__ == '__main__':
 
     from functions.compareVersions import compareVersions # to compare root versions
-    import functions.rootDictAndTDirTools as rootDictAndTDirTools
     import functions.histHelper as histHelper # to help me with histograms
     import limitSetting.limitFunctions.makeHistDict as makeHistDict # alternative option to fill the  masterHistDict
+    import limitSetting.limitFunctions.reportMemUsage as reportMemUsage
 
 
     ######################################################
