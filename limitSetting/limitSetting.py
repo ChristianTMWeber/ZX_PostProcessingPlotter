@@ -842,13 +842,7 @@ if __name__ == '__main__':
     rooMsgServe = ROOT.RooMsgService.instance()                
     rooMsgServe.setGlobalKillBelow(ROOT.RooFit.WARNING)
     
-
-    #inputFileName = "preppedHists_mc16a_unchangedErros_3GeVBins.root" 
-    #inputFileName = "preppedHists_mc16a_sqrtErros_3GeVBins.root"
-    #inputFileName = "preppedHists_mc16a_sqrtErros_1GeVBins.root"
-    #inputFileName = "preppedHists_mc16a_sqrtErros_0.5GeVBins.root"
     inputFileName = args.inputFileName 
-    #inputFileName = "preppedHists_mc16ade_sqrtErros_0.5GeVBins.root"
 
     inputTFile = ROOT.TFile(inputFileName,"OPEN")
     masterDict = TDirTools.buildDictTreeFromTDir(inputTFile) # use this dict for an overview of what hists / channels / systematics / flavors are available
@@ -904,28 +898,18 @@ if __name__ == '__main__':
     for limitIteration in xrange(nIterations):
 
         # setup data hist
-
-        if limitType == "toys" or limitType == "HypoTestInverter" or limitType == "writeOutWorkspaces":
-            dataHistPath = getFullTDirPath(masterDict, region, args.dataToOperateOn , "Nominal",  flavor)
+        dataHistPath = getFullTDirPath(masterDict, region, args.dataToOperateOn , "Nominal",  flavor)
+        #dataHistPath = getFullTDirPath(masterDict, region, "expectedData_signal55GeV" , "Nominal",  flavor)
+        dataHist = inputTFile.Get( dataHistPath )
+        if limitType == "toys" or limitType == "HypoTestInverter" :
             expectedDataHist = inputTFile.Get( dataHistPath )
-
             dataHist = myHistSampler.sampleFromTH1(expectedDataHist)
-
-        elif limitType == "asimov" or limitType == "asymptotic" or limitType == "p0Calculation": # asimov dataset, data has been set to the expectation value from backgrounds
-            dataHistPath = getFullTDirPath(masterDict, region, args.dataToOperateOn , "Nominal",  flavor)
-            #dataHistPath = getFullTDirPath(masterDict, region, "expectedData_signal55GeV" , "Nominal",  flavor)
-            dataHist = inputTFile.Get( dataHistPath )
-
-        elif limitType == "observed" :  # either do asymptotic expected limits, or get real data limits
-            dataHistPath = getFullTDirPath(masterDict, region, args.dataToOperateOn , "Nominal",  flavor)
-            dataHist = inputTFile.Get( dataHistPath )
-
+        elif limitType == "writeOutWorkspaces":                                                  pass
+        elif limitType == "asimov" or limitType == "asymptotic" or limitType == "p0Calculation": pass # asimov dataset, data has been set to the expectation value from backgrounds
+        elif limitType == "observed" :                                                           pass # either do asymptotic expected limits, or get real data limits
         else: raise ValueError("specific limittype '%s' has not been implemented" %limitType)
 
         dataObj = setupHistofactoryData(dataHist) # put things in a HistFactory.Data object to avoit some seg faults
-
-        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-
 
         for massPoint in massesToProcess:
 
