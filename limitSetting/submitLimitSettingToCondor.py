@@ -47,7 +47,7 @@ if __name__ == '__main__':
     # 
 
 
-    inputFileName = "post_20200915_171012_ZX_Run2_BckgSignal_PreppedHist_UnblindedData_V5.root"
+    inputFileName = "post_20200915_171012_ZX_Run2_BckgSignal_PreppedHist_UnblindedData_V7.root"
     #
 
     extraOptions =""
@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     for mass in massPoints:
 
-        outputFileName = "limitV5_PMG_%s_Zd%i.root" %(flavor,mass)
+        outputFileName = "limitV7_PMG_%s_Zd%i.root" %(flavor,mass)
 
 
         submitLine = "python limitSetting.py --inputFileName  %s  --limitType %s --nSystematics -1 --dataToOperateOn data  --outputDir %s --outputFileName %s --flavor %s --nMassPoints %i  %s" %(inputFileName, limitTypeOption,  outputDir, outputFileName , flavor, mass, extraOptions)
@@ -84,8 +84,7 @@ if __name__ == '__main__':
 
 
         #import pdb; pdb.set_trace()
-        shellScript = "batchRunV5_%s_%i_%s.sh" % (flavor,mass, submissionType) 
-        #shellScript = "batchRunV5_%s_%i_PrePostFit.sh" % (flavor,mass) 
+        shellScript = "batchRunV7_%s_%i_%s.sh" % (flavor,mass, submissionType) 
 
         with open(shellScript, "w") as shellWrite:
             shellWrite.write('#!/bin/bash\n')
