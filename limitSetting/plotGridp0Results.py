@@ -14,11 +14,24 @@ sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) ) # need
 
 import functions.tGraphHelpers as graphHelper
 
+from functions.rootDictAndTDirTools import getTDirContentNames
+
 
 def getP0ValueFromFile( filePath ):
 
     TFile = ROOT.TFile(filePath , "OPEN")
     #TFile.Get("HypoTestCalculator_result;1").Print()
+
+
+    TFileContents = getTDirContentNames(TFile)
+
+    nHypoTestResults = TFileContents.count("HypoTestCalculator_result")
+
+    HypoTestCalculatorResult = TFile.Get("HypoTestCalculator_result;1")
+
+    for iterator in xrange(2,nHypoTestResults+1):  # in case we have more then one HypoTestCalculator_result in the given file
+        tempHypoTestCalculatorResult = TFile.Get("HypoTestCalculator_result;" + str(iterator) )
+        HypoTestCalculatorResult.Append( tempHypoTestCalculatorResult )
 
     p0Value = TFile.Get("HypoTestCalculator_result;1").NullPValue()
 
