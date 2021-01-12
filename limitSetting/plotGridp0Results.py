@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
     #folderWithGridP0Results = "gridP0Calculations"
 
-    folderWithGridP0Results = "../../Downloads/gridP0CalculationsMoreStats"
+    folderWithGridP0Results = "user.chweber.ZdZdp0_ZX_Workspace_mZd_XXGeV.42.000000_p0"
 
     #               look behind                        look ahead
     searchString = "(?<=ZdZdp0_ZX_Workspace_mZd_)\d{2}(?=GeV.)" 
@@ -106,15 +106,12 @@ if __name__ == '__main__':
     graph_3Sigma = getNSigmaGraph( 2.9, p0Dict.keys())
 
     
-    graph_3Sigma.GetYaxis().SetTitle("Local p_{0}")
-    graph_3Sigma.GetXaxis().SetTitle("m_{Z_{d}} [GeV]")
-
-    graph_3Sigma.GetYaxis().SetTitleSize(0.06)
-
-    graph_3Sigma.GetXaxis().SetTitleSize(0.05)
-    graph_3Sigma.GetYaxis().SetTitleOffset(0.8)
-
-    graph_3Sigma.GetXaxis().SetTitleOffset(0.85)
+    graph_2Sigma.GetYaxis().SetTitle("Local p_{0}")
+    graph_2Sigma.GetXaxis().SetTitle("m_{Z_{d}} [GeV]")
+    graph_2Sigma.GetYaxis().SetTitleSize(0.06)
+    graph_2Sigma.GetXaxis().SetTitleSize(0.05)
+    graph_2Sigma.GetYaxis().SetTitleOffset(0.8)
+    graph_2Sigma.GetXaxis().SetTitleOffset(0.85)
 
 
 
@@ -127,9 +124,10 @@ if __name__ == '__main__':
     #canv.SetBottomMargin(0.1)
 
 
-    graph_3Sigma.Draw()
+    #graph_3Sigma.Draw()
+    graph_2Sigma.Draw()
     graph_1Sigma.Draw("same")
-    graph_2Sigma.Draw("same")
+
     
 
     p0Graph.Draw("same * L")
@@ -138,8 +136,9 @@ if __name__ == '__main__':
 
     canv.Update()
 
-    canv.Print("p0Graph_2.5kToys.pdf")
-    canv.Print("p0Graph_2.5kToys.png")
+    canv.Print("p0Graph_20kToys.pdf")
+    canv.Print("p0Graph_20kToys.png")
+    canv.Print("p0Graph_20kToys.root")
 
 
 
