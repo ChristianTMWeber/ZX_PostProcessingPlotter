@@ -10,7 +10,8 @@ import sys
 sys.path.append( os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) ) ) # need to append the parent directory here explicitly to be able to import plotPostProcess
 
 import functions.histNumpyTools as histNumpyTools
-
+#from plotPostProcess import preselectTDirsForProcessing
+import plotPostProcess
 
 def makeMinAndMaxHistograms(listOfTh1s):
 
@@ -91,7 +92,7 @@ def visualizeEnvelopeHistogram( upperHist, lowerHist, listHist, outputDir, nomin
         hist.SetStats( False) # remove stats box
         hist.GetYaxis().SetTitle("#Events")
         hist.Draw("SAME HIST")
-        hist.SetTitle("")
+        hist.SetTitle(title)
         histMaximumValues.append( hist.GetMaximum())
 
     upperHist.Draw("SAMEHIST")
@@ -406,12 +407,24 @@ if __name__ == '__main__':
     #myDSIDHelper.setMappingOfChoice( "DSIDtoDSIDMapping" )
     myDSIDHelper.setMappingOfChoice( "analysisMapping" )
 
+    #inputDataFile = "../../post_20200915_171012_mc16ade_ZX_Run2_SignalBackgroundDataFeb2020Unblinded.root"
     #inputDataFile = "../../post_20200809_203927__ZX_Run2_MainBackground_PMGWeights.root"
-    inputDataFile = "ZX_PostProcess_PMGWeightExampleInput.root"
+    #inputDataFile = "ZX_PostProcess_PMGWeightExampleInput.root"
+    #inputDataFile = "../../post_20201230_204837__ZX_Run2_Jul2020_ZZ_364251_Sys_PMGWeights.root"
+
+    inputDataFile = "../../post_20200915_171012_mc16ade_ZX_Run2_SignalBackgroundDataFeb2020UnblindedPMGFixed.root"
+
 
     postProcessedData = ROOT.TFile(inputDataFile,"READ"); # open the file with te data from the ZdZdPostProcessing
 
     myDSIDHelper.fillSumOfEventWeightsDict(postProcessedData)
+
+    DSIDsToConsider = []; backgroundTypes = []
+    #DSIDsToConsider.extend( myDSIDHelper.analysisMapping["H4l"]) ; backgroundTypes.append("H4l")
+    DSIDsToConsider.extend( myDSIDHelper.analysisMapping["ZZ"]) ; backgroundTypes.append("ZZ")
+    DSIDsToConsider.remove(364251)
+
+    DSIDsToConsider = [364251]
 
     channelMapping = { "ZXSR" : "ZXSR"}
 
@@ -426,7 +439,9 @@ if __name__ == '__main__':
     import reportMemUsage as reportMemUsage
     startTime = time.time()
 
-    for path, myTObject  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = None):  
+
+    for path, myTObject in plotPostProcess.preselectTDirsForProcessing(postProcessedData, permittedDSIDs = DSIDsToConsider, systematicsTags = ["PMG_","Nominal"], systematicsVetoes = None, newOwnership = None):
+    #for path, myTObject  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = None):  
         # set newOwnership to 'None' here and let root handle the ownership itself for now, 
         # otherwise we are getting a segmentation fault?!
 
@@ -449,13 +464,16 @@ if __name__ == '__main__':
         
         nRelevantHistsProcessed += 1
 
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+
         if nRelevantHistsProcessed %100 == 0:  print( path, myTObject)
 
     
     reportMemUsage.reportMemUsage(startTime = startTime)
 
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    addTheoryVariationsToMasterHistDict( pmgWeightDict, masterHistDict,  myDSIDHelper.analysisMapping, region = "ZXSR", backgroundtypes = backgroundTypes, prefix="PMG_", outputEnvelopeDir = "theorySystOverview")
 
-    addTheoryVariationsToMasterHistDict( pmgWeightDict, masterHistDict,  myDSIDHelper.analysisMapping, region = "ZXSR", backgroundtypes = ["H4l"], prefix="PMG_", outputEnvelopeDir = "theorySystOverview")
-
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
