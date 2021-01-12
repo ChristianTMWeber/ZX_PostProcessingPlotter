@@ -34,8 +34,10 @@ if __name__ == '__main__':
     #skimmedToyResultsPath = "mc16adeToyResultsV6.33"
     #skimmedToyResultsPath = "mc16adeToyResultsV6.34"
 
+    #skimmedToyResultsPath = "mc16adeToyResultsV7.36"
 
-    for skimmedToyResultsPath in ["mc16adeToyResultsV6.32", "mc16adeToyResultsV6.33", "mc16adeToyResultsV6.34"]:
+
+    for skimmedToyResultsPath in ["mc16adeToyResultsV7.36"]:
 
         outputFileName = skimmedToyResultsPath +".root"
 
