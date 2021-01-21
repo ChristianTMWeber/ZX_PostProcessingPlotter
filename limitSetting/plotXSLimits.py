@@ -60,7 +60,7 @@ def addATLASBlurp(filename):
     return statsTPave
 
 
-def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , colorScheme = ROOT.kRed, writeTo = False, YAxisLimits = None, 
+def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , colorScheme = None, writeTo = False, YAxisLimits = None, 
                        keepInScopeList = [], smoothPlot = False , yAxisTitle = "Upper 95% CL on #sigma_{H #rightarrow ZZ_{d} #rightarrow 4l} [fb] ",
                        makeYAxisLogarithmic = False):
 
@@ -109,27 +109,37 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
     expectedLimit2Sig.GetXaxis().SetTitleOffset(0.85)
     #expectedLimit2Sig.GetXaxis().CenterTitle()
 
-    #expectedLimit2Sig.SetFillColorAlpha(colorScheme-10,0.6) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
-    #expectedLimit2Sig.SetFillColorAlpha(ROOT.kYellow,1) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
-    expectedLimit2Sig.SetFillColor(ROOT.kYellow)
-    #expectedLimit2Sig.SetFillColor(colorScheme-10)  # https://root.cern.ch/doc/master/classTAttFill.html
-    #expectedLimit2Sig.SetFillStyle(3001)  # https://root.cern.ch/doc/master/classTAttFill.html
-    if reuseCanvas: expectedLimit2Sig.Draw(errorBarDrawOption + " same") # use 'A' option only for first TGraph apparently
-    else:           expectedLimit2Sig.Draw(errorBarDrawOption + " A same") # use 'A' option only for first TGraph apparently
-
-    #expectedLimit1Sig.SetFillColorAlpha(colorScheme-9,0.6) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
-    #expectedLimit1Sig.SetFillColorAlpha(ROOT.kGreen,1) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
-    expectedLimit1Sig.SetFillColor(ROOT.kGreen)
-    #expectedLimit1Sig.SetFillColor(colorScheme-9)
-    #expectedLimit1Sig.SetFillStyle(3001)  # https://root.cern.ch/doc/master/classTAttFill.html
-    expectedLimit1Sig.Draw(errorBarDrawOption + " same")
-
     expectedLimitMedian = graphHelper.getTGraphWithoutError( expectedLimit1Sig  , ySetpoint = "median")
 
     expectedLimitMedian.SetLineStyle(2) # https://root.cern.ch/doc/master/classTAttLine.html#L3
     expectedLimitMedian.SetLineWidth(2)
-    #expectedLimitMedian.SetLineColor(colorScheme)
-    expectedLimitMedian.SetLineColor(ROOT.kBlack)
+
+    colorScheme = ROOT.kRed
+
+    if colorScheme is None:
+        #### ATLAS green yellow color scheme
+        expectedLimit2Sig.SetFillColor(ROOT.kYellow)
+        expectedLimit1Sig.SetFillColor(ROOT.kGreen)
+        expectedLimitMedian.SetLineColor(ROOT.kBlack)
+
+    else: # Custon Color Scheme
+        expectedLimit2Sig.SetFillColorAlpha(colorScheme-10,0.6) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
+        expectedLimit1Sig.SetFillColorAlpha(colorScheme-9,0.6) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
+        expectedLimitMedian.SetLineColor(colorScheme)
+        ###expectedLimit2Sig.SetFillColor(colorScheme-10)  # https://root.cern.ch/doc/master/classTAttFill.html
+        #expectedLimit2Sig.SetFillStyle(3001)  # https://root.cern.ch/doc/master/classTAttFill.html
+        #expectedLimit1Sig.SetFillColorAlpha(ROOT.kGreen,1) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
+
+
+    if reuseCanvas: expectedLimit2Sig.Draw(errorBarDrawOption + " same") # use 'A' option only for first TGraph apparently
+    else:           expectedLimit2Sig.Draw(errorBarDrawOption + " A same") # use 'A' option only for first TGraph apparently
+
+
+
+    #expectedLimit1Sig.SetFillColor(colorScheme-9)
+    #expectedLimit1Sig.SetFillStyle(3001)  # https://root.cern.ch/doc/master/classTAttFill.html
+    expectedLimit1Sig.Draw(errorBarDrawOption + " same")
+
     expectedLimitMedian.Draw(regularTGraphDrawOption + "same")
 
     if extractedLimit is not None:
@@ -137,7 +147,8 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
         extractedLimit.SetLineStyle(1) # https://root.cern.ch/doc/master/classTAttLine.html#L3
         extractedLimit.SetLineWidth(2)
         #extractedLimit.SetLineColor(colorScheme)
-        extractedLimit.SetLineColor(ROOT.kBlack)
+        if colorScheme is None: extractedLimit.SetLineColor(ROOT.kBlack)
+        else:                   extractedLimit.SetLineColor(colorScheme)
         extractedLimit.Draw(regularTGraphDrawOption + "same")
 
 
@@ -366,6 +377,7 @@ if __name__ == '__main__':
 
     parser.add_argument( "--AddATLASBlurp" , default=False, choices=["all", "All", "2l2e", "2l2mu", False], help = "Add ATLAS blurp to the figure, include ")
 
+    colorScheme = None
 
     args = parser.parse_args()
 
@@ -424,7 +436,7 @@ if __name__ == '__main__':
 
         
         #makeGraphOverview( observedLimitTGraphNoErrors , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile)
-        canv, keepInScopeList = makeGraphOverview(  observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , 
+        canv, keepInScopeList = makeGraphOverview(  observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = colorScheme , 
                                                     YAxisLimits = args.YAxis, keepInScopeList = [], smoothPlot = args.smooth ,
                                                     yAxisTitle = yAxisTitle, makeYAxisLogarithmic = args.logarithmixYAxis)
 
