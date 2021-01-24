@@ -114,7 +114,7 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
     expectedLimitMedian.SetLineStyle(2) # https://root.cern.ch/doc/master/classTAttLine.html#L3
     expectedLimitMedian.SetLineWidth(2)
 
-    colorScheme = ROOT.kRed
+    #colorScheme = ROOT.kRed
 
     if colorScheme is None:
         #### ATLAS green yellow color scheme
