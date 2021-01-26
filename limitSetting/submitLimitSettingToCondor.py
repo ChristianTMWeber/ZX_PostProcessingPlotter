@@ -32,6 +32,8 @@ def makeSubmitScript( shellScriptName):
 if __name__ == '__main__':
 
     massPoints = range(15,56,1)
+
+    #massPoints.remove(15)
     #massPoints = [26, 30, 32, 54, 55 ]
 
     #submissionType = "asymptoticLimits"
@@ -47,7 +49,7 @@ if __name__ == '__main__':
     # 
 
 
-    inputFileName = "post_20200915_171012_ZX_Run2_BckgSignal_PreppedHist_UnblindedData_V7.root"
+    inputFileName = "post_20210121_210158_ZX_Run2_BckgSignal_PreppedHist_UnblindedData_V8.root"
     #
 
     extraOptions =""
@@ -97,7 +99,7 @@ if __name__ == '__main__':
 
         os.system( "condor_submit " + submitScriptName)
 
-        #time.sleep(1)
+        time.sleep(5)
 
     print("All submitted!")
 
