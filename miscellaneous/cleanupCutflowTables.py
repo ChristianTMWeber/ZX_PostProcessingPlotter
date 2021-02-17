@@ -20,7 +20,7 @@ from os import path
 sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) ) # need to append the parent directory here explicitly to be able to import plotPostProcess
 import functions.rootDictAndTDirTools as TDirTools
 
-
+from  plotPostProcess import DSIDHelper
 
 def getQuadType( histName ):
 
@@ -45,6 +45,17 @@ if __name__ == '__main__':
     parser.add_argument( "--batch", default=False, action='store_true' , 
     help = "If run with '--batch' we will activate root batch mode and suppress all interactive graphics." ) 
 
+    parser.add_argument("-d", "--metaData", type=str, default="../metadata/md_bkg_datasets_mc16e_All.txt" ,
+    help="location of the metadata file for the given mc campaign. If not provided, we will use a default location" )
+
+    parser.add_argument("-c", "--mcCampaign", type=str, choices=["mc16a","mc16d","mc16e","mc16ade"], default="mc16ade",
+        help="name of the mc campaign, i.e. mc16a or mc16d, need to provide exactly 1 mc-campaign tag for each input file, \
+        make sure that sequence of mc-campaign tags matches the sequence of 'input' strings")
+
+    parser.add_argument( "--scaleToCrossSection", default=False, action='store_true' , 
+    help = "If run with '--scaleToCrossSection' we will scale the yield in the cutflow table to the propper cross section,\
+            so that the yield in the final bin, corresponds to the signal region yield." ) 
+
     #parser.add_argument( "--DSIDs", default=None, nargs='*', type=int,
     #help = "List of DSIDs to parse, if not specified, loop over DSIDs in signalDSIDDict" ) 
 
@@ -56,6 +67,11 @@ if __name__ == '__main__':
 
     cutFlowTFile = ROOT.TFile(args.input,"OPEN")
     cutflowTDir = cutFlowTFile.Get("Cutflow")
+
+
+    myDSIDHelper = DSIDHelper()
+    myDSIDHelper.importMetaData(args.metaData) # since the DSID helper administrates the meta data for the MC samples we must provide it with the meta data locati
+    myDSIDHelper.fillSumOfEventWeightsDict(cutFlowTFile)
 
 
     histDict = collections.defaultdict(list) # prepare storage of cutflow histrams in dict of lists like histDict[ "123456" ] = [hist1,hist2]
@@ -141,11 +157,14 @@ if __name__ == '__main__':
 
         newHist.GetYaxis().SetRangeUser( min(binNamesAndContentDict.values()) * 0.9, max( binNamesAndContentDict.values())*1.1  )
         newHist.GetYaxis().SetTitle("yield after cut")
+        if args.scaleToCrossSection: newHist.GetYaxis().SetTitle("yield after cut [events]")
 
         newHist.GetYaxis().SetTitleSize(newHist.GetYaxis().GetTitleSize() *1.5)
         newHist.GetYaxis().SetTitleOffset(0.75)
 
         newHist.SetStats( False) # remove stats box
+
+        if args.scaleToCrossSection: newHist.Scale( myDSIDHelper.getMCScale( DSID, mcTag = args.mcCampaign) )
 
         #for hist in histList[1:]: 
         #    for binNr in range(6,18+1):     binNamesAndContentDict[re.sub(quadType, "", hist.GetXaxis().GetBinLabel(binNr)) ] += hist.GetBinContent(binNr)
