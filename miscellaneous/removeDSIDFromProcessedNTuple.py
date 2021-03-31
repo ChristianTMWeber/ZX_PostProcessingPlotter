@@ -33,17 +33,20 @@ if __name__ == '__main__':
     #parser.add_argument( "--DSID", type=str, default="345060" )
 
     parser.add_argument("input", type=str, help="name or path to the input file, whose content we want to partially delete")
-    parser.add_argument("DSID", type=str, help="DSID of the associated files we want to delete")
+    parser.add_argument("DSID", type=str, nargs='*',help="DSID of the associated files we want to delete")
 
     args = parser.parse_args()
 
+
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
     file = ROOT.TFile(args.input,"UPDATE")
 
-    deleteObjectByNameMatch( file, args.DSID)
+    for DSID in args.DSID: deleteObjectByNameMatch( file, DSID)
 
     cutflowTDir = file.Get("Cutflow").Get("Nominal")
 
-    deleteObjectByNameMatch( cutflowTDir, args.DSID)
+    for DSID in args.DSID: deleteObjectByNameMatch( cutflowTDir, DSID)
 
     file.Close()
 

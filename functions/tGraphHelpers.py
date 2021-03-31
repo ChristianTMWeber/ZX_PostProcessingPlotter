@@ -112,6 +112,15 @@ def listToTGraph( xList, yList, yLowList = None, yHighList = None ):
     return tGraph
 
 
+def dictToTGraph(aDict):
+
+    xList = sorted(aDict.keys())
+
+    yList = [aDict[xVal] for xVal in xList ]
+
+    return listToTGraph( xList, yList )
+
+
 
 if __name__ == '__main__':
 
