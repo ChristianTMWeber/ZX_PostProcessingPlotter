@@ -19,6 +19,8 @@ import functions.rootDictAndTDirTools as TDirTools
 
 from functions.getArrayConfInterval import getArrayConfInterval
 
+from  limitFunctions.RooIntegralMorphWrapper import getNewSetNorm as interpolator1D # to interpolate 1d thinds
+
 def getCanvasAndLegendFromList( inputList):
 
     if inputList is None: return None, None
@@ -282,8 +284,10 @@ def getToyLimits( filename , TTreeName = "upperLimits1Sig_toys", graphName = "to
     return toyLimitTGrapah
 
 
-def convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "mixingParameterLimit"):
+def convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , 
+    limitType = "mixingParameterLimit", flavor = None):
 
+    flavor = flavor.lower() # ensure that all characters are lower case, also throws error if flavor is not a string, which is good for now
 
     def XSLimitToKineticMixingParameter( massPointList, XSLimitList):
 
@@ -329,6 +333,23 @@ def convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimits
         return ZdBranchingRatioList
 
 
+    def XSLimitToFixucialXSLimit( massPointList, XSLimitList):
+
+        xList = [15, 20, 25, 30, 35, 40, 45, 50, 55]
+
+        acceptances = {}
+        acceptances["all"] = [0.2344810810810811, 0.2650647058823529, 0.29614736842105266, 0.32632105263157896, 0.34549473684210524, 0.3544684210526316, 0.3597421052631579, 0.36243157894736844, 0.3676421052631579]
+        acceptances["2l2e"] = [0.15540987876748755, 0.18345417188201119, 0.20836412779525731, 0.24438134300888678, 0.26468478352603597, 0.26789353098307517, 0.27110989462159574, 0.27222445059004835, 0.28951995872424213]
+        acceptances["2l2mu"] = [0.31293410723323606, 0.3460745012541904, 0.3834036479650736, 0.4084075225201496, 0.42595160070582305, 0.4405217920597773, 0.44835752402403983, 0.4521425122294304, 0.44571657073104]
+
+        fiducialXSLimits = []
+
+        for x in xrange( len(massPointList) ): 
+            acceptance = interpolator1D( xList, acceptances[flavor], massPointList[x] ) 
+            fiducialXSLimits.append( XSLimitList[x] * acceptance) 
+
+        return fiducialXSLimits
+
     massPoints , observedLimits = graphHelper.tGraphToList(observedLimitGraph , ySetpoint = "median")
     _ , expectedLimits = graphHelper.tGraphToList(expectedLimitsGraph_1Sigma , ySetpoint = "median")
     _ , expectedLimits_1Sigma_Low  = graphHelper.tGraphToList(expectedLimitsGraph_1Sigma , ySetpoint = "yLow")
@@ -353,6 +374,14 @@ def convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimits
         expectedLimits_mixingParameter_2Sigma_Low   = XSLimitToBRLimit( massPoints , expectedLimits_2Sigma_Low  )
         expectedLimits_mixingParameter_2Sigma_High  = XSLimitToBRLimit( massPoints , expectedLimits_2Sigma_High )
 
+    elif limitType == "fiducialXSLimit" :
+        observedLimits_mixingParameter              = XSLimitToFixucialXSLimit( massPoints , observedLimits             )
+        expectedLimits_mixingParameter              = XSLimitToFixucialXSLimit( massPoints , expectedLimits             )
+        expectedLimits_mixingParameter_1Sigma_Low   = XSLimitToFixucialXSLimit( massPoints , expectedLimits_1Sigma_Low  )
+        expectedLimits_mixingParameter_1Sigma_High  = XSLimitToFixucialXSLimit( massPoints , expectedLimits_1Sigma_High )
+        expectedLimits_mixingParameter_2Sigma_Low   = XSLimitToFixucialXSLimit( massPoints , expectedLimits_2Sigma_Low  )
+        expectedLimits_mixingParameter_2Sigma_High  = XSLimitToFixucialXSLimit( massPoints , expectedLimits_2Sigma_High )
+
 
     observedLimitGraph = graphHelper.listToTGraph( massPoints, observedLimits_mixingParameter  )
     expectedLimitsGraph_1Sigma = graphHelper.listToTGraph( massPoints, expectedLimits_mixingParameter , yLowList = expectedLimits_mixingParameter_1Sigma_Low, yHighList = expectedLimits_mixingParameter_1Sigma_High )
@@ -373,6 +402,7 @@ if __name__ == '__main__':
     parser.add_argument( "--smooth",  default=False, action='store_true', help = "If selected, will smooth the plotted figures")
     parser.add_argument( "--makeMixingParameterPlot" , default=False, action='store_true', help = "Plot mixing prameter instead of cross section limit.")
     parser.add_argument( "--makeBranchingRatioPlot" , default=False, action='store_true', help = "Plot BranchingRatio prameter instead of cross section limit.")
+    parser.add_argument( "--makeFiducialXSPlot" , default=False, action='store_true', help = "Plot fiducial cross section instead of measured cross section limit.")
     parser.add_argument( "--logarithmixYAxis" , default=False, action='store_true', help = "make YAxis logarithmic")
 
     parser.add_argument( "--AddATLASBlurp" , default=False, choices=["all", "All", "2l2e", "2l2mu", False], help = "Add ATLAS blurp to the figure, include ")
@@ -424,11 +454,14 @@ if __name__ == '__main__':
         #observedLimitGraph = None
 
         if args.makeMixingParameterPlot: 
-            observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "mixingParameterLimit" )
+            observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "mixingParameterLimit" , flavor = args.AddATLASBlurp)
             yAxisTitle = "#splitline{Upper 95% CL on kinetic}{mixing parameter #varepsilon [unitless]}"
         elif args.makeBranchingRatioPlot:
-            observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "brachingRatioLimit")
+            observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "brachingRatioLimit", flavor = args.AddATLASBlurp)
             yAxisTitle = "Upper 95% CL on #frac{#sigma_{H}}{#sigma_{H}^{SM}}B(H #rightarrow ZZd)"  
+        elif args.makeFiducialXSPlot:
+            observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "fiducialXSLimit", flavor = args.AddATLASBlurp)
+            yAxisTitle = "Upper 95% CL on #sigma_{H #rightarrow ZZ_{d} #rightarrow 4l}^{fid} [fb] "
 
 
 
