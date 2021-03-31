@@ -55,7 +55,7 @@ def addATLASBlurp(filename):
     elif "2l2mu" in filename:                      statsTexts.append( "4#mu, 2e2#mu final states" )
     elif "all" in filename or "All" in filename:   statsTexts.append( "4#mu, 2e2#mu, 2#mu2e, 4e final states" )
 
-    statsTPave=ROOT.TPaveText(0.5,0.59,0.9,0.69,"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
+    statsTPave=ROOT.TPaveText(0.5,0.57,0.9,0.67,"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
     for stats in statsTexts:   statsTPave.AddText(stats);
     statsTPave.Draw();
 
@@ -68,7 +68,7 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
 
     def setupTLegend():
         # set up a TLegend, still need to add the different entries
-        xOffset = 0.6; yOffset = 0.7
+        xOffset = 0.58; yOffset = 0.68
         xWidth  = 0.3; ywidth = 0.2
         TLegend = ROOT.TLegend(xOffset, yOffset ,xOffset + xWidth, yOffset+ ywidth)
         TLegend.SetFillColor(ROOT.kWhite)
@@ -84,9 +84,9 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
     canv, legend = getCanvasAndLegendFromList( keepInScopeList )
 
     if legend is None: legend = setupTLegend()
-    if canv   is None: canv = ROOT.TCanvas("GraphOverview", "GraphOverview",720, 720) #,1920/1, 1080)
+    if canv   is None: canv = ROOT.TCanvas("GraphOverview", "GraphOverview",int(720*1.47), 720) #,1920/1, 1080)
     else:  reuseCanvas = True
-    canv.SetLeftMargin(0.15)
+    canv.SetLeftMargin(0.2)
     canv.SetBottomMargin(0.1)
     if makeYAxisLogarithmic: canv.SetLogy()
     #canv.SetLogx()
@@ -100,10 +100,11 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
         errorBarDrawOption = "3 "
         regularTGraphDrawOption = ""
  
+    ROOT.gPad.SetTickx();ROOT.gPad.SetTicky(); # enable ticks on both side of the plots
 
     expectedLimit2Sig.GetYaxis().SetTitle(yAxisTitle)
     expectedLimit2Sig.GetYaxis().SetTitleSize(0.06)
-    expectedLimit2Sig.GetYaxis().SetTitleOffset(0.8)
+    expectedLimit2Sig.GetYaxis().SetTitleOffset(1.0)
     expectedLimit2Sig.GetYaxis().CenterTitle()
 
     expectedLimit2Sig.GetXaxis().SetTitle("m_{Z_{d}} [GeV]")
