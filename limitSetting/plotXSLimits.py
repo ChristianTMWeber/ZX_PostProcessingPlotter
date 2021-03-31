@@ -64,7 +64,7 @@ def addATLASBlurp(filename):
 
 def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , colorScheme = None, writeTo = False, YAxisLimits = None, 
                        keepInScopeList = [], smoothPlot = False , yAxisTitle = "Upper 95% CL on #sigma_{H #rightarrow ZZ_{d} #rightarrow 4l} [fb] ",
-                       makeYAxisLogarithmic = False):
+                       makeYAxisLogarithmic = False , legendSuffix = ""):
 
     def setupTLegend():
         # set up a TLegend, still need to add the different entries
@@ -155,10 +155,10 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
         extractedLimit.Draw(regularTGraphDrawOption + "same")
 
 
-    if extractedLimit is not None: legend.AddEntry(extractedLimit , "observed Limit"  , "l");
-    legend.AddEntry(expectedLimitMedian , "expected limit"  , "l");
-    legend.AddEntry(expectedLimit1Sig , "#pm1#sigma expected limit"  , "f");
-    legend.AddEntry(expectedLimit2Sig , "#pm2#sigma expected limit"  , "f");    
+    if extractedLimit is not None: legend.AddEntry(extractedLimit , "observed Limit" +legendSuffix  , "l");
+    legend.AddEntry(expectedLimitMedian , "expected limit" +legendSuffix , "l");
+    legend.AddEntry(expectedLimit1Sig , "#pm1#sigma expected limit" +legendSuffix , "f");
+    legend.AddEntry(expectedLimit2Sig , "#pm2#sigma expected limit" +legendSuffix , "f");    
 
     legend.Draw()
 
@@ -479,10 +479,12 @@ if __name__ == '__main__':
 
         canv.Update()
         ### use this if I wanna plot a second set of limits on top of the first set ###
-        #expectedLimitTFile = ROOT.TFile( "asymptotiveLimitV4_PMGweights_NormsCorr_All.root", "OPEN")
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+        #expectedLimitTFile = ROOT.TFile( "mc16adeToyResultsV7.38.root", "OPEN")
+        #observedLimitGraphB = expectedLimitTFile.Get("observedLimitGraph")
         #expectedLimitsGraph_1SigmaB = expectedLimitTFile.Get("expectedLimits_1Sigma")
         #expectedLimitsGraph_2SigmaB = expectedLimitTFile.Get("expectedLimits_2Sigma")
-        #canv, keepInScopeList = makeGraphOverview(  None   , expectedLimitsGraph_1SigmaB, expectedLimitsGraph_2SigmaB , colorScheme = ROOT.kRed , writeTo = outputTFile, YAxisLimits = args.YAxis, keepInScopeList = keepInScopeList)
+        #canv, keepInScopeList = makeGraphOverview(  observedLimitGraphB  , expectedLimitsGraph_1SigmaB, expectedLimitsGraph_2SigmaB , colorScheme = ROOT.kBlue , YAxisLimits = args.YAxis, keepInScopeList = keepInScopeList, smoothPlot = args.smooth, legendSuffix = ", 2l2e")
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
 
