@@ -103,7 +103,7 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
     ROOT.gPad.SetTickx();ROOT.gPad.SetTicky(); # enable ticks on both side of the plots
 
     expectedLimit2Sig.GetYaxis().SetTitle(yAxisTitle)
-    expectedLimit2Sig.GetYaxis().SetTitleSize(0.06)
+    expectedLimit2Sig.GetYaxis().SetTitleSize(0.05)
     expectedLimit2Sig.GetYaxis().SetTitleOffset(1.0)
     expectedLimit2Sig.GetYaxis().CenterTitle()
 
@@ -456,7 +456,7 @@ if __name__ == '__main__':
 
         if args.makeMixingParameterPlot: 
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "mixingParameterLimit" , flavor = args.AddATLASBlurp)
-            yAxisTitle = "#splitline{Upper 95% CL on kinetic}{mixing parameter #varepsilon [unitless]}"
+            yAxisTitle = "Upper 95% CL onkinetic mixing parameter #varepsilon"
         elif args.makeBranchingRatioPlot:
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "brachingRatioLimit", flavor = args.AddATLASBlurp)
             yAxisTitle = "Upper 95% CL on #frac{#sigma_{H}}{#sigma_{H}^{SM}}B(H #rightarrow ZZd)"  
