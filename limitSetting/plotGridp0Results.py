@@ -101,24 +101,27 @@ if __name__ == '__main__':
 
         graphHelper.fillTGraphWithRooRealVar(p0Graph , mass, p0Dict[mass])
 
-    graph_1Sigma = getNSigmaGraph( 1, p0Dict.keys())
+    sigmaGraphLimits = [p0Graph.GetXaxis().GetXmin(),p0Graph.GetXaxis().GetXmax()]
+
+    graph_1Sigma = getNSigmaGraph( 1, [p0Graph.GetXaxis().GetXmin(),p0Graph.GetXaxis().GetXmax()])
     graph_2Sigma = getNSigmaGraph( 2, p0Dict.keys())
     graph_3Sigma = getNSigmaGraph( 2.9, p0Dict.keys())
 
     
     graph_2Sigma.GetYaxis().SetTitle("Local p_{0}")
-    graph_2Sigma.GetXaxis().SetTitle("m_{Z_{d}} [GeV]")
+    graph_2Sigma.GetXaxis().SetTitle("m_{X} [GeV]")
     graph_2Sigma.GetYaxis().SetTitleSize(0.06)
     graph_2Sigma.GetXaxis().SetTitleSize(0.05)
     graph_2Sigma.GetYaxis().SetTitleOffset(0.8)
     graph_2Sigma.GetXaxis().SetTitleOffset(0.85)
+    graph_2Sigma.GetXaxis().SetRangeUser(min(p0Dict.keys()),max(p0Dict.keys()))
 
 
 
     #p0Graph.SetLineStyle(2) # https://root.cern.ch/doc/master/classTAttLine.html#L3
     #p0Graph.SetLineWidth(2)
 
-    canv =  ROOT.TCanvas("GraphOverview", "GraphOverview",1920/2, 1080)
+    canv =  ROOT.TCanvas("GraphOverview", "GraphOverview",int(720*1.47), 720) #,1920/1, 1080)
     canv.SetLogy()
     canv.SetLeftMargin(0.15)
     #canv.SetBottomMargin(0.1)

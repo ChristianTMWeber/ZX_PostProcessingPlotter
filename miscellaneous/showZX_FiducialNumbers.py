@@ -122,7 +122,7 @@ if __name__ == '__main__':
     graphDict["all"].GetYaxis().SetTitleOffset(0.8)
     #graphDict["all"].GetYaxis().CenterTitle()
 
-    graphDict["all"].GetXaxis().SetTitle("m_{Z_{d}} [GeV]")
+    graphDict["all"].GetXaxis().SetTitle("m_{X} [GeV]")
     graphDict["all"].GetXaxis().SetTitleSize(0.05)
     graphDict["all"].GetXaxis().SetTitleOffset(0.85)
 
