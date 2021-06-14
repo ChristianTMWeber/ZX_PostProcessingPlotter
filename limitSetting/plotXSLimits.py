@@ -315,7 +315,7 @@ def convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimits
     def XSLimitToBRLimit( massPointList, XSLimitList):
 
         # ZdToLLBranchingRatioDict  taken from "Illuminating dark photons with high-energy colliders", arXiv:1412.0018, Table 2
-        higgsXS = 4.858E+04 # femot barn
+        higgsXS = 4.858E+04 # femto barn
         ZdToLLBranchingRatioDict = { 14 : 0.288  ,  15 : 0.288  ,  16 : 0.288  ,  17 : 0.2875 ,  18 : 0.287  ,  19 : 0.2865 ,  20 : 0.286  ,  21 : 0.2855 ,  22 : 0.285  ,  23 : 0.2845 ,  24 : 0.284  ,  25 : 0.2835 ,  26 : 0.283  ,  27 : 0.282  ,  28 : 0.281  ,  29 : 0.2805 ,  30 : 0.28   ,  31 : 0.279  ,  32 : 0.278  ,  33 : 0.2765 ,  34 : 0.275  ,  35 : 0.274  ,  36 : 0.273  ,  37 : 0.2715 ,  38 : 0.27   ,  39 : 0.2685 ,  40 : 0.267  ,  41 : 0.265  ,  42 : 0.263  ,  43 : 0.261  ,  44 : 0.259  ,  45 : 0.2565 ,  46 : 0.254  ,  47 : 0.2515 ,  48 : 0.249  ,  49 : 0.2465 ,  50 : 0.244  ,  51 : 0.241  ,  52 : 0.238  ,  53 : 0.2345 ,  54 : 0.231  ,  55 : 0.227  }
         ZToLLBranchingRatio = 0.00673 
 
@@ -334,7 +334,7 @@ def convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimits
         return ZdBranchingRatioList
 
 
-    def XSLimitToFixucialXSLimit( massPointList, XSLimitList):
+    def XSLimitToFixucialXSLimit( massPointList, XSLimitList, flavor = "all"):
 
         xList = [15, 20, 25, 30, 35, 40, 45, 50, 55]
 
@@ -350,6 +350,40 @@ def convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimits
             fiducialXSLimits.append( XSLimitList[x] * acceptance) 
 
         return fiducialXSLimits
+
+    def XSLimitToMassMixingLimit(massPointList, XSLimitList, XSLimitToBRLimit):
+
+        #XSLimitToBRLimit( massPointList , XSLimitList             )
+
+        branchingRatioList_H_ZZd_4l = XSLimitToBRLimit(massPointList, XSLimitList)
+
+        gammaHiggs = 4.07E-3 # (GeV) SM Higgs decay width
+
+        HVaccumExpectation = 246. # (GeV) # Higgs vaccum expectation value
+
+        mHiggs = 125. # (GeV) Higgs mass
+        mZBoson = 91.188 # (GeV) Z boson mass
+        XSHiggs = 43.92 # standard model higgs cross section
+
+        Zto2lBranchingRatio = 0.068 # l is here muon or electron
+
+        higgsXS = 4.858E+04 # femto barn
+
+        fFunction = 1./math.pi * (mHiggs**2 - mZBoson**2)**3 / (HVaccumExpectation**2 * mHiggs**3) # f function from eq 7 in PHYSICAL REVIEW D 92, 092001 (2015)
+
+        massMixingLimitList = []
+
+        for x in xrange( len(massPointList) ):  
+            if massPointList[x] > 35: break
+            # following equations from run1 version of ZX analysis: PHYSICAL REVIEW D 92, 092001 (2015)
+            #                                                       https://journals.aps.org/prd/abstract/10.1103/PhysRevD.92.092001
+            branchingRatioList_H_ZZd_4l = XSLimitList[x]/higgsXS
+            massMixingLimit =  branchingRatioList_H_ZZd_4l/ Zto2lBranchingRatio * gammaHiggs / fFunction # technically limits on \delta**2 * BR(Zd -> 2l), delta is mass mixing parameter
+            massMixingLimitList.append(massMixingLimit)
+
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+        return massMixingLimitList
 
     massPoints , observedLimits = graphHelper.tGraphToList(observedLimitGraph , ySetpoint = "median")
     _ , expectedLimits = graphHelper.tGraphToList(expectedLimitsGraph_1Sigma , ySetpoint = "median")
@@ -376,12 +410,20 @@ def convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimits
         expectedLimits_mixingParameter_2Sigma_High  = XSLimitToBRLimit( massPoints , expectedLimits_2Sigma_High )
 
     elif limitType == "fiducialXSLimit" :
-        observedLimits_mixingParameter              = XSLimitToFixucialXSLimit( massPoints , observedLimits             )
-        expectedLimits_mixingParameter              = XSLimitToFixucialXSLimit( massPoints , expectedLimits             )
-        expectedLimits_mixingParameter_1Sigma_Low   = XSLimitToFixucialXSLimit( massPoints , expectedLimits_1Sigma_Low  )
-        expectedLimits_mixingParameter_1Sigma_High  = XSLimitToFixucialXSLimit( massPoints , expectedLimits_1Sigma_High )
-        expectedLimits_mixingParameter_2Sigma_Low   = XSLimitToFixucialXSLimit( massPoints , expectedLimits_2Sigma_Low  )
-        expectedLimits_mixingParameter_2Sigma_High  = XSLimitToFixucialXSLimit( massPoints , expectedLimits_2Sigma_High )
+        observedLimits_mixingParameter              = XSLimitToFixucialXSLimit( massPoints , observedLimits             , flavor = flavor)
+        expectedLimits_mixingParameter              = XSLimitToFixucialXSLimit( massPoints , expectedLimits             , flavor = flavor)
+        expectedLimits_mixingParameter_1Sigma_Low   = XSLimitToFixucialXSLimit( massPoints , expectedLimits_1Sigma_Low  , flavor = flavor)
+        expectedLimits_mixingParameter_1Sigma_High  = XSLimitToFixucialXSLimit( massPoints , expectedLimits_1Sigma_High , flavor = flavor)
+        expectedLimits_mixingParameter_2Sigma_Low   = XSLimitToFixucialXSLimit( massPoints , expectedLimits_2Sigma_Low  , flavor = flavor)
+        expectedLimits_mixingParameter_2Sigma_High  = XSLimitToFixucialXSLimit( massPoints , expectedLimits_2Sigma_High , flavor = flavor)
+
+    elif limitType == "massMixingLimit" :
+        observedLimits_mixingParameter              = XSLimitToMassMixingLimit( massPoints , observedLimits             ,XSLimitToBRLimit)
+        expectedLimits_mixingParameter              = XSLimitToMassMixingLimit( massPoints , expectedLimits             ,XSLimitToBRLimit)
+        expectedLimits_mixingParameter_1Sigma_Low   = XSLimitToMassMixingLimit( massPoints , expectedLimits_1Sigma_Low  ,XSLimitToBRLimit)
+        expectedLimits_mixingParameter_1Sigma_High  = XSLimitToMassMixingLimit( massPoints , expectedLimits_1Sigma_High ,XSLimitToBRLimit)
+        expectedLimits_mixingParameter_2Sigma_Low   = XSLimitToMassMixingLimit( massPoints , expectedLimits_2Sigma_Low  ,XSLimitToBRLimit)
+        expectedLimits_mixingParameter_2Sigma_High  = XSLimitToMassMixingLimit( massPoints , expectedLimits_2Sigma_High ,XSLimitToBRLimit)
 
 
     observedLimitGraph = graphHelper.listToTGraph( massPoints, observedLimits_mixingParameter  )
@@ -404,6 +446,7 @@ if __name__ == '__main__':
     parser.add_argument( "--makeMixingParameterPlot" , default=False, action='store_true', help = "Plot mixing prameter instead of cross section limit.")
     parser.add_argument( "--makeBranchingRatioPlot" , default=False, action='store_true', help = "Plot BranchingRatio prameter instead of cross section limit.")
     parser.add_argument( "--makeFiducialXSPlot" , default=False, action='store_true', help = "Plot fiducial cross section instead of measured cross section limit.")
+    parser.add_argument( "--makeMassMixingPlot" , default=False, action='store_true', help = "Plot mass-mixingParam^2 times branching ratio of Zd->2l instead of measured cross section limit.")
     parser.add_argument( "--logarithmixYAxis" , default=False, action='store_true', help = "make YAxis logarithmic")
 
     parser.add_argument( "--AddATLASBlurp" , default=False, choices=["all", "All", "2l2e", "2l2mu", False], help = "Add ATLAS blurp to the figure, include ")
@@ -451,6 +494,7 @@ if __name__ == '__main__':
                 observedLimitGraph = graphHelper.getTGraphWithoutError( observedLimitGraph , ySetpoint = "yHigh")
 
         yAxisTitle = "Upper 95% CL on #sigma_{H #rightarrow ZZ_{d} #rightarrow 4l} [fb] "
+        xAxisTitle = "m_{Z_{d}} [GeV]"
 
         #observedLimitGraph = None
 
@@ -462,9 +506,11 @@ if __name__ == '__main__':
             yAxisTitle = "Upper 95% CL on #frac{#sigma_{H}}{#sigma_{H}^{SM}}B(H #rightarrow ZZd)"  
         elif args.makeFiducialXSPlot:
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "fiducialXSLimit", flavor = args.AddATLASBlurp)
-            yAxisTitle = "Upper 95% CL on #sigma_{H #rightarrow ZZ_{d} #rightarrow 4l}^{fid} [fb] "
-
-
+            yAxisTitle = "Upper 95% CL on #sigma_{H #rightarrow ZX #rightarrow 4l}^{fid} [fb] "
+            xAxisTitle = "m_{X} [GeV]"
+        elif args.makeMassMixingPlot:
+            observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "massMixingLimit", flavor = args.AddATLASBlurp)
+            yAxisTitle = "Upper 95% CL on #delta^{2} #times BR(Z_{d} #rightarrow 2l)"
 
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
