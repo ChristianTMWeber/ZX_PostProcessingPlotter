@@ -16,7 +16,6 @@ import re
 
 
 
-
 def skipTObject(path, baseHist, requiredRootType = ROOT.TH1, selectChannels = ["ZXSR", "ZXVR1"], 
                 selectKinematic = "m34", selectCuts = ["HWindow", "LowMassSidebands"]  ):
 
@@ -34,6 +33,17 @@ def skipTObject(path, baseHist, requiredRootType = ROOT.TH1, selectChannels = ["
 
     return False
 
+def getLongestSubstringAmongSubstringCandidates(referenceString, subStringCandidates):
+
+    assert isinstance(subStringCandidates, list)
+
+    subStringCandidates.sort( key = lambda x:len(x), reverse=True)
+
+    for subString in subStringCandidates:
+        if subString in referenceString: return subString
+
+    return None
+
 
 def fillHistDict( path, currentTH1 , mcTag, aDSIDHelper , channelMap = { "ZXSR" : "signalRegion"}, DSID = None, customMapping = None,
     masterHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) ):
@@ -45,12 +55,11 @@ def fillHistDict( path, currentTH1 , mcTag, aDSIDHelper , channelMap = { "ZXSR" 
     path =   re.search("/(\d|\d{6})/.*", path).group()      # select 1 or 6 digits within backslashes, and all following (non-linebreak) characters
 
     # channel options are the 'keys' in the channelMap dict
-    channels = [channelMap[x] for x in channelMap.keys() if x in currentTH1.GetName() ]
+    channelKey = getLongestSubstringAmongSubstringCandidates(currentTH1.GetName(),channelMap.keys())
+    if channelKey is None:  return masterHistDict
 
-    if len(channels) == 0:  return masterHistDict
-    else: assert len(channels) == 1
-    
-    channel = channels[0]
+    channel = channelMap[channelKey]
+
     systematicVariation = path.split("/")[2]
 
     # determine event type via DSID
