@@ -742,20 +742,22 @@ def make1UpAnd1DownSystVariationHistogram( BackgroundVariationDict , flavor = "A
 def make1UpAnd1DownSystVariationYields( BackgroundVariationDict , flavor = "All" , nominalHist = None):
 
     def makeVariationYield( upOrDown = "1up" , nominalHist = None):
-
-        sysVarYieldList = np.array([BackgroundVariationDict[sysName+upOrDown][flavor].Integral() for sysName in systematicNames])
+        signFactorDict = {"1up" : +1. , "1down" : -1.}
+        signFactor = signFactorDict[upOrDown]
 
         if nominalHist is None: nominalHist = BackgroundVariationDict["Nominal"][flavor]
 
-        nominalYield = nominalHist.Integral()
+        sysVarYieldList = np.array([BackgroundVariationDict[sysName+upOrDown][flavor].Integral() for sysName in systematicNames if "STAT_UNCERT" not in sysName])
+        # tread stat error differently, as they are uncorrelated between bins
+        nominalYield , statError = getHistIntegralWithUnertainty(nominalHist) 
+        np.append(sysVarYieldList , signFactor*statError+nominalYield )
 
         relativeYieldDifference = (sysVarYieldList - nominalYield)/nominalYield
         relativeYieldDifference = np.nan_to_num(relativeYieldDifference) # replace the NaN with zeros
 
         relativeYieldUncertainty = np.sqrt( np.sum( np.square( relativeYieldDifference) , axis=0) ) # add the same bin over different systematics in quadrature
 
-        if upOrDown == "1up": yieldVariation = (+relativeYieldUncertainty) *nominalYield
-        else:                 yieldVariation = (-relativeYieldUncertainty) *nominalYield
+        yieldVariation = (signFactor*relativeYieldUncertainty) *nominalYield
 
         return yieldVariation
 
