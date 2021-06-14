@@ -63,7 +63,7 @@ def addATLASBlurp(filename):
 
 
 def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , colorScheme = None, writeTo = False, YAxisLimits = None, 
-                       keepInScopeList = [], smoothPlot = False , yAxisTitle = "Upper 95% CL on #sigma_{H #rightarrow ZZ_{d} #rightarrow 4l} [fb] ",
+                       keepInScopeList = [], smoothPlot = False , yAxisTitle = "Upper 95% CL on #sigma_{H #rightarrow ZZ_{d} #rightarrow 4l} [fb] ", xAxisTitle = "m_{Z_{d}} [GeV]",
                        makeYAxisLogarithmic = False , legendSuffix = ""):
 
     def setupTLegend():
@@ -107,7 +107,7 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
     expectedLimit2Sig.GetYaxis().SetTitleOffset(1.0)
     expectedLimit2Sig.GetYaxis().CenterTitle()
 
-    expectedLimit2Sig.GetXaxis().SetTitle("m_{Z_{d}} [GeV]")
+    expectedLimit2Sig.GetXaxis().SetTitle(xAxisTitle)
     expectedLimit2Sig.GetXaxis().SetTitleSize(0.05)
     expectedLimit2Sig.GetXaxis().SetTitleOffset(0.85)
     #expectedLimit2Sig.GetXaxis().CenterTitle()
@@ -126,15 +126,17 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
         expectedLimitMedian.SetLineColor(ROOT.kBlack)
 
     else: # Custon Color Scheme
-        expectedLimit2Sig.SetFillColorAlpha(colorScheme-10,0.6) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
-        expectedLimit1Sig.SetFillColorAlpha(colorScheme-9,0.6) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
+        alphaValue = 0.6
+        if reuseCanvas: alphaValue -= 0.1
+        expectedLimit2Sig.SetFillColorAlpha(colorScheme-10, alphaValue) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
+        expectedLimit1Sig.SetFillColorAlpha(colorScheme-9,  alphaValue) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
         expectedLimitMedian.SetLineColor(colorScheme)
         ###expectedLimit2Sig.SetFillColor(colorScheme-10)  # https://root.cern.ch/doc/master/classTAttFill.html
         #expectedLimit2Sig.SetFillStyle(3001)  # https://root.cern.ch/doc/master/classTAttFill.html
         #expectedLimit1Sig.SetFillColorAlpha(ROOT.kGreen,1) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
 
 
-    if reuseCanvas: expectedLimit2Sig.Draw(errorBarDrawOption + " same") # use 'A' option only for first TGraph apparently
+    if reuseCanvas: pass#expectedLimit2Sig.Draw(errorBarDrawOption + " same") # use 'A' option only for first TGraph apparently
     else:           expectedLimit2Sig.Draw(errorBarDrawOption + " A same") # use 'A' option only for first TGraph apparently
 
 
@@ -518,7 +520,7 @@ if __name__ == '__main__':
         #makeGraphOverview( observedLimitTGraphNoErrors , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile)
         canv, keepInScopeList = makeGraphOverview(  observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = colorScheme , 
                                                     YAxisLimits = args.YAxis, keepInScopeList = [], smoothPlot = args.smooth ,
-                                                    yAxisTitle = yAxisTitle, makeYAxisLogarithmic = args.logarithmixYAxis)
+                                                    yAxisTitle = yAxisTitle, makeYAxisLogarithmic = args.logarithmixYAxis) # xAxisTitle = "m_{Z_d}] [GeV]"
 
 
         if args.AddATLASBlurp: atlasBlurb = addATLASBlurp(args.AddATLASBlurp) 
@@ -526,11 +528,19 @@ if __name__ == '__main__':
         canv.Update()
         ### use this if I wanna plot a second set of limits on top of the first set ###
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-        #expectedLimitTFile = ROOT.TFile( "mc16adeToyResultsV7.38.root", "OPEN")
+        #expectedLimitTFile = ROOT.TFile( "mc16adeToyResultsV7.38.root", "OPEN") # 2l2e
         #observedLimitGraphB = expectedLimitTFile.Get("observedLimitGraph")
         #expectedLimitsGraph_1SigmaB = expectedLimitTFile.Get("expectedLimits_1Sigma")
         #expectedLimitsGraph_2SigmaB = expectedLimitTFile.Get("expectedLimits_2Sigma")
+        #observedLimitGraphB   , expectedLimitsGraph_1SigmaB, expectedLimitsGraph_2SigmaB = convertXSLimitsToMixingParameterLimits(observedLimitGraphB   , expectedLimitsGraph_1SigmaB, expectedLimitsGraph_2SigmaB , limitType = "fiducialXSLimit", flavor = "2l2e")
         #canv, keepInScopeList = makeGraphOverview(  observedLimitGraphB  , expectedLimitsGraph_1SigmaB, expectedLimitsGraph_2SigmaB , colorScheme = ROOT.kBlue , YAxisLimits = args.YAxis, keepInScopeList = keepInScopeList, smoothPlot = args.smooth, legendSuffix = ", 2l2e")
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+        #expectedLimitTFile = ROOT.TFile( "mc16adeToyResultsV7.37.root", "OPEN") # 2l2mu
+        #observedLimitGraphC = expectedLimitTFile.Get("observedLimitGraph")
+        #expectedLimitsGraph_1SigmaC = expectedLimitTFile.Get("expectedLimits_1Sigma")
+        #expectedLimitsGraph_2SigmaC = expectedLimitTFile.Get("expectedLimits_2Sigma")
+        #observedLimitGraphC   , expectedLimitsGraph_1SigmaC, expectedLimitsGraph_2SigmaC = convertXSLimitsToMixingParameterLimits(observedLimitGraphC   , expectedLimitsGraph_1SigmaC, expectedLimitsGraph_2SigmaC , limitType = "fiducialXSLimit", flavor = "2l2mu")
+        #canv, keepInScopeList = makeGraphOverview(  observedLimitGraphC  , expectedLimitsGraph_1SigmaC, expectedLimitsGraph_2SigmaC , colorScheme = ROOT.kRed , YAxisLimits = args.YAxis, keepInScopeList = keepInScopeList, smoothPlot = args.smooth, legendSuffix = ", 2l2mu")
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
 
