@@ -679,6 +679,22 @@ def makelleeAndllmumuPlots(dictTree):
     return None
 
 
+def addStatUncertVariationHists(BackgroundVariationDict, flavor = "All", nominalHist = None):
+
+    if nominalHist is None: nominalHist =  BackgroundVariationDict["Nominal"][flavor]
+
+    variationNameTuples = [("STAT_UNCERT_1up" , +1.), ("STAT_UNCERT_1down" , -1.)]
+
+    for variationName , signFactor in variationNameTuples:
+
+        BackgroundVariationDict[variationName][flavor] = nominalHist.Clone( re.sub( "Nominal", variationName, nominalHist.GetName()) )
+
+        for binNr in xrange(1,nominalHist.GetNbinsX()+1):  
+            BackgroundVariationDict[variationName][flavor].SetBinContent(binNr, nominalHist.GetBinContent(binNr) + signFactor*nominalHist.GetBinError(binNr) )
+
+    return None
+
+
 def make1UpAnd1DownSystVariationHistogram( BackgroundVariationDict , flavor = "All" , nominalBackgroundHist = None):
     #make1UpAnd1DownSystVariationHistogram( altMasterHistDict["ZXSR"]["Background"] )
 
@@ -773,8 +789,8 @@ def make1UpAnd1DownSystVariationYields( BackgroundVariationDict , flavor = "All"
 
     systematicNames = sorted(list(systematicNameSet))
 
-    upSysYieldChange   = makeVariationYield( upOrDown = "1up"   )
-    downSysYieldChange = makeVariationYield( upOrDown = "1down" )
+    upSysYieldChange   = makeVariationYield( upOrDown = "1up"   , nominalHist = nominalHist)
+    downSysYieldChange = makeVariationYield( upOrDown = "1down" , nominalHist = nominalHist)
 
     return upSysYieldChange, downSysYieldChange
 
@@ -1241,6 +1257,7 @@ if __name__ == '__main__':
 
                 inferredFlavor  = re.search("(All)|(2e2mu)|(4mu)|(4e)|(2mu2e)|(2l2e)|(2l2mu)", histEnding).group()
 
+                addStatUncertVariationHists(altMasterHistDict[inferredRegion]["Background"], flavor = inferredFlavor , nominalHist = backgroundTallyTH1)
                 #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
                 upSysHist, downSysHist = make1UpAnd1DownSystVariationHistogram( altMasterHistDict["ZXSR"]["Background"]  , flavor =  inferredFlavor , nominalBackgroundHist = backgroundMergedTH1ForRatioHist.Clone())
                 upSysYield, downSysYield = make1UpAnd1DownSystVariationYields(  altMasterHistDict["ZXSR"]["Background"]  , flavor = inferredFlavor )
