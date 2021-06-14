@@ -478,7 +478,7 @@ def fillMasterHistDict2( currentTH1, systematicChannel, histEnding, mcTag, DSID,
         scale = aDSIDHelper.getMCScale(DSID, mcTag)
         currentTH1.Scale(scale) # scale the histogram
 
-    masterHistDict[systematicChannel][histEnding][DSID]=currentTH1
+    masterHistDict[systematicChannel][histEnding][DSID]=currentTH1.Clone()
 
     return masterHistDict
 
@@ -1059,15 +1059,16 @@ if __name__ == '__main__':
         # build my tree structure here to house the relevant histograms, pre-sorted for plotting
 
         baseHist.Rebin(args.rebin)
+        
 
-        #if "ZXVR2" in path:  baseHist = varibleSizeRebinHelper(baseHist, [(76,84)])
+        if "ZXVR2" in path:  baseHist = varibleSizeRebinHelper(baseHist, [(76,84)])
 
         if addSystematicUncertaintyToNominal and not  int(DSID) in myDSIDHelper.analysisMapping["Reducible"] :
-            altMasterHistDict = makeHistDict.fillHistDict(path, baseHist , args.mcCampaign, myDSIDHelper, channelMap = { "ZXSR" : "ZXSR" , "ZXVR1" : "ZZCR"} , masterHistDict = altMasterHistDict, customMapping = myDSIDHelper.BackgroundAndSignalByDSID) 
+            altMasterHistDict = makeHistDict.fillHistDict(path, baseHist , args.mcCampaign, myDSIDHelper, channelMap = { "ZXSR" : "ZXSR" , "ZXVR1" : "ZXVR1" , "ZXVR2" : "ZXVR2", "ZXVR1a":"ZXVR1a" } , masterHistDict = altMasterHistDict, customMapping = myDSIDHelper.BackgroundAndSignalByDSID) 
 
         # store the histograms for binning and and plotting in the master HistDict
         masterHistDict = fillMasterHistDict2( baseHist, systematicChannel, plotTitle, args.mcCampaign, DSID, myDSIDHelper )
-
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
         # output a running counter of processed hists and used memory
         histCounter += 1
         if histCounter %1000 == 0: print str(histCounter) + " relevant hists processed. \t Memory usage: %s (MB)" % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1000)
@@ -1169,7 +1170,8 @@ if __name__ == '__main__':
 
                 keyProperArrow = re.sub('->', '#rightarrow ', key) # make sure the legend displays the proper kind of arrow
                 legend.AddEntry(mergedHist , keyProperArrow , "f");
-                statsTexts.append( keyProperArrow + ": %.2f #pm %.2f" %( getHistIntegralWithUnertainty(mergedHist)) )
+                #statsTexts.append( keyProperArrow + ": %.1f #pm %.1f" %( getHistIntegralWithUnertainty(mergedHist)) )
+                statsTexts.append( keyProperArrow + ": %.1f" %( mergedHist.Integral() ) )
 
                 if myDSIDHelper.isSignalSample( key ): signalTallyTH1.Add(sortedSamples[key])
                 else:
@@ -1227,13 +1229,64 @@ if __name__ == '__main__':
 
             backgroundMergedTH1 = histHelper.mergeTHStackHists(backgroundTHStack) # get a merged background to draw uncertainty bars on the total backgroun
 
+            backgroundSystAddendum = ""
+            backgroundYieldText = "Background: %.1f #pm %.1f" %( getHistIntegralWithUnertainty(backgroundMergedTH1))
+
+            backgroundMergedTH1ForRatioHist = backgroundMergedTH1.Clone( backgroundMergedTH1.GetName() + "_ratioHist")
+
+            ################# add in systematic uncertainties #################
+            if addSystematicUncertaintyToNominal  and systematicChannel == "Nominal" and "ZXVR1a" not in histEnding : # and "ZXSR" in histEnding
+
+                inferredRegion = re.search( "(ZXSR)|(ZXVR1)|(ZXVR2)", histEnding).group()
+
+                print(inferredRegion)
+
+                inferredFlavor  = re.search("(All)|(2e2mu)|(4mu)|(4e)|(2mu2e)|(2l2e)|(2l2mu)", histEnding).group()
+
+                addStatUncertVariationHists(altMasterHistDict[inferredRegion]["Background"], flavor = inferredFlavor , nominalHist = backgroundTallyTH1)
+
+                #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+                upSysHist, downSysHist = make1UpAnd1DownSystVariationHistogram( altMasterHistDict[inferredRegion]["Background"]  , flavor =  inferredFlavor , nominalBackgroundHist = backgroundMergedTH1ForRatioHist.Clone())
+                upSysYield, downSysYield = make1UpAnd1DownSystVariationYields(  altMasterHistDict[inferredRegion]["Background"]  , flavor = inferredFlavor, nominalHist = None)
+                #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+                for sysHist in [upSysHist, downSysHist]: 
+                    sysHist.SetLineColor(ROOT.kGray+2 )
+                    sysHist.SetLineStyle(ROOT.kDashed )
+                    sysHist.SetFillStyle(0)#(3001) # fill style: https://root.cern.ch/doc/v614/classTAttFill.html#F2
+
+                    #sysHist.SetLineWidth( 2 )
+
+                #upSysHist.Draw("same")
+                #downSysHist.Draw("same")
+
+                #legend.AddEntry(upSysHist, "MC sys unc.", "l")
+
+                nominalYield = backgroundMergedTH1.Integral()
+
+
+
+                backgroundSystAddendum += "_{stat} #pm %.1f_{sys}" %(   (upSysYield - downSysYield)/2)
+
+                backgroundYieldText = "Background: %.1f #pm %.1f" %( nominalYield, (upSysYield - downSysYield)/2)
+
+                # include the systematic error in the backgroundMergedTH1, so that it is reflected in the ratio hist
+                for binNr in xrange(1,backgroundMergedTH1ForRatioHist.GetNbinsX()+1): 
+                    newBinError = upSysHist.GetBinContent(binNr) - backgroundMergedTH1ForRatioHist.GetBinContent(binNr)
+                    backgroundMergedTH1ForRatioHist.SetBinError(binNr, newBinError )
+                    backgroundMergedTH1.SetBinError(binNr,  (upSysHist.GetBinContent(binNr)- downSysHist.GetBinContent(binNr))/2 )
+            ################# add in systematic uncertainties #################
+
+            
+
+
             backgroundMergedTH1.Draw("same E2 ")   # "E2" Draw error bars with rectangles:  https://root.cern.ch/doc/v608/classTHistPainter.html
             backgroundMergedTH1.SetMarkerStyle(0 ) # SetMarkerStyle(0 ) remove marker from combined backgroun
             backgroundMergedTH1.SetFillStyle(3244)#(3001) # fill style: https://root.cern.ch/doc/v614/classTAttFill.html#F2
             backgroundMergedTH1.SetFillColor(1)    # black: https://root.cern.ch/doc/v614/classTAttFill.html#F2
             #if "m34" in  backgroundTHStack.GetName() :  backgroundTHStack.GetXaxis().SetRangeUser(10, 70)
 
-            legend.AddEntry(backgroundMergedTH1 , "stat. uncertainty" , "f");
+            legend.AddEntry(backgroundMergedTH1 , "Uncertainty" , "f");
 
             #if "eta"   in backgroundMergedTH1.getTitle: yAxisUnit = ""
             #elif "phi" in backgroundMergedTH1.getTitle: yAxisUnit = " radians"
@@ -1246,49 +1299,11 @@ if __name__ == '__main__':
             #backgroundTHStack.GetXaxis().SetTitleSize(0.12)
             backgroundTHStack.GetXaxis().SetTitleOffset(1.1)
             
-
-
-            backgroundSystAddendum = ""
-
-            backgroundMergedTH1ForRatioHist = backgroundMergedTH1.Clone( backgroundMergedTH1.GetName() + "_ratioHist")
-
-            ################# add in systematic uncertainties #################
-            if addSystematicUncertaintyToNominal and "ZXSR" in histEnding and systematicChannel == "Nominal":
-
-                inferredFlavor  = re.search("(All)|(2e2mu)|(4mu)|(4e)|(2mu2e)|(2l2e)|(2l2mu)", histEnding).group()
-
-                addStatUncertVariationHists(altMasterHistDict[inferredRegion]["Background"], flavor = inferredFlavor , nominalHist = backgroundTallyTH1)
-                #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-                upSysHist, downSysHist = make1UpAnd1DownSystVariationHistogram( altMasterHistDict["ZXSR"]["Background"]  , flavor =  inferredFlavor , nominalBackgroundHist = backgroundMergedTH1ForRatioHist.Clone())
-                upSysYield, downSysYield = make1UpAnd1DownSystVariationYields(  altMasterHistDict["ZXSR"]["Background"]  , flavor = inferredFlavor )
-                #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-
-                for sysHist in [upSysHist, downSysHist]: 
-                    sysHist.SetLineColor(ROOT.kGray+2 )
-                    sysHist.SetLineStyle(ROOT.kDashed )
-                    sysHist.SetFillStyle(0)#(3001) # fill style: https://root.cern.ch/doc/v614/classTAttFill.html#F2
-
-                    #sysHist.SetLineWidth( 2 )
-
-                upSysHist.Draw("same")
-                downSysHist.Draw("same")
-
-                legend.AddEntry(upSysHist, "MC sys unc.", "l")
-
-                nominalYield = backgroundMergedTH1.Integral()
-
-                backgroundSystAddendum += "_{stat} #pm %.2f_{sys}" %(   (upSysYield - downSysYield)/2)
-
-                # include the systematic error in the backgroundMergedTH1, so that it is reflected in the ratio hist
-                for binNr in xrange(1,backgroundMergedTH1ForRatioHist.GetNbinsX()+1): 
-                    newBinError = upSysHist.GetBinContent(binNr) - backgroundMergedTH1ForRatioHist.GetBinContent(binNr)
-                    backgroundMergedTH1ForRatioHist.SetBinError(binNr, newBinError )
-            ################# add in systematic uncertainties #################
                 
             statsTexts.append( "  " )       
-            #statsTexts.append( "Background + Signal: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(backgroundMergedTH1)) )
-            statsTexts.append( "Background : %.2f #pm %.2f" %( getHistIntegralWithUnertainty(backgroundTallyTH1)) + backgroundSystAddendum )
-            if signalTallyTH1.Integral() >0 : statsTexts.append( "Signal: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(signalTallyTH1)) )
+            statsTexts.append( backgroundYieldText )
+            #statsTexts.append( "Background : %.1f #pm %.1f" %( getHistIntegralWithUnertainty(backgroundTallyTH1)) + backgroundSystAddendum )
+            if signalTallyTH1.Integral() >0 : statsTexts.append( "Signal: %.1f #pm %.1f" %( getHistIntegralWithUnertainty(signalTallyTH1)) )
 
 
             # use the x-axis label from the original plot in the THStack, needs to be called after 'Draw()'
@@ -1302,7 +1317,7 @@ if __name__ == '__main__':
 
                 legend.AddEntry(currentTH1, "data", "l")
 
-                if dataTH1.Integral >0: statsTexts.append("Data: %.2f #pm %.2f" %( getHistIntegralWithUnertainty(dataTH1) ) )  
+                if dataTH1.Integral >0: statsTexts.append("Data: %.1f #pm %.1f" %( getHistIntegralWithUnertainty(dataTH1) ) )  
 
             # rescale Y-axis
             largestYValue = [max(getBinContentsPlusError(backgroundMergedTH1ForRatioHist) )]
