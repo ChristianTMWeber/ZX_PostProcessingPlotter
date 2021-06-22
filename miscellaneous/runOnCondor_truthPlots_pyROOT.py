@@ -30,12 +30,13 @@ def makeSubmitScript( shellScriptName):
 if __name__ == '__main__':
 
     #paretnDir = "/usatlas/u/chweber/usatlasdata/Za_signalDAOD/"
-    paretnDir = "/usatlas/u/chweber/usatlasdata/ZX_signalDAOD"
+    #paretnDir = "/usatlas/u/chweber/usatlasdata/ZX_signalDAOD"
+    paretnDir = "/usatlas/u/chweber/usatlasdata/Za_DAOD_samples"
 
     count = 0
 
-    doZX = True
-    doZa = False
+    doZX = False
+    doZa = True
 
     doTruthPlots = False
     doFiducialmeasruement = True
@@ -58,7 +59,6 @@ if __name__ == '__main__':
 
             inputLocation = os.path.join(root,file)
 
-
             if doTruthPlots: 
                 tTreeName = "truthTree_Zd_" + regexMatch.group() + "_GeV"
                 outputName = "ZX_truthTTree_%03i.root" % count
@@ -66,8 +66,12 @@ if __name__ == '__main__':
 
             elif doFiducialmeasruement: 
                 outputName = outputName = "ZX_Fiducial_%03i.root" % count
+                histName = "mZd" + regexMatch.group()
+                if doZa: 
+                    outputName = outputName = "Za_Fiducial_%03i.root" % count
+                    histName = "ma" + regexMatch.group()
                 #outputName = outputName = "ZX_Fiducial_%03i_mc16e.root" % count
-                submitLine = "python measureFiducialAcceptance_pyROOT.py %s --outputName %s --nEventsToProcess %i" %(inputLocation, outputName, -1)
+                submitLine = "python measureFiducialAcceptance_pyROOT.py %s --outputName %s --nEventsToProcess %i --outputHistName %s" %(inputLocation, outputName, -1, histName)
 
 
 
@@ -81,6 +85,8 @@ if __name__ == '__main__':
             os.chmod(shellScript, 0755)
 
             submitScriptName = makeSubmitScript( shellScript)
+
+            #print inputLocation
 
             os.system( "condor_submit " + submitScriptName)
 

@@ -213,8 +213,9 @@ def makeOutputHistogram( nEventsInFiducialRegionDict, histName = "outputHist"):
 
 def getDecayFlavorOfZd(truthParticles):
 
-    ZdCandicates = [ particle for particle in truthParticles if particle.pdgId() == 32 ] 
-
+    #                                                                               Zd            pseudoscalar a 
+    ZdCandicates = [ particle for particle in truthParticles if particle.pdgId() == 32 or particle.pdgId() == 36 ] 
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     if len(ZdCandicates) > 0 : return( abs(ZdCandicates[0].child(0).pdgId()) )
     #else:  import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
@@ -253,9 +254,10 @@ if __name__ == '__main__':
 
 
     # PdgIds: http://pdg.lbl.gov/2010/download/rpp-2010-JPhys-G-37-075021.pdf
-    #   25 = Higgs
+    #   25 = Higgs (For Za samples it is 35)
     #   23 = Z-boson
     #   32 = Zd boson
+    #   36 = pseudosclar a
     #   11 = electron
     #   13 = muon
 
