@@ -336,7 +336,7 @@ def convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimits
         return ZdBranchingRatioList
 
 
-    def XSLimitToFixucialXSLimit( massPointList, XSLimitList, flavor = "all"):
+    def XSLimitToFiducialXSLimit( massPointList, XSLimitList, flavor = "all"):
 
         xList = [15, 20, 25, 30, 35, 40, 45, 50, 55]
 
@@ -412,12 +412,12 @@ def convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimits
         expectedLimits_mixingParameter_2Sigma_High  = XSLimitToBRLimit( massPoints , expectedLimits_2Sigma_High )
 
     elif limitType == "fiducialXSLimit" :
-        observedLimits_mixingParameter              = XSLimitToFixucialXSLimit( massPoints , observedLimits             , flavor = flavor)
-        expectedLimits_mixingParameter              = XSLimitToFixucialXSLimit( massPoints , expectedLimits             , flavor = flavor)
-        expectedLimits_mixingParameter_1Sigma_Low   = XSLimitToFixucialXSLimit( massPoints , expectedLimits_1Sigma_Low  , flavor = flavor)
-        expectedLimits_mixingParameter_1Sigma_High  = XSLimitToFixucialXSLimit( massPoints , expectedLimits_1Sigma_High , flavor = flavor)
-        expectedLimits_mixingParameter_2Sigma_Low   = XSLimitToFixucialXSLimit( massPoints , expectedLimits_2Sigma_Low  , flavor = flavor)
-        expectedLimits_mixingParameter_2Sigma_High  = XSLimitToFixucialXSLimit( massPoints , expectedLimits_2Sigma_High , flavor = flavor)
+        observedLimits_mixingParameter              = XSLimitToFiducialXSLimit( massPoints , observedLimits             , flavor = flavor)
+        expectedLimits_mixingParameter              = XSLimitToFiducialXSLimit( massPoints , expectedLimits             , flavor = flavor)
+        expectedLimits_mixingParameter_1Sigma_Low   = XSLimitToFiducialXSLimit( massPoints , expectedLimits_1Sigma_Low  , flavor = flavor)
+        expectedLimits_mixingParameter_1Sigma_High  = XSLimitToFiducialXSLimit( massPoints , expectedLimits_1Sigma_High , flavor = flavor)
+        expectedLimits_mixingParameter_2Sigma_Low   = XSLimitToFiducialXSLimit( massPoints , expectedLimits_2Sigma_Low  , flavor = flavor)
+        expectedLimits_mixingParameter_2Sigma_High  = XSLimitToFiducialXSLimit( massPoints , expectedLimits_2Sigma_High , flavor = flavor)
 
     elif limitType == "massMixingLimit" :
         observedLimits_mixingParameter              = XSLimitToMassMixingLimit( massPoints , observedLimits             ,XSLimitToBRLimit)
