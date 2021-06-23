@@ -157,10 +157,10 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
         extractedLimit.Draw(regularTGraphDrawOption + "same")
 
 
-    if extractedLimit is not None: legend.AddEntry(extractedLimit , "observed limit" +legendSuffix  , "l");
-    legend.AddEntry(expectedLimitMedian , "expected limit" +legendSuffix , "l");
-    legend.AddEntry(expectedLimit1Sig , "#pm1#sigma expected limit" +legendSuffix , "f");
-    legend.AddEntry(expectedLimit2Sig , "#pm2#sigma expected limit" +legendSuffix , "f");    
+    if extractedLimit is not None: legend.AddEntry(extractedLimit , "#bf{Observed}" +legendSuffix  , "l");
+    legend.AddEntry(expectedLimitMedian , "#bf{Expected}" +legendSuffix , "l");
+    legend.AddEntry(expectedLimit1Sig , "#pm1 #sigma" +legendSuffix , "f");
+    legend.AddEntry(expectedLimit2Sig , "#pm2 #sigma" +legendSuffix , "f");    
 
     legend.Draw()
 
@@ -482,7 +482,7 @@ if __name__ == '__main__':
     parser.add_argument( "--makeZaLimitPlot" , default=False, action='store_true', help = "Plot Za limit.")
     parser.add_argument( "--logarithmixYAxis" , default=False, action='store_true', help = "make YAxis logarithmic")
 
-    parser.add_argument( "--AddATLASBlurp" , default=False, choices=["all", "All", "2l2e", "2l2mu", False], help = "Add ATLAS blurp to the figure, include ")
+    parser.add_argument( "--AddATLASBlurp" , default=False, choices=["all", "All", "2l2e", "2l2mu", "blank", False], help = "Add ATLAS blurp to the figure, include ")
 
     colorScheme = None
     #colorScheme = ROOT.kBlue
@@ -527,7 +527,7 @@ if __name__ == '__main__':
             if isinstance(observedLimitGraph, ROOT.TGraphAsymmErrors): # for some limit setting schemes the upperlimit is given by the upper error of the TGraph. 
                 observedLimitGraph = graphHelper.getTGraphWithoutError( observedLimitGraph , ySetpoint = "yHigh")
 
-        yAxisTitle = "Upper 95% CL on #sigma_{H #rightarrow ZZ_{d} #rightarrow 4l} [fb] "
+        yAxisTitle = "Upper 95% CL on #sigma(H #rightarrow ZZ_{d} #rightarrow 4l) [fb] "
         xAxisTitle = "m_{Z_{d}} [GeV]"
 
         #observedLimitGraph = None
@@ -540,7 +540,7 @@ if __name__ == '__main__':
             yAxisTitle = "Upper 95% CL on #frac{#sigma_{H}}{#sigma_{H}^{SM}}B(H #rightarrow ZZd)"  
         elif args.makeFiducialXSPlot:
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "fiducialXSLimit", flavor = args.AddATLASBlurp)
-            yAxisTitle = "Upper 95% CL on #sigma_{H #rightarrow ZX #rightarrow 4l}^{fid} [fb] "
+            yAxisTitle = "Upper 95% CL on #sigma_{fid}(H #rightarrow ZX #rightarrow 4l) [fb] "
             xAxisTitle = "m_{X} [GeV]"
         elif args.makeMassMixingPlot:
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "massMixingLimit", flavor = args.AddATLASBlurp)
@@ -577,7 +577,8 @@ if __name__ == '__main__':
         #
         #canv, keepInScopeList = makeGraphOverview(  observedLimitGraphB  , expectedLimitsGraph_1SigmaB, expectedLimitsGraph_2SigmaB , colorScheme = ROOT.kRed ,
         #                                             YAxisLimits = args.YAxis, keepInScopeList = keepInScopeList, smoothPlot = args.smooth, 
-        #                                             yAxisTitle = yAxisTitle, xAxisTitle = xAxisTitle, legendSuffix = ", 2l2mu")
+        #                                             yAxisTitle = yAxisTitle, xAxisTitle = xAxisTitle, legendSuffix = ", 2l2#mu")
+        #atlasBlurb = addATLASBlurp("") 
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
         #expectedLimitTFile = ROOT.TFile( "mc16adeToyResultsV7.37.root", "OPEN") # 2l2mu
         #observedLimitGraphC = expectedLimitTFile.Get("observedLimitGraph")
