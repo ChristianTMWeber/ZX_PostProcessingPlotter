@@ -6,6 +6,8 @@ import ROOT
 import re
 import os
 
+import math
+
 
 # import sys and os.path to be able to import things from the parent directory
 import sys 
@@ -41,9 +43,13 @@ def getP0ValueFromFile( filePath ):
 
     return p0Value
 
+def p0ToSignificane( inputP0 ): return ROOT.Math.gaussian_quantile_c ( inputP0, 1)
+
+def significanceToP0( inputSignifiacne): return 1-ROOT.Math.normal_cdf ( inputSignifiacne , 1, 0)
 
 def getNSigmaGraph( nSigma, xPoints):
-    p0AtNSigma =  1-ROOT.Math.normal_cdf ( nSigma , 1, 0)
+    p0AtNSigma =  significanceToP0( nSigma)
+    # inverse of the function above is: ROOT.Math.gaussian_quantile_c ( 1, p0AtNSigma)
 
     nSigmaGrpah = graphHelper.createNamedTGraph( "%.1f#sigma" %nSigma)
 
@@ -58,6 +64,37 @@ def getNSigmaGraph( nSigma, xPoints):
 
     return nSigmaGrpah
 
+
+def globalP0Estimate(p0Dict,  localp0Val, refSignifiance = 1):
+    # following the asymptotic recommendation from https://twiki.cern.ch/twiki/bin/view/AtlasProtected/GlobalSignificanceComputations
+    # based on E. Gross and O. Vitells, Eur. Phys. J. C70 (2010) 525-530: https://arxiv.org/abs/1005.1891
+
+    refP0 = significanceToP0( refSignifiance )
+
+    localSignificance = p0ToSignificane(localp0Val)
+
+
+    # make list of p0 values that is properly sorted
+    p0List = []
+    for mass in sorted(p0Dict.keys()):     p0List.append( p0Dict[mass])
+
+
+    # measure nUp
+    nUp = 0
+    for x in range( len(p0List)-1): 
+        leftP0Value  = p0Dict.values()[x]
+        rightP0Value = p0Dict.values()[x+1]
+
+        # increase nUp if the p0 graph crosses refP0 from up to down
+        if leftP0Value > refP0 and rightP0Value < refP0: nUp+=1 
+
+
+
+    globalP0 = localp0Val + nUp * math.exp(  -0.5 * (localSignificance**2 - refSignifiance**2 ))
+    
+    globalP0Error = nUp**0.5 * math.exp(  -0.5 * (localSignificance**2 - refSignifiance**2 ))
+
+    return globalP0, globalP0Error
 
 
 if __name__ == '__main__':
@@ -92,9 +129,21 @@ if __name__ == '__main__':
                 p0Dict[mass] = getP0ValueFromFile( filePath )
                 
 
+    globalP0Value = globalP0Estimate(p0Dict, min(p0Dict.values()) , refSignifiance = 1)
+
+    globalP0Value = globalP0Estimate(p0Dict, min(p0Dict.values()) , refSignifiance = 0)
+
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
 
     for mass in sorted(p0Dict.keys()):     
         p0Value = p0Dict[mass]
+
+        signifianceValue = p0ToSignificane( p0Value )
+
+        print( mass, p0Value, signifianceValue)
+
+        
 
         if p0Value == 0: continue
 
