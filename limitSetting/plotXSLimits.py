@@ -353,6 +353,28 @@ def convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimits
 
         return fiducialXSLimits
 
+    def XSLimitToZaLimit( massPointList, XSLimitList, XSLimitToFiducialXSLimit, flavor = "all"):
+
+        fiducialLimits = XSLimitToFiducialXSLimit(massPointList, XSLimitList, flavor = flavor)
+
+        xList = [15, 20, 25, 30]
+
+        acceptances = {}
+        acceptances["all"] = [0.179231638418, 0.162434285714, 0.188849110997, 0.219710674157]
+        acceptances["2l2e"] = [0.,            0.109721590909, 0.127661111111, 0.165027777778  ]
+        acceptances["2l2mu"] =[0.179059322034,0.215752873563, 0.253636786099, 0.275636363636]
+
+        fiducialXSLimits = []
+
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+        for x in xrange( len(massPointList) ): 
+            if massPointList[x] > 30: break # don't have signal samples for ma > 30 GeV
+            acceptance = interpolator1D( xList, acceptances[flavor], massPointList[x] ) 
+            fiducialXSLimits.append( XSLimitList[x] / acceptance) 
+
+        return fiducialXSLimits
+
     def XSLimitToMassMixingLimit(massPointList, XSLimitList, XSLimitToBRLimit):
 
         #XSLimitToBRLimit( massPointList , XSLimitList             )
@@ -427,6 +449,14 @@ def convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimits
         expectedLimits_mixingParameter_2Sigma_Low   = XSLimitToMassMixingLimit( massPoints , expectedLimits_2Sigma_Low  ,XSLimitToBRLimit)
         expectedLimits_mixingParameter_2Sigma_High  = XSLimitToMassMixingLimit( massPoints , expectedLimits_2Sigma_High ,XSLimitToBRLimit)
 
+    elif limitType == "ZaXSLimit" :
+        observedLimits_mixingParameter              = XSLimitToZaLimit( massPoints , observedLimits             , XSLimitToFiducialXSLimit, flavor = flavor)
+        expectedLimits_mixingParameter              = XSLimitToZaLimit( massPoints , expectedLimits             , XSLimitToFiducialXSLimit, flavor = flavor)
+        expectedLimits_mixingParameter_1Sigma_Low   = XSLimitToZaLimit( massPoints , expectedLimits_1Sigma_Low  , XSLimitToFiducialXSLimit, flavor = flavor)
+        expectedLimits_mixingParameter_1Sigma_High  = XSLimitToZaLimit( massPoints , expectedLimits_1Sigma_High , XSLimitToFiducialXSLimit, flavor = flavor)
+        expectedLimits_mixingParameter_2Sigma_Low   = XSLimitToZaLimit( massPoints , expectedLimits_2Sigma_Low  , XSLimitToFiducialXSLimit, flavor = flavor)
+        expectedLimits_mixingParameter_2Sigma_High  = XSLimitToZaLimit( massPoints , expectedLimits_2Sigma_High , XSLimitToFiducialXSLimit, flavor = flavor)
+
 
     observedLimitGraph = graphHelper.listToTGraph( massPoints, observedLimits_mixingParameter  )
     expectedLimitsGraph_1Sigma = graphHelper.listToTGraph( massPoints, expectedLimits_mixingParameter , yLowList = expectedLimits_mixingParameter_1Sigma_Low, yHighList = expectedLimits_mixingParameter_1Sigma_High )
@@ -449,6 +479,7 @@ if __name__ == '__main__':
     parser.add_argument( "--makeBranchingRatioPlot" , default=False, action='store_true', help = "Plot BranchingRatio prameter instead of cross section limit.")
     parser.add_argument( "--makeFiducialXSPlot" , default=False, action='store_true', help = "Plot fiducial cross section instead of measured cross section limit.")
     parser.add_argument( "--makeMassMixingPlot" , default=False, action='store_true', help = "Plot mass-mixingParam^2 times branching ratio of Zd->2l instead of measured cross section limit.")
+    parser.add_argument( "--makeZaLimitPlot" , default=False, action='store_true', help = "Plot Za limit.")
     parser.add_argument( "--logarithmixYAxis" , default=False, action='store_true', help = "make YAxis logarithmic")
 
     parser.add_argument( "--AddATLASBlurp" , default=False, choices=["all", "All", "2l2e", "2l2mu", False], help = "Add ATLAS blurp to the figure, include ")
@@ -514,6 +545,10 @@ if __name__ == '__main__':
         elif args.makeMassMixingPlot:
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "massMixingLimit", flavor = args.AddATLASBlurp)
             yAxisTitle = "Upper 95% CL on #delta^{2} #times BR(Z_{d} #rightarrow 2l)"
+        elif args.makeZaLimitPlot:
+            observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "ZaXSLimit", flavor = args.AddATLASBlurp)
+            yAxisTitle = "Upper 95% CL on #sigma(H #rightarrow Za #rightarrow 4l) [fb] "
+            xAxisTitle = "m_{a} [GeV]"
 
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
@@ -524,7 +559,9 @@ if __name__ == '__main__':
                                                     yAxisTitle = yAxisTitle, makeYAxisLogarithmic = args.logarithmixYAxis, xAxisTitle = xAxisTitle )#, legendSuffix = ", 2l2e") 
 
 
-        if args.AddATLASBlurp: atlasBlurb = addATLASBlurp(args.AddATLASBlurp) 
+
+        if args.AddATLASBlurp and args.makeZaLimitPlot: atlasBlurb = addATLASBlurp(args.AddATLASBlurp, boundaries = (0.28,0.76,0.68,0.86)) 
+        elif args.AddATLASBlurp: atlasBlurb = addATLASBlurp(args.AddATLASBlurp) 
         #atlasBlurb = addATLASBlurp("") 
 
 
