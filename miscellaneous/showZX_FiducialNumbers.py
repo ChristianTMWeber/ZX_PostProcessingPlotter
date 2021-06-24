@@ -79,8 +79,9 @@ def setupTLegend():
 if __name__ == '__main__':
 
     #file = ROOT.TFile( "ZX_FiducialCombined_HiggsTagged.root","OPEN")
-    file = ROOT.TFile( "ZX_FiducialCombined.root","OPEN")
+    #file = ROOT.TFile( "ZX_FiducialCombined.root","OPEN")
     #file = ROOT.TFile( "ZX_FiducialCombined_mc16e.root","OPEN")
+    file = ROOT.TFile( "Za_CombinedFiducial.root","OPEN")
     
 
     hists = [hist for hist in generateTDirContents(file)]
@@ -93,18 +94,25 @@ if __name__ == '__main__':
 
         histContents = histToDict(hist)
 
-        outputString = hist.GetName() + ", #2l2mu = " + str((histContents["4mu"] + histContents["2e2mu"])/histContents["ZdTruthFlavor_2l2mu"]  ) + \
-                        ", #2l2e = " + str((histContents["4e"] + histContents["2mu2e"])/histContents["ZdTruthFlavor_2l2e"] ) + \
-                        ", #all = " + str( histContents["all"] /(histContents["ZdTruthFlavor_2l2e"] +histContents["ZdTruthFlavor_2l2mu"]  ) ) 
 
         #outputString = hist.GetName() + " truth count " + str(histContents["ZdTruthFlavor_2l2mu"]  + histContents["ZdTruthFlavor_2l2e"]) + " eventsProcessed: " +  str(histContents["eventsProcessed"])
 
         #outputString = hist.GetName() + " truth count " + str(histContents["ZdTruthFlavor_2l2mu"]  + histContents["ZdTruthFlavor_2l2e"])
 
         mass = re.search("\d+",hist.GetName()).group()
-        acceptances["2l2e"][int(mass)]   = (histContents["4e"]  + histContents["2mu2e"])/histContents["ZdTruthFlavor_2l2e"]
+
+        
+
+        if histContents["ZdTruthFlavor_2l2e"] == 0: acceptances["2l2e"][int(mass)] = 0
+        else:  acceptances["2l2e"][int(mass)]   = (histContents["4e"]  + histContents["2mu2e"])/histContents["ZdTruthFlavor_2l2e"]
         acceptances["2l2mu"][int(mass)]  = (histContents["4mu"] + histContents["2e2mu"])/histContents["ZdTruthFlavor_2l2mu"] 
         acceptances["all"][int(mass)]   = histContents["all"] /(histContents["ZdTruthFlavor_2l2e"] +histContents["ZdTruthFlavor_2l2mu"]  )
+
+        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+        outputString = hist.GetName() + ", #2l2mu = " + str(acceptances["2l2mu"][int(mass)]  ) + \
+                ", #2l2e = " + str(acceptances["2l2e"][int(mass)]) + \
+                ", #all = " + str( acceptances["all"][int(mass)]  ) 
+
 
         print outputString
 
