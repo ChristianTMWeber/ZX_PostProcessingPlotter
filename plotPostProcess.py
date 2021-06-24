@@ -260,7 +260,7 @@ class DSIDHelper:
         scale = self.lumiMap[mcTag] * 1000000. * prod / self.sumOfEventWeightsDict[int(DSID)] 
 
         # posthoc hack to display the plots with the postfit background expectation, to the H4lNorm nuisacne parameter in the fit-
-        #if  int(DSID) in self.analysisMapping["H4l"]: scale = scale * 1.2 
+        #if  int(DSID) in self.analysisMapping["H4l"]: scale = scale * h4lScaling 
 
         return scale
     
@@ -934,6 +934,10 @@ if __name__ == '__main__':
     parser.add_argument( "--cacheForDockerOnWSL", default=False, action='store_true' , 
     help = "Use when opening larger files, while operating in a docker container, on a Windows machine" ) 
 
+    parser.add_argument( "--h4lScale", type=float, default= 1. , 
+    help = "Scale the cross section of the h4l background by this factor. Usefull for setting the H4l background to a postfit value" ) 
+
+
     startTime = time.time() 
 
     args = parser.parse_args()
@@ -980,6 +984,9 @@ if __name__ == '__main__':
     #    e.g. grouping DSIDs 345060 and 341488 (among others) into one histogram for the "H->ZZ*->4l" process
     myDSIDHelper = DSIDHelper()
     myDSIDHelper.importMetaData(args.metaData) # since the DSID helper administrates the meta data for the MC samples we must provide it with the meta data locati
+
+    # scale H4l cross sections to value set in command line. Default is 1. and leaves the cross sections unchanged
+    for DSID in myDSIDHelper.analysisMapping["H4l"]: myDSIDHelper.metaDataDict[DSID]["crossSection"] *= args.h4lScale
 
     # assemble the input files, mc-campaign tags and metadata file locations into dict
     # well structered dict is sorted by mc-campign tag and has 
@@ -1060,7 +1067,6 @@ if __name__ == '__main__':
 
         baseHist.Rebin(args.rebin)
         
-
         if "ZXVR2" in path:  baseHist = varibleSizeRebinHelper(baseHist, [(76,84)])
 
         if addSystematicUncertaintyToNominal and not  int(DSID) in myDSIDHelper.analysisMapping["Reducible"] :
@@ -1076,7 +1082,6 @@ if __name__ == '__main__':
 
     reportMemUsage.reportMemUsage(startTime)
 
-    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     ######################################################
     # Do the data processing from here on
     ######################################################
