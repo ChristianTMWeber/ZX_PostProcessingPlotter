@@ -123,8 +123,25 @@ def quadruplets( leptonPairs):
         else:                                                      quadrupletList.append( (pair2[0], pair2[1], pair1[0], pair1[1]) )
 
 
+    # Sort the quadruplets
+    # We put the most important sorting parameter last
+
+    sortByM34Lambda = lambda x,refMass = ZBosonMass:abs((x[2]+x[3]).M()-refMass)
+    quadrupletList.sort( key = sortByM34Lambda , reverse=False) # 
+
+    sortByM12Lambda = lambda x,refMass = ZBosonMass:abs((x[0]+x[1]).M()-refMass)
+    quadrupletList.sort( key = sortByM12Lambda , reverse=False) # 
+
+
     quadrupletList.sort( key = lambda x:x[0].pdgId() , reverse=True) # i.e. we
     quadrupletList.sort( key = lambda x:x[2].pdgId() , reverse=True) # i.e. we
+
+
+    ## lines for inspecting the sorted quadruplets
+    #if len(quadrupletList) > 3 : import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    #for quadruplet in quadrupletList: print( quadruplet[0].pdgId(), quadruplet[1].pdgId(), quadruplet[2].pdgId(), quadruplet[3].pdgId() )
+    #for quadruplet in quadrupletList: print( abs((quadruplet[0]+quadruplet[1]).M()-ZBosonMass), abs((quadruplet[2]+quadruplet[3]).M()-ZBosonMass) )
+
 
     return quadrupletList
 
