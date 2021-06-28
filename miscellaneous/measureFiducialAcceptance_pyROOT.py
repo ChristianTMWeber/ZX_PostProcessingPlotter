@@ -175,7 +175,9 @@ def quadrupletSelection( leptonPairList):
         diLeptonMassesOK = checkDileptonMasses(lep1, lep2, lep3, lep4)
         if not diLeptonMassesOK: continue
 
-        pairwiseDeltaROK = [ getDeltaR(lepA, lepB) > 0.1  for lepA, lepB in  getAllPairs( [lep1, lep2, lep3, lep4] )]
+        flavorDependentDeltaR =  lambda lep1, lep2: 0.1 if abs(lep1.pdgId()) == abs(lep2.pdgId()) else 0.2
+
+        pairwiseDeltaROK = [ getDeltaR(lepA, lepB) > flavorDependentDeltaR(lepA, lepB)  for lepA, lepB in  getAllPairs( [lep1, lep2, lep3, lep4] )]
 
         if not all(pairwiseDeltaROK): continue
 
