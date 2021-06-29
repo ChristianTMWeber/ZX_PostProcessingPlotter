@@ -79,8 +79,8 @@ def setupTLegend():
 if __name__ == '__main__':
 
     #file = ROOT.TFile( "ZX_FiducialCombined_HiggsTagged.root","OPEN")
-    file = ROOT.TFile( "ZX_FiducialCombined.root","OPEN")
-    #file = ROOT.TFile( "ZX_FiducialCombined_mc16e.root","OPEN")
+    #file = ROOT.TFile( "ZX_FiducialCombined.root","OPEN")
+    file = ROOT.TFile( "ZX_Fiducial_mc16ade.root","OPEN")
     
 
     hists = [hist for hist in generateTDirContents(file)]
@@ -88,6 +88,9 @@ if __name__ == '__main__':
     hists.sort( key = lambda x:x.GetName() , reverse=True) # i.e. we
 
     acceptances = collections.defaultdict(lambda: collections.defaultdict(dict))
+
+
+    histMassDict = { int(re.search("\d+",hist.GetName()).group()) : hist for hist in hists}
 
     for hist in hists: 
 
@@ -108,6 +111,11 @@ if __name__ == '__main__':
 
         print outputString
 
+
+    
+
+    #print(histToDict( histMassDict[55] ))
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     #for binTitle in histContents: print( binTitle, histContents[binTitle] )
 
     allAcceptances = []
@@ -116,13 +124,13 @@ if __name__ == '__main__':
     
     graphDict = { flavor: graphHelper.dictToTGraph(acceptances[flavor]) for flavor in acceptances.keys() }
 
-    graphDict["all"].GetYaxis().SetRangeUser(0,max(allAcceptances)*1.2)
+    graphDict["all"].GetYaxis().SetRangeUser(0.2,max(allAcceptances)*1.2)
     graphDict["all"].GetYaxis().SetTitle("acceptance [unitless]")
     graphDict["all"].GetYaxis().SetTitleSize(0.05)
     graphDict["all"].GetYaxis().SetTitleOffset(0.8)
     #graphDict["all"].GetYaxis().CenterTitle()
 
-    graphDict["all"].GetXaxis().SetTitle("m_{X} [GeV]")
+    graphDict["all"].GetXaxis().SetTitle("m_{Z_{d}} [GeV]")
     graphDict["all"].GetXaxis().SetTitleSize(0.05)
     graphDict["all"].GetXaxis().SetTitleOffset(0.85)
 
