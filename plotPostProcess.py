@@ -260,7 +260,7 @@ class DSIDHelper:
         scale = self.lumiMap[mcTag] * 1000000. * prod / self.sumOfEventWeightsDict[int(DSID)] 
 
         # posthoc hack to display the plots with the postfit background expectation, to the H4lNorm nuisacne parameter in the fit-
-        #if  int(DSID) in self.analysisMapping["H4l"]: scale = scale * 1.2 
+        #if  int(DSID) in self.analysisMapping["H4l"]: scale = scale * h4lScaling 
 
         return scale
     
@@ -422,16 +422,27 @@ def activateATLASPlotStyle():
     return None
 
 
-def setupTLegend():
+def setupTLegend( nColumns = 2, boundaries = (0.15,0.70,0.55,0.95)):
     # set up a TLegend, still need to add the different entries
-    TLegend = ROOT.TLegend(0.15,0.70,0.55,0.95)
+    # boundaries = (lowLimit X, lowLimit Y, highLimit X, highLimit Y)
+
+    TLegend = ROOT.TLegend(boundaries[0],boundaries[1],boundaries[2],boundaries[3])
     TLegend.SetFillColor(ROOT.kWhite)
     TLegend.SetLineColor(ROOT.kWhite)
-    TLegend.SetNColumns(2);
+    TLegend.SetNColumns(nColumns);
     TLegend.SetFillStyle(0);  # make legend background transparent
     TLegend.SetBorderSize(0); # and remove its border without a border
 
     return TLegend
+
+def setupStatsTPave(statsTextList, boundaries = (0.4,0.40,0.9,0.87)):
+    # boundaries = (lowLimit X, lowLimit Y, highLimit X, highLimit Y)
+
+    statsTPave=ROOT.TPaveText(boundaries[0],boundaries[1],boundaries[2],boundaries[3],"NBNDC")
+    statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
+    for stats in statsTextList:   statsTPave.AddText(stats);
+
+    return statsTPave
 
 
 def printRootCanvasPDF(myRootCanvas, isLastCanvas, fileName, tableOfContents = None):
@@ -547,12 +558,13 @@ def addRegionAndChannelToStatsText(shortName):
     outList = ""
 
     # fill in region
-    if "ZXSR" in shortName:    outList += "Signal Region"
-    elif "ZXCRC" in shortName: outList += "VR1"
-    elif "ZXCRD" in shortName: outList += "VR2"
+    if "ZXSR" in shortName:    outList += "ZX Signal Region; "
+    elif "ZXVR1a" in shortName: outList += "ZXVR1a; "
+    elif "ZXVR1" in shortName: outList += "ZX Validation Region d; "
+    elif "ZXVR2" in shortName: outList += "ZX Validation Region e; "
     else: outList += shortName
 
-    outList += ", "
+    #outList += ", "
 
     if "4m"      in shortName:  outList += "4#mu"
     elif "2e2m"  in shortName:  outList += "2e2#mu"
@@ -560,9 +572,9 @@ def addRegionAndChannelToStatsText(shortName):
     elif "2m2e"  in shortName:  outList += "2#mu2e"
     elif "2mu2e" in shortName:  outList += "2#mu2e"
     elif "4e"    in shortName:  outList += "4e"
-    elif "2l2e"  in shortName:  outList += "llee"
-    elif "2l2mu"in shortName:  outList += "ll#mu#mu"
-    else:                       outList += "4#mu, 2e2#mu, 2#mu2e, 4e"
+    elif "2l2e"  in shortName:  outList += "llee final state"
+    elif "2l2mu"in shortName:  outList += "ll#mu#mu final state"
+    else:                       outList += "4#mu, 2e2#mu, 2#mu2e, 4e combined"
 
     return outList
 
@@ -873,6 +885,30 @@ def makeSignificancePlots(referenceHist, dataHist, backgroundHist):
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     return significanceHist, min(significanceListForPlotLimits)*1.1, max(significanceListForPlotLimits)*1.1
 
+def centerDataMCRatioPlotAroundZero(ratioHist):
+
+    for binNr in xrange(1,ratioHist.GetNbinsX()+1):  
+        binContent = ratioHist.GetBinContent(binNr)
+        if binContent != 0: ratioHist.SetBinContent(binNr, binContent -1)
+
+    return ratioHist
+
+def adjustAxesRangesManually(hist):
+
+    if isinstance(hist,list):
+        for listElement in hist: adjustAxesRangesManually(listElement)
+
+    else:
+
+        histName = hist.GetName() 
+
+        if   "m34" in histName and "ZXSR"  in histName:  hist.GetXaxis().SetRangeUser(10, 66)
+        elif "m34" in histName and "ZXVR1" in histName:  hist.GetXaxis().SetRangeUser(4, 48)
+        elif "m34" in histName and "ZXVR2" in histName:  hist.GetXaxis().SetRangeUser(10, 88)
+
+
+    return None
+
 if __name__ == '__main__':
 
     from functions.compareVersions import compareVersions # to compare root versions
@@ -934,6 +970,14 @@ if __name__ == '__main__':
     parser.add_argument( "--cacheForDockerOnWSL", default=False, action='store_true' , 
     help = "Use when opening larger files, while operating in a docker container, on a Windows machine" ) 
 
+    parser.add_argument( "--makePaperStylePlots", default=False, action='store_true' , 
+    help = "Change the layout of the plots such that they are more appropriate for the paper" ) 
+
+    parser.add_argument( "--h4lScale", type=float, default= 1. , 
+    help = "Scale the cross section of the h4l background by this factor. Usefull for setting the H4l background to a postfit value" ) 
+
+
+
     startTime = time.time() 
 
     args = parser.parse_args()
@@ -980,6 +1024,9 @@ if __name__ == '__main__':
     #    e.g. grouping DSIDs 345060 and 341488 (among others) into one histogram for the "H->ZZ*->4l" process
     myDSIDHelper = DSIDHelper()
     myDSIDHelper.importMetaData(args.metaData) # since the DSID helper administrates the meta data for the MC samples we must provide it with the meta data locati
+
+    # scale H4l cross sections to value set in command line. Default is 1. and leaves the cross sections unchanged
+    for DSID in myDSIDHelper.analysisMapping["H4l"]: myDSIDHelper.metaDataDict[DSID]["crossSection"] *= args.h4lScale
 
     # assemble the input files, mc-campaign tags and metadata file locations into dict
     # well structered dict is sorted by mc-campign tag and has 
@@ -1060,7 +1107,6 @@ if __name__ == '__main__':
 
         baseHist.Rebin(args.rebin)
         
-
         if "ZXVR2" in path:  baseHist = varibleSizeRebinHelper(baseHist, [(76,84)])
 
         if addSystematicUncertaintyToNominal and not  int(DSID) in myDSIDHelper.analysisMapping["Reducible"] :
@@ -1076,7 +1122,6 @@ if __name__ == '__main__':
 
     reportMemUsage.reportMemUsage(startTime)
 
-    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     ######################################################
     # Do the data processing from here on
     ######################################################
@@ -1135,21 +1180,32 @@ if __name__ == '__main__':
             myDSIDHelper.colorizeHistsInDict(sortedSamples) # change the fill colors of the hists in a nice way
             statsTexts = []
 
-            statsTexts.append( "#font[72]{ATLAS} internal")
-            statsTexts.append( "#sqrt{s} = 13 TeV, %.1f fb^{-1}" %( myDSIDHelper.lumiMap[args.mcCampaign] ) ) 
+
 
             regionAndChannelString = addRegionAndChannelToStatsText( canvasName )
             if systematicChannel != "Nominal" : regionAndChannelString = systematicChannel +" "+ regionAndChannelString
-            statsTexts.append( regionAndChannelString ) 
+            
+            statsTexts.append( "#font[72]{ATLAS} internal")
+            statsTexts.append( "#sqrt{s} = 13 TeV, %.1f fb^{-1}" %( myDSIDHelper.lumiMap[args.mcCampaign] ) ) 
 
-            statsTexts.append( "  " ) 
+            statsTexts.append( regionAndChannelString.split(";")[0] )
+            statsTexts.append( regionAndChannelString.split(";")[1] )
+            
+
+            if not args.makePaperStylePlots:  statsTexts.append( "  " ) 
 
             # use these to report the total number of background and signal samples each later on
             backgroundTallyTH1 = sortedSamples.values()[0].Clone( "backgroundTally")
             backgroundTallyTH1.Scale(0)
             signalTallyTH1 = backgroundTallyTH1.Clone("signalTally")
 
-            legend = setupTLegend()
+            
+
+            if args.makePaperStylePlots: legend = setupTLegend(nColumns = 1, boundaries = (0.6, 0.3 ,0.9,0.9) )
+            else:                        legend = setupTLegend()
+
+
+            if gotDataSample:    legend.AddEntry(currentTH1, "Data", "p")
 
             for key in myDSIDHelper.defineSequenceOfSortedSamples( sortedSamples  ): # add merged samples to the backgroundTHStack 
 
@@ -1169,9 +1225,11 @@ if __name__ == '__main__':
                 
 
                 keyProperArrow = re.sub('->', '#rightarrow ', key) # make sure the legend displays the proper kind of arrow
+                keyProperArrow = re.sub('(ttbar)|(tt)', 't#bar{t}', keyProperArrow) # make sure the legend displays the proper kind of arrow-
                 legend.AddEntry(mergedHist , keyProperArrow , "f");
                 #statsTexts.append( keyProperArrow + ": %.1f #pm %.1f" %( getHistIntegralWithUnertainty(mergedHist)) )
-                statsTexts.append( keyProperArrow + ": %.1f" %( mergedHist.Integral() ) )
+
+                if not args.makePaperStylePlots: statsTexts.append( keyProperArrow + ": %.1f" %( mergedHist.Integral() ) )
 
                 if myDSIDHelper.isSignalSample( key ): signalTallyTH1.Add(sortedSamples[key])
                 else:
@@ -1284,7 +1342,7 @@ if __name__ == '__main__':
             backgroundMergedTH1.SetMarkerStyle(0 ) # SetMarkerStyle(0 ) remove marker from combined backgroun
             backgroundMergedTH1.SetFillStyle(3244)#(3001) # fill style: https://root.cern.ch/doc/v614/classTAttFill.html#F2
             backgroundMergedTH1.SetFillColor(1)    # black: https://root.cern.ch/doc/v614/classTAttFill.html#F2
-            #if "m34" in  backgroundTHStack.GetName() :  backgroundTHStack.GetXaxis().SetRangeUser(10, 70)
+            #if "m34" in  backgroundTHStack.GetName() and args.makePaperStylePlots:  backgroundTHStack.GetXaxis().SetRangeUser(10, 66)
 
             legend.AddEntry(backgroundMergedTH1 , "Uncertainty" , "f");
 
@@ -1292,32 +1350,31 @@ if __name__ == '__main__':
             #elif "phi" in backgroundMergedTH1.getTitle: yAxisUnit = " radians"
 
             backgroundTHStack.GetYaxis().SetTitle("Events / " + str(backgroundMergedTH1.GetBinWidth(1) )+" GeV" )
-            backgroundTHStack.GetYaxis().SetTitleSize(0.05)
-            backgroundTHStack.GetYaxis().SetTitleOffset(1.1)
-            backgroundTHStack.GetYaxis().CenterTitle()
+            backgroundTHStack.GetYaxis().SetTitleSize(0.065)
+            backgroundTHStack.GetYaxis().SetTitleOffset(0.85)
+            #backgroundTHStack.GetYaxis().CenterTitle()
             
             #backgroundTHStack.GetXaxis().SetTitleSize(0.12)
             backgroundTHStack.GetXaxis().SetTitleOffset(1.1)
             
                 
-            statsTexts.append( "  " )       
-            statsTexts.append( backgroundYieldText )
+            if not args.makePaperStylePlots: statsTexts.append( "  " ); statsTexts.append( backgroundYieldText )
             #statsTexts.append( "Background : %.1f #pm %.1f" %( getHistIntegralWithUnertainty(backgroundTallyTH1)) + backgroundSystAddendum )
-            if signalTallyTH1.Integral() >0 : statsTexts.append( "Signal: %.1f #pm %.1f" %( getHistIntegralWithUnertainty(signalTallyTH1)) )
+            if signalTallyTH1.Integral() >0 and not args.makePaperStylePlots: statsTexts.append( "Signal: %.1f #pm %.1f" %( getHistIntegralWithUnertainty(signalTallyTH1)) )
 
 
             # use the x-axis label from the original plot in the THStack, needs to be called after 'Draw()'
             #backgroundTHStack.GetXaxis().SetTitle( mergedHist.GetXaxis().GetTitle() )
 
             if gotDataSample: # add data samples
-                dataTH1.Draw("same")
-                #if "m34" in  backgroundTHStack.GetName() :  dataTH1.GetXaxis().SetRangeUser(10, 70)
+                
+                if args.makePaperStylePlots:    dataTH1.Draw("same P")
+                else:                           dataTH1.Draw("same")
+                #if "m34" in  backgroundTHStack.GetName() and args.makePaperStylePlots:  dataTH1.GetXaxis().SetRangeUser(10, 66)
                 #if max(getBinContentsPlusError(dataTH1)) > backgroundTHStack.GetMaximum(): backgroundTHStack.SetMaximum( max(getBinContentsPlusError(dataTH1)) +1 ) # rescale Y axis limit
                 #backgroundTHStack.SetMaximum( max(getBinContentsPlusError(dataTH1)*1.3) )
 
-                legend.AddEntry(currentTH1, "data", "l")
-
-                if dataTH1.Integral >0: statsTexts.append("Data: %.1f #pm %.1f" %( getHistIntegralWithUnertainty(dataTH1) ) )  
+                if dataTH1.Integral >0 and not args.makePaperStylePlots: statsTexts.append("Data: %.1f #pm %.1f" %( getHistIntegralWithUnertainty(dataTH1) ) )  
 
             # rescale Y-axis
             largestYValue = [max(getBinContentsPlusError(backgroundMergedTH1ForRatioHist) )]
@@ -1329,8 +1386,10 @@ if __name__ == '__main__':
             backgroundTHStack.GetXaxis().SetRange(axRangeLow,axRangeHigh)
 
             #statsOffset = (0.6,0.55), statsWidths = (0.3,0.32)
-            statsTPave=ROOT.TPaveText(0.4,0.40,0.9,0.87,"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
-            for stats in statsTexts:   statsTPave.AddText(stats);
+            
+            if args.makePaperStylePlots: statsTPave=setupStatsTPave(statsTexts, boundaries = (0.15,0.75,0.5,0.925)) 
+            else:                        statsTPave=setupStatsTPave(statsTexts)
+
             statsTPave.Draw();
             legend.Draw(); # do legend things
             
@@ -1356,18 +1415,23 @@ if __name__ == '__main__':
 
                 ratioHist = dataTH1.Clone( dataTH1.GetName()+"_Clone" )
                 ratioHist.Divide(backgroundMergedTH1ForRatioHist)
+                centerDataMCRatioPlotAroundZero(ratioHist)
                 ratioHist.GetXaxis().SetRange(axRangeLow, axRangeHigh)
                 ratioHist.SetStats( False) # remove stats box
                 
                 ratioHist.SetTitle("")
-                
+
+                #if "m34" in  backgroundTHStack.GetName() and args.makePaperStylePlots:  ratioHist.GetXaxis().SetRangeUser(10, 66)
+
+                #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
                 ratioHist.GetYaxis().SetNdivisions( 506, True)  # XYY x minor divisions YY major ones, optimizing around these values = TRUE
                 ratioHist.GetYaxis().SetLabelSize(0.1)
 
-                ratioHist.GetYaxis().SetTitle("Data / MC")
+                ratioHist.GetYaxis().SetTitle("Data / MC - 1")
                 ratioHist.GetYaxis().SetTitleSize(0.11)
                 ratioHist.GetYaxis().SetTitleOffset(0.4)
-                ratioHist.GetYaxis().CenterTitle()
+                #ratioHist.GetYaxis().CenterTitle()
 
                 # ratioHist.GetMaximum() , ratioHist.GetMinimum()
                 if ratioHist.GetMaximum() > 5: ratioHist.GetYaxis().SetRangeUser(ratioHist.GetMinimum(), 5)
@@ -1390,7 +1454,7 @@ if __name__ == '__main__':
 
                 ratioHist.Draw()
 
-                if "ZXSR" in backgroundTHStack.GetName(): #== "ZXSR_All_HWindow_m34": 
+                if "ZXSR" in backgroundTHStack.GetName() and backgroundTHStack.GetName() == "ZXSR_All_HWindow_m34": 
                     significanceHist, minSignifiance, maxSignificance = makeSignificancePlots(ratioHist, dataTH1, backgroundMergedTH1ForRatioHist)
 
                     newLowerAxisLimit = min(ratioHist.GetMinimum(), minSignifiance)
@@ -1400,14 +1464,14 @@ if __name__ == '__main__':
 
                     significanceHist.Draw("P same") 
 
-                    lowerLegend = setupTLegend()
-                    lowerLegend.AddEntry(ratioHist, "Data / MC", "p")
-                    lowerLegend.AddEntry(significanceHist, "sign.", "p")
+                    lowerLegend = setupTLegend(boundaries = (0.15,0.88,0.35,0.98))
+                    lowerLegend.AddEntry(ratioHist, "Data/MC-1", "p")
+                    lowerLegend.AddEntry(significanceHist, "significance", "p")
                     lowerLegend.Draw()
 
-                    lowerLegend.SetX2(.3)
+                    #lowerLegend.SetX2(.3)
 
-                    ratioHist.GetYaxis().SetTitle("#splitline{Data / MC,}{significance.}")
+                    ratioHist.GetYaxis().SetTitle("#splitline{Data / MC -1,}{significance}")
                     #ratioHist.GetYaxis().SetTitle("Data / MC, significance")
                     #ratioHist.GetYaxis().CenterTitle(True)
                     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
@@ -1416,10 +1480,13 @@ if __name__ == '__main__':
                 #if "m34" in  ratioHist.GetName() :  ratioHist.GetXaxis().SetRangeUser(10, 70)
             else: backgroundTHStack.GetXaxis().SetTitle( sortedSamples.values()[0].GetXaxis().GetTitle()  )
 
-            #if "m34" in  backgroundTHStack.GetName() :  backgroundTHStack.GetXaxis().SetRangeUser(10, 70)
+            #if "m34" in  backgroundTHStack.GetName() and args.makePaperStylePlots:  backgroundTHStack.GetXaxis().SetRangeUser(10, 66)
 
 
 
+            # adjust xAxis range. There should be a better way identify the hists whose xAxes ranges we need to change.
+            # maybe by somehow iterating over the contents of the canvas where we draw on, but this should work for now
+            if args.makePaperStylePlots: adjustAxesRangesManually( [ratioHist, backgroundTHStack] )
 
             canvas.Update() # we need to update the canvas, so that changes to it (like the drawing of a legend get reflected in its status)
             canvasList.append( copy.deepcopy(canvas) ) # save a deep copy of the canvas for later use
