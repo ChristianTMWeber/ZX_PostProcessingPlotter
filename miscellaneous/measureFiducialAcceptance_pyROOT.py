@@ -68,6 +68,30 @@ def decorateLeptons( photonList, leptonList):
 
     return None
 
+def constructListOfFinalParticles(truthParticles, pdgIdToSelect = [], usePhotonsFromHadrons = False):
+    # https://acode-browser1.usatlas.bnl.gov/lxr/source/athena/PhysicsAnalysis/DerivationFramework/DerivationFrameworkMCTruth/DerivationFrameworkMCTruth/DecayGraphHelper.h#0225
+    # "  //pdgID that are 'good' for dressing: status==1, barcode < 2e5 (for the photons), not from hadron decay,"
+
+    finalStateParticles = []
+
+    # geant 4 barcode offset, now sure what it actually is, but is featured in the reference implementation
+    # https://acode-browser1.usatlas.bnl.gov/lxr/source/athena/PhysicsAnalysis/DerivationFramework/DerivationFrameworkMCTruth/DerivationFrameworkMCTruth/DecayGraphHelper.h#0026
+    g4BarcodeOffset = 200000 
+
+    # make sure pdgIdToSelect is a list
+    if not isinstance(pdgIdToSelect, list): pdgIdToSelect = [pdgIdToSelect]
+
+    for particle in truthParticles:
+        if abs(particle.pdgId()) not in pdgIdToSelect: continue
+        if particle.status()  != 1 :continue # I guess status == 1 means it is a final state particle?
+        if particle.barcode() >= g4BarcodeOffset: continue
+        if not usePhotonsFromHadrons and particle.pdgId() == 22 and 22 in pdgIdToSelect and  particle.parent().isHadron(): continue
+
+        finalStateParticles.append(particle)
+
+    return finalStateParticles
+
+
 def selectBaselineLeptons(leptonList):
 
     baselineLeptons = []
@@ -234,7 +258,6 @@ def getDecayFlavorOfZd(truthParticles):
 
     #                                                                               Zd            pseudoscalar a 
     ZdCandicates = [ particle for particle in truthParticles if particle.pdgId() == 32 or particle.pdgId() == 36 ] 
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
     if len(ZdCandicates) > 0 : return( abs(ZdCandicates[0].child(0).pdgId()) )
     #else:  import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
@@ -296,16 +319,17 @@ if __name__ == '__main__':
 
         truthParticles = evt.retrieve("xAOD::TruthParticleContainer","TruthParticles")  
 
+        # how to retrieve runNumber and eventNumber
+        # evt.retrieve("xAOD::EventInfo","EventInfo").runNumber()
+        # evt.retrieve("xAOD::EventInfo","EventInfo").eventNumber()
 
         ZdDecayFalvor = getDecayFlavorOfZd(truthParticles)
 
         if   ZdDecayFalvor == 11: nEventsInFiducialRegionDict["ZdTruthFlavor_2l2e"]  += 1
         elif ZdDecayFalvor == 13: nEventsInFiducialRegionDict["ZdTruthFlavor_2l2mu"] += 1
 
-        leptons = [ particle for particle in truthParticles if (abs(particle.pdgId()) == 11 or abs(particle.pdgId()) == 13) and not particle.child(0)] # look for not particle.child(0) to find final state leptons
-
-
-        photons = [ particle for particle in truthParticles if (abs(particle.pdgId()) == 22 and not particle.child(0)) ]
+        leptons = constructListOfFinalParticles(truthParticles, pdgIdToSelect = [11,13]) 
+        photons = constructListOfFinalParticles(truthParticles, pdgIdToSelect = [22] ) 
 
 
         leptons4Vec = [ particleToLorenzVector(lep) for lep in leptons ] # we now have a list of ROOT.Math.PxPyPzEVector
