@@ -29,14 +29,14 @@ def makeSubmitScript( shellScriptName):
 
 if __name__ == '__main__':
 
-    #paretnDir = "/usatlas/u/chweber/usatlasdata/Za_signalDAOD/"
+    paretnDir = "/usatlas/u/chweber/usatlasdata/Za_DAOD_samples/"
     #paretnDir = "/usatlas/u/chweber/usatlasdata/ZX_signalDAOD"
-    paretnDir = "/usatlas/u/chweber/usatlasdata/Za_DAOD_samples"
+    #paretnDir = "/usatlas/u/chweber/usatlasdata/ZX_signalDAOD/"
 
     count = 0
 
-    doZX = False
     doZa = True
+    doZX = False#True
 
     doTruthPlots = False
     doFiducialmeasruement = True
@@ -44,9 +44,10 @@ if __name__ == '__main__':
     for (root,dirs,files) in os.walk(paretnDir): 
         for file in files:
 
-            #if "r9315" not in root: continue # select only mc16a
-            #if "r10201" not in root: continue # select only mc16d
-            #if "r10724" not in root: continue # select only mc16e
+            if "r9315"    in root: fileSuffix = "_mc16a" # select only mc16a
+            elif "r10201" in root: fileSuffix = "_mc16d" # select only mc16d
+            elif "r10724" in root: fileSuffix = "_mc16e" # select only mc16e
+            else:                  fileSuffix = ""
 
             if doZX:  regexMatch =  re.search("(?<=Zd)\d\d",root)
             elif doZa:
@@ -61,14 +62,14 @@ if __name__ == '__main__':
 
             if doTruthPlots: 
                 tTreeName = "truthTree_Zd_" + regexMatch.group() + "_GeV"
-                outputName = "ZX_truthTTree_%03i.root" % count
+                outputName = "ZX_truthTTree_%03i_.root" % count
                 submitLine = "python truthPlots_pyROOT.py %s --outputName %s --tTreeName %s --nEventsToProcess %i" %(inputLocation, outputName, tTreeName, -1)
 
             elif doFiducialmeasruement: 
-                outputName = outputName = "ZX_Fiducial_%03i.root" % count
-                histName = "mZd" + regexMatch.group()
+                outputName = outputName = "ZX_Fiducial_%03i%s.root" % (count,fileSuffix)
+                histName = "mZd" + regexMatch.group() + ""
                 if doZa: 
-                    outputName = outputName = "Za_Fiducial_%03i.root" % count
+                    outputName = outputName = "Za_Fiducial_%03i%s.root" % (count,fileSuffix)
                     histName = "ma" + regexMatch.group()
                 #outputName = outputName = "ZX_Fiducial_%03i_mc16e.root" % count
                 submitLine = "python measureFiducialAcceptance_pyROOT.py %s --outputName %s --nEventsToProcess %i --outputHistName %s" %(inputLocation, outputName, -1, histName)
