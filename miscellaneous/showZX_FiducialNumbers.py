@@ -80,7 +80,7 @@ if __name__ == '__main__':
 
     #file = ROOT.TFile( "ZX_FiducialCombined_HiggsTagged.root","OPEN")
     #file = ROOT.TFile( "ZX_FiducialCombined.root","OPEN")
-    file = ROOT.TFile( "ZX_Fiducial_mc16ade.root","OPEN")
+    file = ROOT.TFile( "Za_mc16ade_Fiducial_HiggsWindow.root","OPEN")
 
     
 
@@ -120,7 +120,12 @@ if __name__ == '__main__':
         print outputString
 
 
-    
+    # print out acceptances so I can copy it to the 'plotXSLimit.py'
+    for flavor in acceptances.keys():
+        outStringList = []
+        for mass in sorted(acceptances[flavor].keys()): outStringList.append( str(acceptances[flavor][mass]))
+        print( flavor )
+        print(", ".join(outStringList))
 
     #print(histToDict( histMassDict[55] ))
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
@@ -178,6 +183,6 @@ if __name__ == '__main__':
 
     for fileType in ["png","pdf","root"]: canvas.Print("acceptanceOverview."+fileType)
 
-    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
     print("All Done")
