@@ -80,7 +80,7 @@ if __name__ == '__main__':
 
     #file = ROOT.TFile( "ZX_FiducialCombined_HiggsTagged.root","OPEN")
     #file = ROOT.TFile( "ZX_FiducialCombined.root","OPEN")
-    file = ROOT.TFile( "Za_mc16ade_Fiducial_HiggsWindow.root","OPEN")
+    file = ROOT.TFile( "ZX_Fiducial_mc16ade_HiggsWindow.root","OPEN")
 
     
 
@@ -166,7 +166,8 @@ if __name__ == '__main__':
     canvas = ROOT.TCanvas("AcceptanceOverview", "AcceptanceOverview",int(720*1.47), 720) #,1920/1, 1080)
     ROOT.gPad.SetTickx();ROOT.gPad.SetTicky(); # enable ticks on both side of the plots
 
-
+    canvas.SetLeftMargin(0.2)
+    canvas.SetBottomMargin(0.1)
 
     graphDict["all"].Draw("")
     graphDict["2l2e"].Draw("same")
