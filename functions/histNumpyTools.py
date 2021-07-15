@@ -21,6 +21,15 @@ def histErrorToNPArray(hist):
 
     return outArray
 
+def histBinCenterToNPArray(hist):
+
+    outArray = np.zeros( hist.GetNbinsX() )
+
+    for x in xrange(1,hist.GetNbinsX()+1): # we are ignoring the over and underflow here. Otherweise we would do xrange(0,hist.GetNbinsX()+2)
+        outArray[x-1] = hist.GetBinCenter(x)
+
+    return outArray
+
 def listOfTH1ToNumpyMatrix(listOfTh1):
 
     listOfNumpyArrays = [ histToNPArray(hist) for hist in listOfTh1 ]

@@ -120,6 +120,31 @@ def dictToTGraph(aDict):
 
     return listToTGraph( xList, yList )
 
+def histToTGraph(hist, skipFunction = False):
+
+
+    tGraph = ROOT.TGraphAsymmErrors()
+
+    graphPointCounter = 0
+
+    for binNr in xrange(1,hist.GetNbinsX()+1): 
+
+        x = hist.GetBinCenter(binNr)
+        y = hist.GetBinContent(binNr)
+        yError = hist.GetBinError(binNr)
+
+        if skipFunction:
+            if skipFunction(x,y,yError): continue
+
+        graphPointCounter += 1
+
+        tGraph.SetPoint( graphPointCounter, x, y)
+        tGraph.SetPointError( graphPointCounter, 0,0,yError,  yError )
+
+
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+    return tGraph
 
 
 if __name__ == '__main__':
