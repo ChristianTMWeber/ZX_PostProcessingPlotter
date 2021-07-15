@@ -1186,13 +1186,12 @@ if __name__ == '__main__':
             if systematicChannel != "Nominal" : regionAndChannelString = systematicChannel +" "+ regionAndChannelString
             
             statsTexts.append( "#font[72]{ATLAS} internal")
-            statsTexts.append( "#sqrt{s} = 13 TeV, %.1f fb^{-1}" %( myDSIDHelper.lumiMap[args.mcCampaign] ) ) 
+            statsTexts.append( "#sqrt{s} = 13 TeV, %.0f fb^{-1}" %( myDSIDHelper.lumiMap[args.mcCampaign] ) ) 
 
             statsTexts.append( regionAndChannelString.split(";")[0] )
-            statsTexts.append( regionAndChannelString.split(";")[1] )
-            
 
-            if not args.makePaperStylePlots:  statsTexts.append( "  " ) 
+            if not args.makePaperStylePlots: statsTexts.append( regionAndChannelString.split(";")[1] );  statsTexts.append( "  " ) 
+            else: statsTexts.append( "  " ) 
 
             # use these to report the total number of background and signal samples each later on
             backgroundTallyTH1 = sortedSamples.values()[0].Clone( "backgroundTally")
@@ -1339,6 +1338,7 @@ if __name__ == '__main__':
 
 
             backgroundMergedTH1.Draw("same E2 ")   # "E2" Draw error bars with rectangles:  https://root.cern.ch/doc/v608/classTHistPainter.html
+            backgroundMergedTH1.SetLineColorAlpha(1,0.) # In the legend the unceratinty logo has a black outline, in the figure it does not. This harmonizes it
             backgroundMergedTH1.SetMarkerStyle(0 ) # SetMarkerStyle(0 ) remove marker from combined backgroun
             backgroundMergedTH1.SetFillStyle(3244)#(3001) # fill style: https://root.cern.ch/doc/v614/classTAttFill.html#F2
             backgroundMergedTH1.SetFillColor(1)    # black: https://root.cern.ch/doc/v614/classTAttFill.html#F2
