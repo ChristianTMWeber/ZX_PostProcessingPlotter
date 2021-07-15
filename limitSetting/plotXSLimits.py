@@ -48,15 +48,17 @@ def addATLASBlurp(filename, boundaries = (0.5,0.57,0.9,0.67)):
     activateATLASPlotStyle()
     statsTexts = []
 
-    statsTexts.append( "#font[72]{ATLAS} internal")
+    statsTexts.append( "#font[72]{ATLAS} Internal")
     statsTexts.append( "#sqrt{s} = 13 TeV, %.0f fb^{-1}" %( 139. ) ) 
+    statsTexts.append( "ZX analysis") # https://root.cern/doc/master/classTAttText.html#T1
 
-    if "2l2e" in filename:                         statsTexts.append( "2#mu2e, 4e final states" )
-    elif "2l2mu" in filename:                      statsTexts.append( "4#mu, 2e2#mu final states" )
-    elif "all" in filename or "All" in filename:   statsTexts.append( "4#mu, 2e2#mu, 2#mu2e, 4e final states" )
+    #if "2l2e" in filename:                         statsTexts.append( "2#mu2e, 4e final states" )
+    #elif "2l2mu" in filename:                      statsTexts.append( "4#mu, 2e2#mu final states" )
+    #elif "all" in filename or "All" in filename:   statsTexts.append( "4#mu, 2e2#mu, 2#mu2e, 4e final states" )
 
     statsTPave=ROOT.TPaveText(boundaries[0],boundaries[1],boundaries[2],boundaries[3],"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
     for stats in statsTexts:   statsTPave.AddText(stats);
+    statsTPave.SetTextAlign(12)
     statsTPave.Draw();
 
     return statsTPave
@@ -64,13 +66,16 @@ def addATLASBlurp(filename, boundaries = (0.5,0.57,0.9,0.67)):
 
 def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , colorScheme = None, writeTo = False, YAxisLimits = None, 
                        keepInScopeList = [], smoothPlot = False , yAxisTitle = "Upper 95% CL on #sigma_{H #rightarrow ZZ_{d} #rightarrow 4l} [fb] ", xAxisTitle = "m_{Z_{d}} [GeV]",
-                       makeYAxisLogarithmic = False , legendSuffix = ""):
+                       makeYAxisLogarithmic = False , legendSuffix = "", yAxisTitleSize = 0.045, legendBoundaries = None):
 
-    def setupTLegend():
+    def setupTLegend( boundaries = None):
+
+        if boundaries is None : boundaries = (0.58, 0.68, 0.58+0.3 ,0.68+0.2)
         # set up a TLegend, still need to add the different entries
-        xOffset = 0.58; yOffset = 0.68
-        xWidth  = 0.3; ywidth = 0.2
-        TLegend = ROOT.TLegend(xOffset, yOffset ,xOffset + xWidth, yOffset+ ywidth)
+
+        TLegend = ROOT.TLegend(boundaries[0],boundaries[1],boundaries[2],boundaries[3])
+
+        #TLegend = ROOT.TLegend(xOffset, yOffset ,xOffset + xWidth, yOffset+ ywidth)
         TLegend.SetFillColor(ROOT.kWhite)
         TLegend.SetLineColor(ROOT.kWhite)
         TLegend.SetNColumns(1);
@@ -83,7 +88,7 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
 
     canv, legend = getCanvasAndLegendFromList( keepInScopeList )
 
-    if legend is None: legend = setupTLegend()
+    if legend is None: legend = setupTLegend(boundaries = legendBoundaries)
     if canv   is None: canv = ROOT.TCanvas("GraphOverview", "GraphOverview",int(720*1.47), 720) #,1920/1, 1080)
     else:  reuseCanvas = True
     canv.SetLeftMargin(0.2)
@@ -103,9 +108,9 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
     ROOT.gPad.SetTickx();ROOT.gPad.SetTicky(); # enable ticks on both side of the plots
 
     expectedLimit2Sig.GetYaxis().SetTitle(yAxisTitle)
-    expectedLimit2Sig.GetYaxis().SetTitleSize(0.05)
+    expectedLimit2Sig.GetYaxis().SetTitleSize( yAxisTitleSize )
     expectedLimit2Sig.GetYaxis().SetTitleOffset(1.0)
-    expectedLimit2Sig.GetYaxis().CenterTitle()
+    #expectedLimit2Sig.GetYaxis().CenterTitle()
 
     expectedLimit2Sig.GetXaxis().SetTitle(xAxisTitle)
     expectedLimit2Sig.GetXaxis().SetTitleSize(0.05)
@@ -157,10 +162,10 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
         extractedLimit.Draw(regularTGraphDrawOption + "same")
 
 
-    if extractedLimit is not None: legend.AddEntry(extractedLimit , "#bf{Observed}" +legendSuffix  , "l");
-    legend.AddEntry(expectedLimitMedian , "#bf{Expected}" +legendSuffix , "l");
-    legend.AddEntry(expectedLimit1Sig , "#pm1 #sigma" +legendSuffix , "f");
-    legend.AddEntry(expectedLimit2Sig , "#pm2 #sigma" +legendSuffix , "f");    
+    if extractedLimit is not None: legend.AddEntry(extractedLimit , "Observed" +legendSuffix  , "l");
+    legend.AddEntry(expectedLimitMedian , "Expected" +legendSuffix , "l");
+    legend.AddEntry(expectedLimit1Sig , "Expected #pm1 #sigma" +legendSuffix , "f");
+    legend.AddEntry(expectedLimit2Sig , "Expected #pm2 #sigma" +legendSuffix , "f");    
 
     legend.Draw()
 
@@ -484,10 +489,17 @@ if __name__ == '__main__':
 
     parser.add_argument( "--AddATLASBlurp" , default=False, choices=["all", "All", "2l2e", "2l2mu", "blank", False], help = "Add ATLAS blurp to the figure, include ")
 
-    colorScheme = None
-    #colorScheme = ROOT.kBlue
+    parser.add_argument("--secondInput", type=str, default=False, help="second input files for plots where we show 2l2e and 2l2mu for example")
+
+
 
     args = parser.parse_args()
+
+    ROOT.gROOT.SetBatch(True)
+
+
+    if args.secondInput: colorScheme = ROOT.kBlue
+    else:                colorScheme = None
 
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
@@ -527,58 +539,79 @@ if __name__ == '__main__':
             if isinstance(observedLimitGraph, ROOT.TGraphAsymmErrors): # for some limit setting schemes the upperlimit is given by the upper error of the TGraph. 
                 observedLimitGraph = graphHelper.getTGraphWithoutError( observedLimitGraph , ySetpoint = "yHigh")
 
-        yAxisTitle = "Upper 95% CL on #sigma(H #rightarrow ZZ_{d} #rightarrow 4l) [fb] "
+        yAxisTitlePrefix = "95 % CL upper limit on "
+        yAxisTitle = yAxisTitlePrefix + "#sigma(H #rightarrow ZZ_{d} #rightarrow 4l) [fb] "
         xAxisTitle = "m_{Z_{d}} [GeV]"
 
         #observedLimitGraph = None
 
+        yAxisTitleSize = 0.045
+        blurbBoundaries = (0.58,0.57,0.9,0.67)
+        legendBoundaries = None
+        limitType = None
+
         if args.makeMixingParameterPlot: 
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "mixingParameterLimit" , flavor = args.AddATLASBlurp)
-            yAxisTitle = "Upper 95% CL onkinetic mixing parameter #varepsilon"
+            yAxisTitle = yAxisTitlePrefix + "kinetic mixing parameter #varepsilon"
+            yAxisTitleSize = 0.045
+            blurbBoundaries = (0.3,0.76,0.62,0.86)
+            limitType = "mixingParameterLimit"
         elif args.makeBranchingRatioPlot:
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "brachingRatioLimit", flavor = args.AddATLASBlurp)
-            yAxisTitle = "Upper 95% CL on #frac{#sigma_{H}}{#sigma_{H}^{SM}}B(H #rightarrow ZZd)"  
+            yAxisTitle = yAxisTitlePrefix + "#frac{#sigma_{H}}{#sigma_{H}^{SM}}B(H #rightarrow ZZd)"  
+            limitType = "brachingRatioLimit"
         elif args.makeFiducialXSPlot:
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "fiducialXSLimit", flavor = args.AddATLASBlurp)
-            yAxisTitle = "Upper 95% CL on #sigma_{fid}(H #rightarrow ZX #rightarrow 4l) [fb] "
+            yAxisTitle = yAxisTitlePrefix + "#sigma_{fid}(H #rightarrow ZX #rightarrow 4l) [fb] "
             xAxisTitle = "m_{X} [GeV]"
+            limitType = "fiducialXSLimit"
         elif args.makeMassMixingPlot:
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "massMixingLimit", flavor = args.AddATLASBlurp)
-            yAxisTitle = "Upper 95% CL on #delta^{2} #times BR(Z_{d} #rightarrow 2l)"
+            yAxisTitle = yAxisTitlePrefix + "#delta^{2} #times BR(Z_{d} #rightarrow 2l)"
+            blurbBoundaries = (0.7,0.76,0.93,0.86)
+            legendBoundaries = (0.25, 0.69, 0.25+0.3 ,0.69+0.2)
+            limitType = "massMixingLimit"
         elif args.makeZaLimitPlot:
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "ZaXSLimit", flavor = args.AddATLASBlurp)
-            yAxisTitle = "Upper 95% CL on #sigma(H #rightarrow Za #rightarrow 4l) [fb] "
+            yAxisTitle = yAxisTitlePrefix + "#sigma(H #rightarrow Za #rightarrow 2l2#mu) [fb] "
             xAxisTitle = "m_{a} [GeV]"
+            blurbBoundaries = (0.24,0.76,0.62,0.86)
+            limitType = "ZaXSLimit"
 
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+        if args.secondInput: legendSuffix = ", 2l2e"
+        else:                legendSuffix = ""
 
         
         #makeGraphOverview( observedLimitTGraphNoErrors , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile)
         canv, keepInScopeList = makeGraphOverview(  observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = colorScheme , 
                                                     YAxisLimits = args.YAxis, keepInScopeList = [], smoothPlot = args.smooth ,
-                                                    yAxisTitle = yAxisTitle, makeYAxisLogarithmic = args.logarithmixYAxis, xAxisTitle = xAxisTitle )#, legendSuffix = ", 2l2e") 
+                                                    yAxisTitle = yAxisTitle, makeYAxisLogarithmic = args.logarithmixYAxis, xAxisTitle = xAxisTitle, yAxisTitleSize = yAxisTitleSize, legendBoundaries = legendBoundaries , legendSuffix = legendSuffix) 
 
 
 
-        if args.AddATLASBlurp and args.makeZaLimitPlot: atlasBlurb = addATLASBlurp(args.AddATLASBlurp, boundaries = (0.28,0.76,0.68,0.86)) 
-        elif args.AddATLASBlurp: atlasBlurb = addATLASBlurp(args.AddATLASBlurp) 
+        atlasBlurb = addATLASBlurp(args.AddATLASBlurp, boundaries = blurbBoundaries)
         #atlasBlurb = addATLASBlurp("") 
 
 
         canv.Update()
         #### use this if I wanna plot a second set of limits on top of the first set ###
-        #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-        #expectedLimitTFile = ROOT.TFile( "mc16adeToyResultsV7.37.root", "OPEN") # 2l2e
-        #observedLimitGraphB = expectedLimitTFile.Get("observedLimitGraph")
-        #expectedLimitsGraph_1SigmaB = expectedLimitTFile.Get("expectedLimits_1Sigma")
-        #expectedLimitsGraph_2SigmaB = expectedLimitTFile.Get("expectedLimits_2Sigma")
-        #observedLimitGraphB   , expectedLimitsGraph_1SigmaB, expectedLimitsGraph_2SigmaB = convertXSLimitsToMixingParameterLimits(observedLimitGraphB   , 
-        #                        expectedLimitsGraph_1SigmaB, expectedLimitsGraph_2SigmaB , limitType = "fiducialXSLimit", flavor = "2l2mu")
-        #
-        #canv, keepInScopeList = makeGraphOverview(  observedLimitGraphB  , expectedLimitsGraph_1SigmaB, expectedLimitsGraph_2SigmaB , colorScheme = ROOT.kRed ,
-        #                                             YAxisLimits = args.YAxis, keepInScopeList = keepInScopeList, smoothPlot = args.smooth, 
-        #                                             yAxisTitle = yAxisTitle, xAxisTitle = xAxisTitle, legendSuffix = ", 2l2#mu")
-        #atlasBlurb = addATLASBlurp("") 
+
+        if args.secondInput: 
+            expectedLimitTFile = ROOT.TFile( args.secondInput, "OPEN") # 2l2e
+            observedLimitGraphB = expectedLimitTFile.Get("observedLimitGraph")
+            expectedLimitsGraph_1SigmaB = expectedLimitTFile.Get("expectedLimits_1Sigma")
+            expectedLimitsGraph_2SigmaB = expectedLimitTFile.Get("expectedLimits_2Sigma")
+            #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+            if limitType:
+                observedLimitGraphB   , expectedLimitsGraph_1SigmaB, expectedLimitsGraph_2SigmaB = convertXSLimitsToMixingParameterLimits(observedLimitGraphB   , 
+                                        expectedLimitsGraph_1SigmaB, expectedLimitsGraph_2SigmaB , limitType = limitType, flavor = "2l2mu")
+            #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+            canv, keepInScopeList = makeGraphOverview(  observedLimitGraphB  , expectedLimitsGraph_1SigmaB, expectedLimitsGraph_2SigmaB , colorScheme = ROOT.kRed ,
+                                                         YAxisLimits = args.YAxis, keepInScopeList = keepInScopeList, smoothPlot = args.smooth, 
+                                                         yAxisTitle = yAxisTitle, xAxisTitle = xAxisTitle, legendSuffix = ", 2l2#mu")
+            atlasBlurb = addATLASBlurp("",boundaries = blurbBoundaries) 
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
         #expectedLimitTFile = ROOT.TFile( "mc16adeToyResultsV7.37.root", "OPEN") # 2l2mu
         #observedLimitGraphC = expectedLimitTFile.Get("observedLimitGraph")
