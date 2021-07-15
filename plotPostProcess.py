@@ -33,6 +33,8 @@ import makeReducibleShapes.makeReducibleShapes as makeReducibleShapes
 from functions.varibleSizeRebinHelper import varibleSizeRebinHelper # to help me make variable sized bins
 import functions.rootDictAndTDirTools as rootDictAndTDirTools
 
+import functions.tGraphHelpers as tGraphHelpers
+
 class DSIDHelper:
 
     # define a groupings of DSIDS, e.g. if we wanna group DSIDs by 'physicsProcess', then one of those groups is called "H->ZZ*->4l" and contains the DSIDs 341964, 341947, etc...
@@ -1321,8 +1323,6 @@ if __name__ == '__main__':
 
                 nominalYield = backgroundMergedTH1.Integral()
 
-
-
                 backgroundSystAddendum += "_{stat} #pm %.1f_{sys}" %(   (upSysYield - downSysYield)/2)
 
                 backgroundYieldText = "Background: %.1f #pm %.1f" %( nominalYield, (upSysYield - downSysYield)/2)
@@ -1333,9 +1333,6 @@ if __name__ == '__main__':
                     backgroundMergedTH1ForRatioHist.SetBinError(binNr, newBinError )
                     backgroundMergedTH1.SetBinError(binNr,  (upSysHist.GetBinContent(binNr)- downSysHist.GetBinContent(binNr))/2 )
             ################# add in systematic uncertainties #################
-
-            
-
 
             backgroundMergedTH1.Draw("same E2 ")   # "E2" Draw error bars with rectangles:  https://root.cern.ch/doc/v608/classTHistPainter.html
             backgroundMergedTH1.SetLineColorAlpha(1,0.) # In the legend the unceratinty logo has a black outline, in the figure it does not. This harmonizes it
@@ -1356,23 +1353,17 @@ if __name__ == '__main__':
             
             #backgroundTHStack.GetXaxis().SetTitleSize(0.12)
             backgroundTHStack.GetXaxis().SetTitleOffset(1.1)
-            
                 
             if not args.makePaperStylePlots: statsTexts.append( "  " ); statsTexts.append( backgroundYieldText )
             #statsTexts.append( "Background : %.1f #pm %.1f" %( getHistIntegralWithUnertainty(backgroundTallyTH1)) + backgroundSystAddendum )
             if signalTallyTH1.Integral() >0 and not args.makePaperStylePlots: statsTexts.append( "Signal: %.1f #pm %.1f" %( getHistIntegralWithUnertainty(signalTallyTH1)) )
 
-
-            # use the x-axis label from the original plot in the THStack, needs to be called after 'Draw()'
-            #backgroundTHStack.GetXaxis().SetTitle( mergedHist.GetXaxis().GetTitle() )
-
             if gotDataSample: # add data samples
-                
-                if args.makePaperStylePlots:    dataTH1.Draw("same P")
-                else:                           dataTH1.Draw("same")
-                #if "m34" in  backgroundTHStack.GetName() and args.makePaperStylePlots:  dataTH1.GetXaxis().SetRangeUser(10, 66)
-                #if max(getBinContentsPlusError(dataTH1)) > backgroundTHStack.GetMaximum(): backgroundTHStack.SetMaximum( max(getBinContentsPlusError(dataTH1)) +1 ) # rescale Y axis limit
-                #backgroundTHStack.SetMaximum( max(getBinContentsPlusError(dataTH1)*1.3) )
+
+                dataTGrapth = tGraphHelpers.histToTGraph(dataTH1, skipFunction = lambda x,y,yError : y==0)
+                dataTGrapth.Draw("same P")
+                #dataTGrapth.SetLineColor(ROOT.kRed); dataTGrapth.SetMarkerColor(ROOT.kRed)
+                dataTGrapth.SetLineWidth(2)
 
                 if dataTH1.Integral >0 and not args.makePaperStylePlots: statsTexts.append("Data: %.1f #pm %.1f" %( getHistIntegralWithUnertainty(dataTH1) ) )  
 
@@ -1384,8 +1375,6 @@ if __name__ == '__main__':
             #rescale X-axis
             axRangeLow, axRangeHigh = histHelper.getFirstAndLastNonEmptyBinInHist(backgroundTHStack, offset = 1)
             backgroundTHStack.GetXaxis().SetRange(axRangeLow,axRangeHigh)
-
-            #statsOffset = (0.6,0.55), statsWidths = (0.3,0.32)
             
             if args.makePaperStylePlots: statsTPave=setupStatsTPave(statsTexts, boundaries = (0.15,0.75,0.5,0.925)) 
             else:                        statsTPave=setupStatsTPave(statsTexts)
