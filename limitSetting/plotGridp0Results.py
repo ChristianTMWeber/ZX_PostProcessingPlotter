@@ -59,7 +59,7 @@ def getNSigmaGraph( nSigma, xPoints):
     #nSigmaGrpah.SetLineStyle( int(round(nSigma)) +1) # https://root.cern.ch/doc/master/classTAttLine.html#L3
     nSigmaGrpah.SetLineStyle( 2) # https://root.cern.ch/doc/master/classTAttLine.html#L3
 
-    p0Graph.SetLineWidth(2)
+    #nSigmaGrpah.SetLineWidth(2)
     nSigmaGrpah.SetLineColor( ROOT.kRed)
 
     return nSigmaGrpah
@@ -96,6 +96,44 @@ def globalP0Estimate(p0Dict,  localp0Val, refSignifiance = 1):
 
     return globalP0, globalP0Error
 
+def activateATLASPlotStyle():
+    # runs the root macro that defines the ATLAS style, and checks that it is active
+    # relies on a seperate style macro
+    ROOT.gROOT.ProcessLine(".x ../atlasStyle.C")
+
+    if "ATLAS" in ROOT.gStyle.GetName(): print("ROOT.gStyle: ATLAS style loaded!")
+    else:                                warnings.warn("Did not load ATLAS style properly")
+
+    return None
+
+def addATLASBlurp(boundaries = (0.5,0.57,0.9,0.67)):
+
+    activateATLASPlotStyle()
+    statsTexts = []
+
+    statsTexts.append( "#font[72]{ATLAS} Internal")
+    statsTexts.append( "#sqrt{s} = 13 TeV, %.0f fb^{-1}" %( 139. ) ) 
+    statsTexts.append( "ZX significances") # https://root.cern/doc/master/classTAttText.html#T1
+
+
+    statsTPave=ROOT.TPaveText(boundaries[0],boundaries[1],boundaries[2],boundaries[3],"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
+    for stats in statsTexts:   statsTPave.AddText(stats);
+    statsTPave.Draw();
+
+    return statsTPave
+
+def setupTLegend( nColumns = 2, boundaries = (0.15,0.70,0.55,0.95)):
+    # set up a TLegend, still need to add the different entries
+    # boundaries = (lowLimit X, lowLimit Y, highLimit X, highLimit Y)
+
+    TLegend = ROOT.TLegend(boundaries[0],boundaries[1],boundaries[2],boundaries[3])
+    TLegend.SetFillColor(ROOT.kWhite)
+    TLegend.SetLineColor(ROOT.kWhite)
+    TLegend.SetNColumns(nColumns);
+    TLegend.SetFillStyle(0);  # make legend background transparent
+    TLegend.SetBorderSize(0); # and remove its border without a border
+
+    return TLegend
 
 if __name__ == '__main__':
 
@@ -133,7 +171,7 @@ if __name__ == '__main__':
 
     globalP0Value = globalP0Estimate(p0Dict, min(p0Dict.values()) , refSignifiance = 0)
 
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
 
     for mass in sorted(p0Dict.keys()):     
@@ -141,9 +179,7 @@ if __name__ == '__main__':
 
         signifianceValue = p0ToSignificane( p0Value )
 
-        print( mass, p0Value, signifianceValue)
-
-        
+        #print( mass, p0Value, signifianceValue)
 
         if p0Value == 0: continue
 
@@ -153,17 +189,21 @@ if __name__ == '__main__':
     sigmaGraphLimits = [p0Graph.GetXaxis().GetXmin(),p0Graph.GetXaxis().GetXmax()]
 
     graph_1Sigma = getNSigmaGraph( 1, [p0Graph.GetXaxis().GetXmin(),p0Graph.GetXaxis().GetXmax()])
-    graph_2Sigma = getNSigmaGraph( 2, p0Dict.keys())
-    graph_3Sigma = getNSigmaGraph( 2.9, p0Dict.keys())
+    graph_2Sigma = getNSigmaGraph( 2, [p0Graph.GetXaxis().GetXmin(),p0Graph.GetXaxis().GetXmax()])
+    graph_3Sigma = getNSigmaGraph( 3, [p0Graph.GetXaxis().GetXmin(),p0Graph.GetXaxis().GetXmax()])
 
-    
-    graph_2Sigma.GetYaxis().SetTitle("Local p_{0}")
-    graph_2Sigma.GetXaxis().SetTitle("m_{X} [GeV]")
-    graph_2Sigma.GetYaxis().SetTitleSize(0.06)
-    graph_2Sigma.GetXaxis().SetTitleSize(0.05)
-    graph_2Sigma.GetYaxis().SetTitleOffset(0.8)
-    graph_2Sigma.GetXaxis().SetTitleOffset(0.85)
-    graph_2Sigma.GetXaxis().SetRangeUser(min(p0Dict.keys()),max(p0Dict.keys()))
+
+    listOfAllGraphes = [graph_1Sigma, graph_2Sigma, graph_3Sigma, p0Graph]
+
+    for graph in listOfAllGraphes:
+        graph.GetYaxis().SetTitle("Local p_{0}")
+        graph.GetXaxis().SetTitle("m_{X} [GeV]")
+        graph.GetYaxis().SetTitleSize(0.06)
+        graph.GetXaxis().SetTitleSize(0.05)
+        graph.GetYaxis().SetTitleOffset(0.4)
+        graph.GetXaxis().SetTitleOffset(0.85)
+        graph.GetXaxis().SetRangeUser(min(p0Dict.keys()),max(p0Dict.keys()))
+        graph.GetYaxis().SetRangeUser(1E-3,8)
 
 
 
@@ -172,19 +212,31 @@ if __name__ == '__main__':
 
     canv =  ROOT.TCanvas("GraphOverview", "GraphOverview",int(720*1.47), 720) #,1920/1, 1080)
     canv.SetLogy()
-    canv.SetLeftMargin(0.15)
+    canv.SetLeftMargin(0.10)
     #canv.SetBottomMargin(0.1)
 
+    p0Graph.GetYaxis().SetRangeUser(1E-3,8)
+    p0Graph.SetMarkerStyle(ROOT.kFullDotMedium)
+    p0Graph.Draw("")
 
-    #graph_3Sigma.Draw()
-    graph_2Sigma.Draw()
+    graph_3Sigma.Draw("same")
+    graph_2Sigma.Draw("same")
     graph_1Sigma.Draw("same")
 
     
+    atlasBlurb = addATLASBlurp(boundaries = (0.01,0.78,0.5,0.88))
 
-    p0Graph.Draw("same * L")
-    
+    legend = setupTLegend( nColumns = 1, boundaries = (0.6,0.80,0.9,0.85))
+    legend.AddEntry(graph_1Sigma, "Local significance", "l")
 
+    legend.Draw()
+
+    latexText = ROOT.TLatex()
+    #latexText.SetTextAlign(10)
+
+    latexText.DrawLatex(45,significanceToP0( 1)+1E-2,"#scale[1]{#color[2]{1#sigma}}")
+    latexText.DrawLatex(45,significanceToP0( 2)+1E-3,"#scale[1]{#color[2]{2#sigma}}")
+    latexText.DrawLatex(45,significanceToP0( 3)+1E-4,"#scale[1]{#color[2]{3#sigma}}")
 
     canv.Update()
 
@@ -196,4 +248,4 @@ if __name__ == '__main__':
 
 
 
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
