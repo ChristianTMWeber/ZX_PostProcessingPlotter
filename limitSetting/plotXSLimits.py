@@ -376,7 +376,7 @@ def convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimits
         for x in xrange( len(massPointList) ): 
             if massPointList[x] > 30: break # don't have signal samples for ma > 30 GeV
             acceptance = interpolator1D( xList, acceptances[flavor], massPointList[x] ) 
-            fiducialXSLimits.append( XSLimitList[x] / acceptance) 
+            fiducialXSLimits.append( fiducialLimits[x] / acceptance) 
 
         return fiducialXSLimits
 
