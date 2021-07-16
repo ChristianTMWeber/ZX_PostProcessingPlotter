@@ -131,8 +131,7 @@ def dictToTGraph(aDict):
 
     return listToTGraph( xList, yList )
 
-def histToTGraph(hist, skipFunction = False):
-
+def histToTGraph(hist, skipFunction = False, errorFunction = None):
 
     tGraph = ROOT.TGraphAsymmErrors()
 
@@ -142,15 +141,19 @@ def histToTGraph(hist, skipFunction = False):
 
         x = hist.GetBinCenter(binNr)
         y = hist.GetBinContent(binNr)
-        yError = hist.GetBinError(binNr)
+
+        if errorFunction is None: 
+            yErrorLow  = hist.GetBinError(binNr)
+            yErrorHigh = hist.GetBinError(binNr)
+
+        else: yErrorLow, yErrorHigh = errorFunction(x,y)
 
         if skipFunction:
-            if skipFunction(x,y,yError): continue
-
-        graphPointCounter += 1
+            if skipFunction(x,y,yErrorLow,yErrorHigh): continue
 
         tGraph.SetPoint( graphPointCounter, x, y)
-        tGraph.SetPointError( graphPointCounter, 0,0,yError,  yError )
+        tGraph.SetPointError( graphPointCounter, 0,0, yErrorLow,  yErrorHigh )
+        graphPointCounter += 1
 
 
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
