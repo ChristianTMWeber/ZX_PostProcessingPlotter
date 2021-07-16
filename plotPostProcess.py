@@ -908,9 +908,21 @@ def adjustAxesRangesManually(hist):
         elif "m34" in histName and "ZXVR1" in histName:  hist.GetXaxis().SetRangeUser(4, 48)
         elif "m34" in histName and "ZXVR2" in histName:  hist.GetXaxis().SetRangeUser(10, 88)
 
-
     return None
 
+def getAsymmetricPoissonError(nObserved): # based on code from Michel Lefebvre 
+
+    if nObserved == 0: return 0, 1.14791 # one-sided upper limit, 68.27% CL
+    alpha = 0.3173; # 1sigma, PDG 40.4.2.2 Gaussian distributed measurements Table 40.1
+    alphaLoUp = alpha/2; # Central CI, PDG 40.4.2.3 Poisson or binomial data Eq 40.76ab
+
+    lowerConfidenceLimit =  0.5*ROOT.TMath.ChisquareQuantile(alphaLoUp, 2*nObserved)
+    upperConfidenceLimit =  0.5*ROOT.TMath.ChisquareQuantile(1-alphaLoUp, 2*(nObserved+1))
+
+    lowError  =  nObserved - lowerConfidenceLimit
+    highError =  upperConfidenceLimit - nObserved
+
+    return lowError, highError
 if __name__ == '__main__':
 
     from functions.compareVersions import compareVersions # to compare root versions
@@ -1360,7 +1372,7 @@ if __name__ == '__main__':
 
             if gotDataSample: # add data samples
 
-                dataTGrapth = tGraphHelpers.histToTGraph(dataTH1, skipFunction = lambda x,y,yError : y==0)
+                dataTGrapth = tGraphHelpers.histToTGraph(dataTH1, skipFunction = lambda x,y,yErrorLow,yErrorHigh : y==0, errorFunction = lambda x,y : getAsymmetricPoissonError(y) )
                 dataTGrapth.Draw("same P")
                 #dataTGrapth.SetLineColor(ROOT.kRed); dataTGrapth.SetMarkerColor(ROOT.kRed)
                 dataTGrapth.SetLineWidth(2)
