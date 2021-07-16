@@ -923,6 +923,40 @@ def getAsymmetricPoissonError(nObserved): # based on code from Michel Lefebvre
     highError =  upperConfidenceLimit - nObserved
 
     return lowError, highError
+
+
+def makeAsymmetricDataMCRatioTGraph(dataTGrapth, expectedBackgroundTH1, dataTH1):
+
+    xList, yList, yLowList, yHighLowList = tGraphHelpers.tGraphToList(dataTGrapth , ySetpoint = "yLowAndYHigh")
+
+    backgroundHistBinCenters = histNumpyTools.histBinCenterToNPArray(expectedBackgroundTH1)
+    backgroundHistContents   = histNumpyTools.histToNPArray(expectedBackgroundTH1)
+
+    backgroundBinCenterToContentMap = {}
+
+    for x in range(0, len(backgroundHistBinCenters)): backgroundBinCenterToContentMap[ backgroundHistBinCenters[x] ] = backgroundHistContents[x]
+
+
+    asymmetricDataMCRatioTGraph = ROOT.TGraphAsymmErrors()
+
+    for index in range(0, len(xList) ):
+
+        xVal = xList[index]
+
+        mcYield = backgroundBinCenterToContentMap[ xVal ] 
+
+        y = yList[index]/mcYield
+        yLow  = yLowList[index]/mcYield
+        yHigh = yHighLowList[index]/mcYield
+
+        asymmetricDataMCRatioTGraph.SetPoint( index, xVal, y)
+        asymmetricDataMCRatioTGraph.SetPointError( index, 0,0, y-yLow,  yHigh-y )
+
+    return asymmetricDataMCRatioTGraph
+
+
+
+
 if __name__ == '__main__':
 
     from functions.compareVersions import compareVersions # to compare root versions
@@ -1414,28 +1448,35 @@ if __name__ == '__main__':
                 ratioPad.Draw();              # Draw the upper pad: pad1
                 ratioPad.cd();                # pad1 becomes the current pad
 
-                ratioHist = dataTH1.Clone( dataTH1.GetName()+"_Clone" )
-                ratioHist.Divide(backgroundMergedTH1ForRatioHist)
-                centerDataMCRatioPlotAroundZero(ratioHist)
-                ratioHist.GetXaxis().SetRange(axRangeLow, axRangeHigh)
-                ratioHist.SetStats( False) # remove stats box
-                
-                ratioHist.SetTitle("")
+                # make histogram that contains the background expectation, but with zero error
+                # this is such that when we make data/mc ratios we don't mix their uncertainties
+                backgroundHistZeroError = backgroundMergedTH1ForRatioHist.Clone( "backgroundZeroError"  )
+                # set the error to zero, so that we don't dount it twice when taking the ratio
+                for binNr in xrange(1,backgroundHistZeroError.GetNbinsX()+1): backgroundHistZeroError.SetBinError(binNr,0)
 
-                #if "m34" in  backgroundTHStack.GetName() and args.makePaperStylePlots:  ratioHist.GetXaxis().SetRangeUser(10, 66)
 
-                #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+                # make data/mc ratio histogram
+                ratioHist = dataTH1.Clone( dataTH1.GetName()+"_data/mc" )
+                ratioHist.Divide(backgroundHistZeroError)
+                #centerDataMCRatioPlotAroundZero(ratioHist)
 
-                ratioHist.GetYaxis().SetNdivisions( 506, True)  # XYY x minor divisions YY major ones, optimizing around these values = TRUE
-                ratioHist.GetYaxis().SetLabelSize(0.1)
+                mcRelativeErrorHist = backgroundMergedTH1ForRatioHist.Clone( dataTH1.GetName() +"_mcRelError")
 
-                ratioHist.GetYaxis().SetTitle("Data / MC - 1")
-                ratioHist.GetYaxis().SetTitleSize(0.11)
-                ratioHist.GetYaxis().SetTitleOffset(0.4)
-                #ratioHist.GetYaxis().CenterTitle()
+                mcRelativeErrorHist.Divide(backgroundHistZeroError)
 
-                # ratioHist.GetMaximum() , ratioHist.GetMinimum()
-                if ratioHist.GetMaximum() > 5: ratioHist.GetYaxis().SetRangeUser(ratioHist.GetMinimum(), 5)
+
+                mcRelativeErrorHist.SetLineColorAlpha(1,0.) # In the legend the unceratinty logo has a black outline, in the figure it does not. This harmonizes it
+                mcRelativeErrorHist.SetMarkerStyle(0 ) # SetMarkerStyle(0 ) remove marker from combined backgroun
+                mcRelativeErrorHist.SetFillStyle(3244)#(3001) # fill style: https://root.cern.ch/doc/v614/classTAttFill.html#F2
+                mcRelativeErrorHist.SetFillColor(1)    # black: https://root.cern.ch/doc/v614/classTAttFill.html#F2
+
+                #ratioTGrapth = tGraphHelpers.histToTGraph(ratioHist, skipFunction = lambda x,y,yErrorLow,yErrorHigh : y==0)
+                ratioTGrapth = makeAsymmetricDataMCRatioTGraph(dataTGrapth,backgroundHistZeroError, dataTH1)
+
+
+                ### estimate range of Y-Axis ###
+
+                #if ratioHist.GetMaximum() > 5: ratioHist.GetYaxis().SetRangeUser(ratioHist.GetMinimum(), 5)
                 maxRatioVal , _ = histHelper.getMaxBin(ratioHist , useError = True, skipZeroBins = True)
                 minRatioVal , _ = histHelper.getMinBin(ratioHist , useError = True, skipZeroBins = True)
 
@@ -1443,27 +1484,79 @@ if __name__ == '__main__':
 
                 if maxRatioVal > 5.5: maxRatioVal = 5
 
-                if maxRatioVal is not None and minRatioVal is not None:
-                    ratioHist.GetYaxis().SetRangeUser(minRatioVal * 0.9, maxRatioVal * 1.1)
+                for TObject in [ratioHist, ratioTGrapth, mcRelativeErrorHist]:
 
-
-
-                ratioHist.GetXaxis().SetLabelSize(0.12)
-                ratioHist.GetXaxis().SetTitleSize(0.13)
-                ratioHist.GetXaxis().SetTitleOffset(1.0)
+                    TObject.GetXaxis().SetRange(axRangeLow, axRangeHigh)
                 
+                    TObject.SetTitle("")
 
-                ratioHist.Draw()
+                    TObject.GetYaxis().SetNdivisions( 506, True)  # XYY x minor divisions YY major ones, optimizing around these values = TRUE
+                    TObject.GetYaxis().SetLabelSize(0.1)
 
-                if "ZXSR" in backgroundTHStack.GetName() and backgroundTHStack.GetName() == "ZXSR_All_HWindow_m34": 
+                    TObject.GetYaxis().SetTitle("Data / MC")
+                    TObject.GetYaxis().SetTitleSize(0.11)
+                    TObject.GetYaxis().SetTitleOffset(0.4)
+                    TObject.GetXaxis().SetLabelSize(0.12)
+                    TObject.GetXaxis().SetTitleSize(0.13)
+                    TObject.GetXaxis().SetTitleOffset(1.0)
+
+                    if maxRatioVal is not None and minRatioVal is not None:
+                      TObject.GetYaxis().SetRangeUser(minRatioVal * 0.9, maxRatioVal * 1.1)
+
+                    if isinstance(TObject, ROOT.TH1): TObject.SetStats( False) # remove stats box
+
+
+                mcRelativeErrorHist.Draw("E2 ")   # "E2" Draw error bars with rectangles:  https://root.cern.ch/doc/v608/classTHistPainter.html
+                #ratioHist.Draw("same ")
+
+                mcRelativeErrorHist.GetXaxis().SetRangeUser(50, 100)
+
+                
+                ratioTGrapth.Draw("SAME P")
+                ratioTGrapth.SetLineWidth(2)
+
+                ROOT.gPad.RedrawAxis("G") # to make sure that the Axis ticks are above the histograms
+                ROOT.gPad.RedrawAxis()
+
+                canvas.Update() # we need to update the canvas, so that changes to it (like the drawing of a legend get reflected in its status)
+
+                #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+                #ratioTGrapth.SetLineColor(ROOT.kRed); ratioTGrapth.SetMarkerColor(ROOT.kRed)
+
+                #ratioHist.Draw()
+       
+                #ratioTGrapth.SetLineColor(ROOT.kRed); ratioTGrapth.SetMarkerColor(ROOT.kRed)
+
+
+                if "ZXSR" in backgroundTHStack.GetName() and backgroundTHStack.GetName() == "ZXSR_All_HWindow_m34" and not args.makePaperStylePlots: 
                     significanceHist, minSignifiance, maxSignificance = makeSignificancePlots(ratioHist, dataTH1, backgroundMergedTH1ForRatioHist)
 
                     newLowerAxisLimit = min(ratioHist.GetMinimum(), minSignifiance)
                     newUpperAxisLimit = max(ratioHist.GetMaximum(), maxSignificance)
 
-                    ratioHist.GetYaxis().SetRangeUser(newLowerAxisLimit, newUpperAxisLimit)
+                    #significanceHist.GetYaxis().SetRangeUser(newLowerAxisLimit, newUpperAxisLimit)
 
-                    significanceHist.Draw("P same") 
+
+                    significanceHist.SetStats( False) # remove stats box
+                    
+                    significanceHist.SetTitle("")
+
+                    significanceHist.GetYaxis().SetNdivisions( 506, True)  # XYY x minor divisions YY major ones, optimizing around these values = TRUE
+                    significanceHist.GetYaxis().SetLabelSize(0.1)
+
+                    significanceHist.GetYaxis().SetTitle("Data / MC - 1")
+                    significanceHist.GetYaxis().SetTitleSize(0.11)
+                    significanceHist.GetYaxis().SetTitleOffset(0.4)
+                    if maxRatioVal is not None and minRatioVal is not None:
+                        significanceHist.GetYaxis().SetRangeUser(minRatioVal * 0.9, maxRatioVal * 1.1)
+                    significanceHist.GetXaxis().SetLabelSize(0.12)
+                    significanceHist.GetXaxis().SetTitleSize(0.13)
+                    significanceHist.GetXaxis().SetTitleOffset(1.0)
+                    if args.makePaperStylePlots: adjustAxesRangesManually( [ significanceHist] )
+
+                    significanceHist.Draw("P") 
+
+
 
                     lowerLegend = setupTLegend(boundaries = (0.15,0.88,0.35,0.98))
                     lowerLegend.AddEntry(ratioHist, "Data/MC-1", "p")
@@ -1473,12 +1566,16 @@ if __name__ == '__main__':
                     #lowerLegend.SetX2(.3)
 
                     ratioHist.GetYaxis().SetTitle("#splitline{Data / MC -1,}{significance}")
+                    significanceHist.GetYaxis().SetTitle("#splitline{Data / MC -1,}{significance}")
                     #ratioHist.GetYaxis().SetTitle("Data / MC, significance")
                     #ratioHist.GetYaxis().CenterTitle(True)
                     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
+    
 
                 #if "m34" in  ratioHist.GetName() :  ratioHist.GetXaxis().SetRangeUser(10, 70)
+
+
             else: backgroundTHStack.GetXaxis().SetTitle( sortedSamples.values()[0].GetXaxis().GetTitle()  )
 
             #if "m34" in  backgroundTHStack.GetName() and args.makePaperStylePlots:  backgroundTHStack.GetXaxis().SetRangeUser(10, 66)
@@ -1487,7 +1584,7 @@ if __name__ == '__main__':
 
             # adjust xAxis range. There should be a better way identify the hists whose xAxes ranges we need to change.
             # maybe by somehow iterating over the contents of the canvas where we draw on, but this should work for now
-            if args.makePaperStylePlots: adjustAxesRangesManually( [ratioHist, backgroundTHStack] )
+            if args.makePaperStylePlots: adjustAxesRangesManually( [ backgroundTHStack, mcRelativeErrorHist] ) #ratioHist,
 
             canvas.Update() # we need to update the canvas, so that changes to it (like the drawing of a legend get reflected in its status)
             canvasList.append( copy.deepcopy(canvas) ) # save a deep copy of the canvas for later use
