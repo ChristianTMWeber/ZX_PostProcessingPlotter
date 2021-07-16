@@ -74,19 +74,30 @@ def tGraphToList(TGraph , ySetpoint = "median"):
 
     xCopy =ROOT.Double() # use these for pass by reference
     yCopy = ROOT.Double() # use these for pass by reference
+    yLowCopy = ROOT.Double() # use these for pass by reference
+    yHighCopy = ROOT.Double() # use these for pass by reference
 
     xList = []
     yList = []
+    yLowList = []
+    yHighLowList = []
 
     for n in xrange(0,TGraph.GetN() ): 
         TGraph.GetPoint(n,xCopy,yCopy)
         if   ySetpoint == "yHigh": yCopy = ROOT.Double( yCopy + TGraph.GetErrorYhigh(n) )
         elif ySetpoint == "yLow":  yCopy = ROOT.Double( yCopy - TGraph.GetErrorYlow(n) )
+        elif ySetpoint == "yLowAndYHigh":  
+            yLowCopy = ROOT.Double( yCopy - TGraph.GetErrorYlow(n) )
+            yHighCopy = ROOT.Double( yCopy + TGraph.GetErrorYhigh(n) )
 
         xList.append( float(xCopy))
         yList.append( float(yCopy))
+        yLowList.append(float(yLowCopy))
+        yHighLowList.append(float(yHighCopy))
 
-    return xList, yList
+
+    if ySetpoint == "yLowAndYHigh": return xList, yList, yLowList, yHighLowList
+    else: return xList, yList
 
 def listToTGraph( xList, yList, yLowList = None, yHighList = None ):
 
