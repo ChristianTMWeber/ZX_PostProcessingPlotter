@@ -23,6 +23,7 @@
 
 # ignore compressed folders that I might have
 *.zip
+*.tar
 
 # ignote files related to condor submissions
 *.sh
