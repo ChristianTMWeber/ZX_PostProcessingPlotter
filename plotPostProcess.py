@@ -1052,13 +1052,13 @@ if __name__ == '__main__':
     parser.add_argument( "--h4lScale", type=float, default= 1. , 
     help = "Scale the cross section of the h4l background by this factor. Usefull for setting the H4l background to a postfit value" ) 
 
-
+    parser.add_argument( "--plotZXSignal", default=False, action='store_true' , 
+    help = "Enables the plottong of ZX signal" ) 
 
     startTime = time.time() 
 
     args = parser.parse_args()
 
-    skipZX = True
     skipZdZd = True
     skipZjets = False
     skipReducible = args.skipReducible
@@ -1138,9 +1138,9 @@ if __name__ == '__main__':
         for ZJetDISD in  myDSIDHelper.ZJetDSIDs:
             if ZJetDISD in DSIDsToConsider:   DSIDsToConsider.remove(ZJetDISD)
 
-    # ZZd samples                   m_Zd    15 GeV  20 GeV  25 GeV  30 GeV  35 GeV  40 GeV  45 GeV  50 GeV  55 GeV  
-    #                                       343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242
-    if not skipZX : DSIDsToConsider.extend([343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242])
+    # ZZd samples                          m_Zd    15 GeV  20 GeV  25 GeV  30 GeV  35 GeV  40 GeV  45 GeV  50 GeV  55 GeV  
+    #                                              343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242
+    if args.plotZXSignal : DSIDsToConsider.extend([        343235,                 343238,                         343242])
 
 
 
