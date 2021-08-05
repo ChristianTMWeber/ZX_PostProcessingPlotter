@@ -51,15 +51,15 @@ class DSIDHelper:
                                      410142]
                     }
 
-    physicsProcessSignal = {"ZZd, m_{Zd} = 15GeV" : [343234],
-                            "ZZd, m_{Zd} = 20GeV" : [343235],
-                            "ZZd, m_{Zd} = 25GeV" : [343236],
-                            "ZZd, m_{Zd} = 30GeV" : [343237],
-                            "ZZd, m_{Zd} = 35GeV" : [343238],
-                            "ZZd, m_{Zd} = 40GeV" : [343239],
-                            "ZZd, m_{Zd} = 45GeV" : [343240],
-                            "ZZd, m_{Zd} = 50GeV" : [343241],
-                            "ZZd, m_{Zd} = 55GeV" : [343242],
+    physicsProcessSignal = {"ZZd, m_{Zd} = 15 GeV" : [343234],
+                            "ZZd, m_{Zd} = 20 GeV" : [343235],
+                            "ZZd, m_{Zd} = 25 GeV" : [343236],
+                            "ZZd, m_{Zd} = 30 GeV" : [343237],
+                            "ZZd, m_{Zd} = 35 GeV" : [343238],
+                            "ZZd, m_{Zd} = 40 GeV" : [343239],
+                            "ZZd, m_{Zd} = 45 GeV" : [343240],
+                            "ZZd, m_{Zd} = 50 GeV" : [343241],
+                            "ZZd, m_{Zd} = 55 GeV" : [343242],
                             "ZdZd, m_{Zd} =0.5GeV" : [302073],
                             "ZdZd, m_{Zd} =  1GeV" : [302074],
                             "ZdZd, m_{Zd} =  2GeV" : [302075],
@@ -446,16 +446,33 @@ def setupTLegend( nColumns = 2, boundaries = (0.15,0.70,0.55,0.95)):
     TLegend.SetFillStyle(0);  # make legend background transparent
     TLegend.SetBorderSize(0); # and remove its border without a border
 
+    ROOT.gStyle.SetLegendTextSize(0.038)
+
     return TLegend
 
 def setupStatsTPave(statsTextList, boundaries = (0.4,0.40,0.9,0.87)):
     # boundaries = (lowLimit X, lowLimit Y, highLimit X, highLimit Y)
 
-    statsTPave=ROOT.TPaveText(boundaries[0],boundaries[1],boundaries[2],boundaries[3],"NBNDC")
+    ATTLASTextFraction = 0.3
+
+    splitCoordinate = boundaries[3] - ( boundaries[3] - boundaries[1] ) * ATTLASTextFraction
+
+    ATLASTPave = ROOT.TPaveText(boundaries[0],splitCoordinate,boundaries[2],boundaries[3],"NBNDC")
+    #ATLASTPave.AddText("#font[72]{ATLAS} Internal");
+    ATLASTPave.AddText( "#font[72]{ATLAS} Preliminary")
+    ATLASTPave.SetFillStyle(0); ATLASTPave.SetBorderSize(0); # and
+    ATLASTPave.SetTextAlign(12)
+
+    statsTPave=ROOT.TPaveText(boundaries[0],boundaries[1],boundaries[2],splitCoordinate,"NBNDC")
+
+    
+
     statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
     for stats in statsTextList:   statsTPave.AddText(stats);
 
-    return statsTPave
+    statsTPave.SetTextAlign(12)
+
+    return [statsTPave, ATLASTPave]
 
 
 def printRootCanvasPDF(myRootCanvas, isLastCanvas, fileName, tableOfContents = None):
@@ -573,8 +590,8 @@ def addRegionAndChannelToStatsText(shortName):
     # fill in region
     if "ZXSR" in shortName:    outList += "ZX Signal Region; "
     elif "ZXVR1a" in shortName: outList += "ZXVR1a; "
-    elif "ZXVR1" in shortName: outList += "ZX Validation Region d; "
-    elif "ZXVR2" in shortName: outList += "ZX Validation Region e; "
+    elif "ZXVR1" in shortName: outList += "ZX Validation Region c; "
+    elif "ZXVR2" in shortName: outList += "ZX Validation Region d; "
     else: outList += shortName
 
     #outList += ", "
@@ -1244,7 +1261,6 @@ if __name__ == '__main__':
             regionAndChannelString = addRegionAndChannelToStatsText( canvasName )
             if systematicChannel != "Nominal" : regionAndChannelString = systematicChannel +" "+ regionAndChannelString
             
-            statsTexts.append( "#font[72]{ATLAS} internal")
             statsTexts.append( "#sqrt{s} = 13 TeV, %.0f fb^{-1}" %( myDSIDHelper.lumiMap[args.mcCampaign] ) ) 
 
             statsTexts.append( regionAndChannelString.split(";")[0] )
@@ -1259,7 +1275,7 @@ if __name__ == '__main__':
 
             
 
-            if args.makePaperStylePlots: legend = setupTLegend(nColumns = 1, boundaries = (0.6, 0.3 ,0.9,0.9) )
+            if args.makePaperStylePlots: legend = setupTLegend(nColumns = 1, boundaries = (0.55 - 0.02, 0.5 ,0.9,0.9) )
             else:                        legend = setupTLegend()
 
             lengendInputListBackground = []
@@ -1318,21 +1334,25 @@ if __name__ == '__main__':
 
             #import pdb; pdb.set_trace() # import the debugger and instruct
 
+            
+            if gotDataSample and not args.skipRatioHist: canvasWidth = 20.00025*10*2.6; canvasHeight = 20.320*10*2.6 #canvasWidth = 525; canvasHeight = 700
+            else:                                        canvasWidth = 20.00025*10*2.6; canvasHeight = 20.320*10*2.6
 
             
-            canvas = ROOT.TCanvas(canvasName,canvasName,1300/2,1300/2);
+            canvas = ROOT.TCanvas(canvasName,canvasName, int(canvasWidth),int(canvasHeight))
             ROOT.SetOwnership(canvas, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
 
 
             #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
             # create a pad for the CrystalBall fit + data
-            if gotDataSample and not args.skipRatioHist: histPadYStart = 3.5/13
+            if gotDataSample and not args.skipRatioHist: histPadYStart = .29
             else:  histPadYStart = 0
             histPad = ROOT.TPad("histPad", "histPad", 0, histPadYStart, 1, 1);
             ROOT.SetOwnership(histPad, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
-            if gotDataSample and not args.skipRatioHist: histPad.SetBottomMargin(0.06); # Seperation between upper and lower plots
+            if gotDataSample and not args.skipRatioHist: histPad.SetBottomMargin(0.02); # Seperation between upper and lower plots
             else: histPad.SetBottomMargin(0.12)
+            histPad.SetLeftMargin(0.16)
             #histPad.SetGridx();          # Vertical grid
             histPad.Draw();              # Draw the upper pad: pad1
             histPad.cd();                # pad1 becomes the current pad
@@ -1401,7 +1421,7 @@ if __name__ == '__main__':
             backgroundMergedTH1.SetLineColorAlpha(1,0.) # In the legend the unceratinty logo has a black outline, in the figure it does not. This harmonizes it
             backgroundMergedTH1.SetMarkerStyle(0 ) # SetMarkerStyle(0 ) remove marker from combined backgroun
             backgroundMergedTH1.SetFillStyle(3244)#(3001) # fill style: https://root.cern.ch/doc/v614/classTAttFill.html#F2
-            backgroundMergedTH1.SetFillColor(1)    # black: https://root.cern.ch/doc/v614/classTAttFill.html#F2
+            backgroundMergedTH1.SetFillColor(ROOT.kGray+3)    # black: https://root.cern.ch/doc/v614/classTAttFill.html#F2
             #if "m34" in  backgroundTHStack.GetName() and args.makePaperStylePlots:  backgroundTHStack.GetXaxis().SetRangeUser(10, 66)
 
             legend.AddEntry(backgroundMergedTH1 , "Uncertainty" , "f");
@@ -1409,13 +1429,27 @@ if __name__ == '__main__':
             #if "eta"   in backgroundMergedTH1.getTitle: yAxisUnit = ""
             #elif "phi" in backgroundMergedTH1.getTitle: yAxisUnit = " radians"
 
+
+
             backgroundTHStack.GetYaxis().SetTitle("Events / " + str(backgroundMergedTH1.GetBinWidth(1) )+" GeV" )
-            backgroundTHStack.GetYaxis().SetTitleSize(0.065)
-            backgroundTHStack.GetYaxis().SetTitleOffset(0.85)
+            yAxisTitleSize = 0.055
+            backgroundTHStack.GetYaxis().SetTitleSize(yAxisTitleSize)
+            backgroundTHStack.GetYaxis().SetTitleOffset(0)
+            #backgroundTHStack.GetYaxis().SetLabelSize(0.12)
             #backgroundTHStack.GetYaxis().CenterTitle()
             
-            #backgroundTHStack.GetXaxis().SetTitleSize(0.12)
-            backgroundTHStack.GetXaxis().SetTitleOffset(1.1)
+
+            if gotDataSample and not args.skipRatioHist: 
+                backgroundTHStack.GetXaxis().SetLabelSize(0.0)
+                backgroundTHStack.GetXaxis().SetTitleSize(0.0)
+                backgroundTHStack.GetXaxis().SetTitleOffset(1.1)
+                #backgroundTHStack.GetYaxis().SetTitleOffset(0.85)
+            else: 
+                backgroundTHStack.GetXaxis().SetTitleOffset(1.0)
+                backgroundTHStack.GetXaxis().SetTitleSize(0.055)
+                #backgroundTHStack.GetYaxis().SetTitleOffset(1.0)
+
+
                 
             if not args.makePaperStylePlots: statsTexts.append( "  " ); statsTexts.append( backgroundYieldText )
             #statsTexts.append( "Background : %.1f #pm %.1f" %( getHistIntegralWithUnertainty(backgroundTallyTH1)) + backgroundSystAddendum )
@@ -1424,9 +1458,14 @@ if __name__ == '__main__':
             if gotDataSample: # add data samples
 
                 dataTGrapth = tGraphHelpers.histToTGraph(dataTH1, skipFunction = lambda x,y,yErrorLow,yErrorHigh : y==0, errorFunction = lambda x,y : getAsymmetricPoissonError(y) )
-                dataTGrapth.Draw("same P")
+                dataTGrapth.Draw("same PZ")
+                dataTGrapth.SetMarkerSize(1)
                 #dataTGrapth.SetLineColor(ROOT.kRed); dataTGrapth.SetMarkerColor(ROOT.kRed)
                 dataTGrapth.SetLineWidth(2)
+
+                legend.AddEntry(dataTGrapth, "Data", "P")
+                #ROOT.gStyle.SetEndErrorSize(10)
+                
 
                 if dataTH1.Integral >0 and not args.makePaperStylePlots: statsTexts.append("Data: %.1f #pm %.1f" %( getHistIntegralWithUnertainty(dataTH1) ) )  
 
@@ -1439,10 +1478,10 @@ if __name__ == '__main__':
             axRangeLow, axRangeHigh = histHelper.getFirstAndLastNonEmptyBinInHist(backgroundTHStack, offset = 1)
             backgroundTHStack.GetXaxis().SetRange(axRangeLow,axRangeHigh)
             
-            if args.makePaperStylePlots: statsTPave=setupStatsTPave(statsTexts, boundaries = (0.15,0.75,0.5,0.925)) 
-            else:                        statsTPave=setupStatsTPave(statsTexts)
+            if args.makePaperStylePlots: statsTPaves=setupStatsTPave(statsTexts, boundaries = (0.18,0.68,0.5,0.925)) 
+            else:                        statsTPaves=setupStatsTPave(statsTexts)
 
-            statsTPave.Draw();
+            for statsTPave in statsTPaves: statsTPave.Draw();
             legend.Draw(); # do legend things
             
             ROOT.gPad.RedrawAxis("G") # to make sure that the Axis ticks are above the histograms
@@ -1450,17 +1489,15 @@ if __name__ == '__main__':
 
             canvas.cd()
 
-
-
-
-
             if gotDataSample and not args.skipRatioHist: # fill the ratio pad with the ratio of the data bins to  mc bckground bins
 
                 # define a TPad where we can add a histogram of the ratio of the data and MC bins
                 ratioPad = ROOT.TPad("ratioPad", "ratioPad", 0, 0, 1, histPadYStart);
                 ROOT.SetOwnership(ratioPad, False) # Do this to prevent a segfault: https://sft.its.cern.ch/jira/browse/ROOT-9042
-                ratioPad.SetTopMargin(0.)
+
+                ratioPad.SetTopMargin(0.02)
                 ratioPad.SetBottomMargin(0.3)
+                ratioPad.SetLeftMargin(0.16)
                 ratioPad.SetGridy(); #ratioPad.SetGridx(); 
                 ratioPad.Draw();              # Draw the upper pad: pad1
                 ratioPad.cd();                # pad1 becomes the current pad
@@ -1485,7 +1522,7 @@ if __name__ == '__main__':
                 mcRelativeErrorHist.SetLineColorAlpha(1,0.) # In the legend the unceratinty logo has a black outline, in the figure it does not. This harmonizes it
                 mcRelativeErrorHist.SetMarkerStyle(0 ) # SetMarkerStyle(0 ) remove marker from combined backgroun
                 mcRelativeErrorHist.SetFillStyle(3244)#(3001) # fill style: https://root.cern.ch/doc/v614/classTAttFill.html#F2
-                mcRelativeErrorHist.SetFillColor(1)    # black: https://root.cern.ch/doc/v614/classTAttFill.html#F2
+                mcRelativeErrorHist.SetFillColor(ROOT.kGray+3)    # black: https://root.cern.ch/doc/v614/classTAttFill.html#F2
 
                 #ratioTGrapth = tGraphHelpers.histToTGraph(ratioHist, skipFunction = lambda x,y,yErrorLow,yErrorHigh : y==0)
                 ratioTGrapth = makeAsymmetricDataMCRatioTGraph(dataTGrapth,backgroundHistZeroError, dataTH1)
@@ -1508,11 +1545,13 @@ if __name__ == '__main__':
                     TObject.SetTitle("")
 
                     TObject.GetYaxis().SetNdivisions( 506, True)  # XYY x minor divisions YY major ones, optimizing around these values = TRUE
-                    TObject.GetYaxis().SetLabelSize(0.1)
+                    TObject.GetYaxis().SetLabelSize(0.12)
 
                     TObject.GetYaxis().SetTitle("Data / MC")
-                    TObject.GetYaxis().SetTitleSize(0.11)
-                    TObject.GetYaxis().SetTitleOffset(0.4)
+
+                    topPadYAxisTitleSize = (1-histPadYStart) * yAxisTitleSize 
+                    TObject.GetYaxis().SetTitleSize(topPadYAxisTitleSize/histPadYStart)
+                    TObject.GetYaxis().SetTitleOffset(0.425)
                     TObject.GetXaxis().SetLabelSize(0.12)
                     TObject.GetXaxis().SetTitleSize(0.13)
                     TObject.GetXaxis().SetTitleOffset(1.0)
@@ -1529,7 +1568,7 @@ if __name__ == '__main__':
                 mcRelativeErrorHist.GetXaxis().SetRangeUser(50, 100)
 
                 
-                ratioTGrapth.Draw("SAME P")
+                ratioTGrapth.Draw("SAME PZ")
                 ratioTGrapth.SetLineWidth(2)
 
                 ROOT.gPad.RedrawAxis("G") # to make sure that the Axis ticks are above the histograms
@@ -1543,7 +1582,7 @@ if __name__ == '__main__':
                 #ratioHist.Draw()
        
                 #ratioTGrapth.SetLineColor(ROOT.kRed); ratioTGrapth.SetMarkerColor(ROOT.kRed)
-
+                if args.makePaperStylePlots: adjustAxesRangesManually( [ backgroundTHStack, mcRelativeErrorHist] ) #ratioHist,
 
                 if "ZXSR" in backgroundTHStack.GetName() and backgroundTHStack.GetName() == "ZXSR_All_HWindow_m34" and not args.makePaperStylePlots: 
                     significanceHist, minSignifiance, maxSignificance = makeSignificancePlots(ratioHist, dataTH1, backgroundMergedTH1ForRatioHist)
@@ -1563,7 +1602,7 @@ if __name__ == '__main__':
 
                     significanceHist.GetYaxis().SetTitle("Data / MC - 1")
                     significanceHist.GetYaxis().SetTitleSize(0.11)
-                    significanceHist.GetYaxis().SetTitleOffset(0.4)
+                    significanceHist.GetYaxis().SetTitleOffset(0.45)
                     if maxRatioVal is not None and minRatioVal is not None:
                         significanceHist.GetYaxis().SetRangeUser(minRatioVal * 0.9, maxRatioVal * 1.1)
                     significanceHist.GetXaxis().SetLabelSize(0.12)
@@ -1576,7 +1615,7 @@ if __name__ == '__main__':
 
 
                     lowerLegend = setupTLegend(boundaries = (0.15,0.88,0.35,0.98))
-                    lowerLegend.AddEntry(ratioHist, "Data/MC-1", "p")
+                    lowerLegend.AddEntry(ratioHist, "Data / MC-1", "p")
                     lowerLegend.AddEntry(significanceHist, "significance", "p")
                     lowerLegend.Draw()
 
@@ -1601,7 +1640,7 @@ if __name__ == '__main__':
 
             # adjust xAxis range. There should be a better way identify the hists whose xAxes ranges we need to change.
             # maybe by somehow iterating over the contents of the canvas where we draw on, but this should work for now
-            if args.makePaperStylePlots: adjustAxesRangesManually( [ backgroundTHStack, mcRelativeErrorHist] ) #ratioHist,
+            if args.makePaperStylePlots: adjustAxesRangesManually( [ backgroundTHStack] ) #ratioHist,
 
             canvas.Update() # we need to update the canvas, so that changes to it (like the drawing of a legend get reflected in its status)
             canvasList.append( copy.deepcopy(canvas) ) # save a deep copy of the canvas for later use
