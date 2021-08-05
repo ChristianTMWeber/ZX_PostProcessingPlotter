@@ -3,7 +3,7 @@ import time # for measuring execution time
 import datetime # to convert seconds to hours:minutes:seconds
 
 
-def reportMemUsage(startTime = None):
+def reportMemUsage(startTime = None, defaultTime = time.time() ):
 
     # ru_maxrss is actually in kilobytes: http://man7.org/linux/man-pages/man2/getrusage.2.html
 
@@ -11,8 +11,10 @@ def reportMemUsage(startTime = None):
 
     displayString = "Memory usage: %i MiB " % (memoryUsedMB) 
 
-    if startTime is not None: 
-        displayString += "\t Runtime: " + str(datetime.timedelta(seconds=( time.time()- startTime) ))
+    if startTime is None:  referenceTime = defaultTime
+    else:                  referenceTime = startTime
+   
+    displayString += "\t Runtime: " + str(datetime.timedelta(seconds=( time.time() - referenceTime) ))
     
     print displayString
 
