@@ -50,15 +50,31 @@ def addATLASBlurp(filename):
     activateATLASPlotStyle()
     statsTexts = []
 
-    statsTexts.append( "#font[72]{ATLAS} internal")
+    #statsTexts.append( "#font[72]{ATLAS} Internal")
+    statsTexts.append( "#font[72]{ATLAS} Preliminary")
     statsTexts.append( "#sqrt{s} = 13 TeV, %.0f fb^{-1}" %( 139. ) ) 
 
     if "2l2e" in filename:                         statsTexts.append( "2#mu2e, 4e final states" )
     elif "2l2mu" in filename:                      statsTexts.append( "4#mu, 2e2#mu final states" )
     elif "all" in filename or "All" in filename:   statsTexts.append( "4#mu, 2e2#mu, 2#mu2e, 4e final states" )
 
-    statsTPave=ROOT.TPaveText(0.15,0.73,0.45,0.88,"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
+
+
+    blurbDx = .3; blurbDy = .1
+    legendDx = .3 ; legendDy = 0
+
+    blurbBoundaries = (0.58, .78  ,0.58 + blurbDx, .78 +blurbDy )
+
+
+
+    # (0.58,0.51 + delta,0.9,0.67 + delta)
+    # (0.15,0.73,0.45,0.88,"NBNDC")
+    dx = 0.06
+    dy = 0.2
+    statsTPave=ROOT.TPaveText(0.58, .78  ,0.58 + blurbDx, .78 +blurbDy,"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
     for stats in statsTexts:   statsTPave.AddText(stats);
+    #statsTPave.AddText( "ZX channel") # https://root.cern/doc/master/classTAttText.html#T1
+    statsTPave.SetTextAlign(12)
     statsTPave.Draw();
 
     return statsTPave
@@ -76,35 +92,61 @@ def setupTLegend():
     TLegend.SetBorderSize(0); # and remove its border without a border
     return TLegend
 
-if __name__ == '__main__':
+def castFiducialYieldHistsToDict(fileName):
 
-    #file = ROOT.TFile( "ZX_FiducialCombined_HiggsTagged.root","OPEN")
-    #file = ROOT.TFile( "ZX_FiducialCombined.root","OPEN")
-    file = ROOT.TFile( "ZX_Fiducial_mc16ade_HiggsWindow.root","OPEN")
-
-    
+    file = ROOT.TFile( fileName ,"OPEN")
 
     hists = [hist for hist in generateTDirContents(file)]
 
     hists.sort( key = lambda x:x.GetName() , reverse=True) # i.e. we
 
+    histContents = { hist.GetName() : histToDict(hist)  for  hist in hists }
+
+    for key in histContents:
+        histContents[key]["2l2mu"] = histContents[key]["4mu"] + histContents[key]["2e2mu"]
+        histContents[key]["2l2e"]  = histContents[key]["4e"] + histContents[key]["2mu2e"]
+
+    return histContents
+
+
+def prepCanvas(title):
+
+    canvas = ROOT.TCanvas(title, title,int(720*1.47), 720) #,1920/1, 1080)
+    ROOT.gPad.SetTickx();ROOT.gPad.SetTicky(); # enable ticks on both side of the plots
+
+    canvas.SetLeftMargin(0.2)
+    canvas.SetBottomMargin(0.1)
+
+    return canvas
+
+
+
+if __name__ == '__main__':
+
+    #file = ROOT.TFile( "ZX_FiducialCombined_HiggsTagged.root","OPEN")
+    #file = ROOT.TFile( "ZX_FiducialCombined.root","OPEN")
+
+    fiducialYieldHists = castFiducialYieldHistsToDict("ZX_Fiducial_mc16ade_HiggsWindowV3.root")
+
+    #file = ROOT.TFile( "ZX_Fiducial_mc16ade_HiggsWindow.root","OPEN")
+    #hists = [hist for hist in generateTDirContents(file)]
+    #hists.sort( key = lambda x:x.GetName() , reverse=True) # i.e. we
     acceptances = collections.defaultdict(lambda: collections.defaultdict(dict))
+    #histMassDict = { int(re.search("\d+",hist.GetName()).group()) : hist for hist in hists}
 
 
-    histMassDict = { int(re.search("\d+",hist.GetName()).group()) : hist for hist in hists}
 
-    for hist in hists: 
+    for histName in sorted(fiducialYieldHists.keys()): 
 
-        histContents = histToDict(hist)
+        histContents = fiducialYieldHists[histName]
 
 
         #outputString = hist.GetName() + " truth count " + str(histContents["ZdTruthFlavor_2l2mu"]  + histContents["ZdTruthFlavor_2l2e"]) + " eventsProcessed: " +  str(histContents["eventsProcessed"])
 
         #outputString = hist.GetName() + " truth count " + str(histContents["ZdTruthFlavor_2l2mu"]  + histContents["ZdTruthFlavor_2l2e"])
+        mass = re.search("\d+", histName ).group()
 
-        mass = re.search("\d+",hist.GetName()).group()
-
-        
+       
 
         if histContents["ZdTruthFlavor_2l2e"] == 0: acceptances["2l2e"][int(mass)] = 0
         else:  acceptances["2l2e"][int(mass)]   = (histContents["4e"]  + histContents["2mu2e"])/histContents["ZdTruthFlavor_2l2e"]
@@ -112,7 +154,7 @@ if __name__ == '__main__':
         acceptances["all"][int(mass)]   = histContents["all"] /(histContents["ZdTruthFlavor_2l2e"] +histContents["ZdTruthFlavor_2l2mu"]  )
 
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-        outputString = hist.GetName() + ", #2l2mu = " + str(acceptances["2l2mu"][int(mass)]  ) + \
+        outputString = histName + ", #2l2mu = " + str(acceptances["2l2mu"][int(mass)]  ) + \
                 ", #2l2e = " + str(acceptances["2l2e"][int(mass)]) + \
                 ", #all = " + str( acceptances["all"][int(mass)]  ) 
 
@@ -163,11 +205,7 @@ if __name__ == '__main__':
 
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
-    canvas = ROOT.TCanvas("AcceptanceOverview", "AcceptanceOverview",int(720*1.47), 720) #,1920/1, 1080)
-    ROOT.gPad.SetTickx();ROOT.gPad.SetTicky(); # enable ticks on both side of the plots
-
-    canvas.SetLeftMargin(0.2)
-    canvas.SetBottomMargin(0.1)
+    canvas =  prepCanvas("AcceptanceOverview")
 
     graphDict["all"].Draw("")
     graphDict["2l2e"].Draw("same")
@@ -184,6 +222,6 @@ if __name__ == '__main__':
 
     for fileType in ["png","pdf","root"]: canvas.Print("acceptanceOverview."+fileType)
 
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
     print("All Done")
