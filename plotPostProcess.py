@@ -797,9 +797,9 @@ def make1UpAnd1DownSystVariationHistogram( BackgroundVariationDict , flavor = "A
 
     return upSysHist, downSysHist
 
-def make1UpAnd1DownSystVariationYields( BackgroundVariationDict , flavor = "All" , nominalHist = None):
+def make1UpAnd1DownSystVariationYields( BackgroundVariationDict , flavor = "All" , nominalHist = None, includeStatUncertainty = True):
 
-    def makeVariationYield( upOrDown = "1up" , nominalHist = None):
+    def makeVariationYield( upOrDown = "1up" , nominalHist = None, includeStatUncertainty = True):
         signFactorDict = {"1up" : +1. , "1down" : -1.}
         signFactor = signFactorDict[upOrDown]
 
@@ -808,7 +808,7 @@ def make1UpAnd1DownSystVariationYields( BackgroundVariationDict , flavor = "All"
         sysVarYieldList = np.array([BackgroundVariationDict[sysName+upOrDown][flavor].Integral() for sysName in systematicNames if "STAT_UNCERT" not in sysName])
         # tread stat error differently, as they are uncorrelated between bins
         nominalYield , statError = getHistIntegralWithUnertainty(nominalHist) 
-        np.append(sysVarYieldList , signFactor*statError+nominalYield )
+        if includeStatUncertainty: sysVarYieldList = np.append(sysVarYieldList , signFactor*statError+nominalYield )
 
         relativeYieldDifference = (sysVarYieldList - nominalYield)/nominalYield
         relativeYieldDifference = np.nan_to_num(relativeYieldDifference) # replace the NaN with zeros
@@ -831,8 +831,8 @@ def make1UpAnd1DownSystVariationYields( BackgroundVariationDict , flavor = "All"
 
     systematicNames = sorted(list(systematicNameSet))
 
-    upSysYieldChange   = makeVariationYield( upOrDown = "1up"   , nominalHist = nominalHist)
-    downSysYieldChange = makeVariationYield( upOrDown = "1down" , nominalHist = nominalHist)
+    upSysYieldChange   = makeVariationYield( upOrDown = "1up"   , nominalHist = nominalHist, includeStatUncertainty = includeStatUncertainty)
+    downSysYieldChange = makeVariationYield( upOrDown = "1down" , nominalHist = nominalHist, includeStatUncertainty = includeStatUncertainty)
 
     return upSysYieldChange, downSysYieldChange
 
