@@ -111,13 +111,16 @@ def addATLASBlurp(boundaries = (0.5,0.57,0.9,0.67)):
     activateATLASPlotStyle()
     statsTexts = []
 
-    statsTexts.append( "#font[72]{ATLAS} Internal")
+    #statsTexts.append( "#font[72]{ATLAS} Internal")
+    statsTexts.append( "#font[72]{ATLAS} Preliminary")
     statsTexts.append( "#sqrt{s} = 13 TeV, %.0f fb^{-1}" %( 139. ) ) 
-    statsTexts.append( "ZX significances") # https://root.cern/doc/master/classTAttText.html#T1
+    statsTexts.append( "ZX channel") # https://root.cern/doc/master/classTAttText.html#T1
 
 
     statsTPave=ROOT.TPaveText(boundaries[0],boundaries[1],boundaries[2],boundaries[3],"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
     for stats in statsTexts:   statsTPave.AddText(stats);
+
+    statsTPave.SetTextAlign(12)
     statsTPave.Draw();
 
     return statsTPave
@@ -224,7 +227,7 @@ if __name__ == '__main__':
     graph_1Sigma.Draw("same")
 
     
-    atlasBlurb = addATLASBlurp(boundaries = (0.01,0.78,0.5,0.88))
+    atlasBlurb = addATLASBlurp(boundaries = (0.12,0.73,0.5,0.9)) # (0.01,0.78,0.5,0.88)
 
     legend = setupTLegend( nColumns = 1, boundaries = (0.6,0.80,0.9,0.85))
     legend.AddEntry(graph_1Sigma, "Local significance", "l")
