@@ -89,9 +89,10 @@ class DSIDHelper:
 
 
     colorMap = {"H->ZZ*->4l" : ROOT.kRed  , "ZZ*->4l" :   ROOT.kAzure+1 ,
-                      "Reducible (Z+Jets, WZ, ttbar)"  : ROOT.kYellow , "VVV/VBS" : ROOT.kCyan,
+                      "Reducible (Z+Jets, WZ, ttbar)"  : ROOT.kOrange-2 , "VVV/VBS" : ROOT.kCyan,
                        "Z+(ttbar/J/Psi/Upsilon)" : ROOT.kGreen, "VVV, tt+Z" : ROOT.kGreen , 
-                       "H4l"  : ROOT.kRed  , "ZZ" :   ROOT.kAzure+1,   "const" : ROOT.kYellow} # colors for the analysisMapping
+                       "H4l"  : ROOT.kRed  , "ZZ" :   ROOT.kAzure+1,   "const" : ROOT.kYellow,
+                       "ZZd, m_{Zd} = 20GeV" : ROOT.kRed+3, "ZZd, m_{Zd} = 35GeV" : ROOT.kCyan-7, "ZZd, m_{Zd} = 55GeV" : ROOT.kMagenta} # colors for the analysisMapping
 
     physicsSubProcess = {"ggH" : [345060], "VBFH":[341488], "WH" : [341964], "ZH" : [341947],
                      "ggZH" : [345066], "ttH125" : [345046, 345047, 345048], "bbH" : [344973, 344974],
@@ -205,13 +206,20 @@ class DSIDHelper:
             
 
             if fillStyleSetting is None : 
-                if self.isSignalSample( process ): fillStyle = 3345 # make signal shaded 
+                if self.isSignalSample( process ): fillStyle = 3104 # make signal shaded 
                 else:                                      fillStyle = 1001 # 1001 - Solid Fill: https://root.cern.ch/doc/v608/classTAttFill.html
 
             else: fillStyle = fillStyleSetting
 
             mergedSamplesDICT[process].SetFillStyle( fillStyle )  
             mergedSamplesDICT[process].SetFillColor( color )
+
+
+            if self.isSignalSample( process ):
+                #mergedSamplesDICT[process].SetFillColorAlpha(color, 0.35)
+                mergedSamplesDICT[process].SetFillColor(color)
+                mergedSamplesDICT[process].SetLineColor(color)
+                mergedSamplesDICT[process].SetLineWidth(1)
 
         #elif isinstance(mergedSamplesDICT, list ): # if we happen to color a list of hists, we will just iterate over our colors
         #    for hist in mergedSamplesDICT.keys():    hist.SetFillColor(fillColors.next())
