@@ -337,7 +337,10 @@ class DSIDHelper:
             if self.isSignalSample( key ): signalKeys.append(key)
             else :  backgroundKeys.append(key)
 
-        backgroundKeys.sort(); signalKeys.sort()
+        backgroundKeys.sort( key = lambda x: sortedSamples[x].Integral() , reverse = True)
+        signalKeys.sort()
+
+
 
         # put the background and signal keys in lists, the background ones first
         completeKeyList = backgroundKeys
@@ -1259,8 +1262,8 @@ if __name__ == '__main__':
             if args.makePaperStylePlots: legend = setupTLegend(nColumns = 1, boundaries = (0.6, 0.3 ,0.9,0.9) )
             else:                        legend = setupTLegend()
 
-
-            if gotDataSample:    legend.AddEntry(currentTH1, "Data", "p")
+            lengendInputListBackground = []
+            lengendInputListSignal = []
 
             for key in myDSIDHelper.defineSequenceOfSortedSamples( sortedSamples  ): # add merged samples to the backgroundTHStack 
 
@@ -1281,15 +1284,21 @@ if __name__ == '__main__':
 
                 keyProperArrow = re.sub('->', '#rightarrow ', key) # make sure the legend displays the proper kind of arrow
                 keyProperArrow = re.sub('(ttbar)|(tt)', 't#bar{t}', keyProperArrow) # make sure the legend displays the proper kind of arrow-
-                legend.AddEntry(mergedHist , keyProperArrow , "f");
                 #statsTexts.append( keyProperArrow + ": %.1f #pm %.1f" %( getHistIntegralWithUnertainty(mergedHist)) )
 
                 if not args.makePaperStylePlots: statsTexts.append( keyProperArrow + ": %.1f" %( mergedHist.Integral() ) )
 
-                if myDSIDHelper.isSignalSample( key ): signalTallyTH1.Add(sortedSamples[key])
+                if myDSIDHelper.isSignalSample( key ): 
+                    signalTallyTH1.Add(sortedSamples[key])
+                    lengendInputListSignal.append( (mergedHist , keyProperArrow , "f") )
                 else:
                     backgroundTHStack.Add( mergedHist )                                  
                     backgroundTallyTH1.Add(sortedSamples[key])
+                    lengendInputListBackground.append( (mergedHist , keyProperArrow , "f") )
+
+            lengendInputListBackground.reverse()
+            for hist , label, drawOption in lengendInputListBackground: legend.AddEntry( hist , label, drawOption );
+            for hist , label, drawOption in lengendInputListSignal: legend.AddEntry( hist , label, drawOption );
 
             backgroundClones = []
             signalTHStacks = []
