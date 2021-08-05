@@ -46,7 +46,7 @@ def getLongestSubstringAmongSubstringCandidates(referenceString, subStringCandid
 
 
 def fillHistDict( path, currentTH1 , mcTag, aDSIDHelper , channelMap = { "ZXSR" : "signalRegion"}, DSID = None, customMapping = None,
-    masterHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) ):
+    masterHistDict = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict))) , doScaling = True):
 
     # channel map = {"substring in path" : "what we want to replace it with in the output"}
 
@@ -72,7 +72,7 @@ def fillHistDict( path, currentTH1 , mcTag, aDSIDHelper , channelMap = { "ZXSR" 
 
         if customMapping is not None: eventType = customMapping[DSID]
         else:                         eventType = aDSIDHelper.mappingOfChoice[DSID]
-        scale = aDSIDHelper.getMCScale(DSID, mcTag)
+        if doScaling: scale = aDSIDHelper.getMCScale(DSID, mcTag)
         #currentTH1.Scale(scale) # scale the histogram
 
     flavor = currentTH1.GetName().split("_")[2]
