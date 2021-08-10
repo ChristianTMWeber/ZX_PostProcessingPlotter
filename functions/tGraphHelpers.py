@@ -123,13 +123,19 @@ def listToTGraph( xList, yList, yLowList = None, yHighList = None ):
     return tGraph
 
 
-def dictToTGraph(aDict):
+def dictToTGraph(aDict, uncertDict = None):
 
     xList = sorted(aDict.keys())
 
     yList = [aDict[xVal] for xVal in xList ]
 
-    return listToTGraph( xList, yList )
+    if uncertDict is not None: 
+        assert set(xList) == set(uncertDict.keys())
+        yLowList  = [aDict[xVal] - uncertDict[xVal] for xVal in xList ]
+        yHighList = [aDict[xVal] + uncertDict[xVal] for xVal in xList ]
+    else: yLowList = None; yHighList = None
+
+    return listToTGraph( xList, yList, yLowList, yHighList )
 
 def histToTGraph(hist, skipFunction = False, errorFunction = None):
 
