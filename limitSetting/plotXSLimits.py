@@ -48,8 +48,8 @@ def addATLASBlurp(filename, boundaries = (0.5,0.57,0.9,0.67)):
     activateATLASPlotStyle()
     statsTexts = []
 
-    #statsTexts.append( "#font[72]{ATLAS} Internal")
-    statsTexts.append( "#font[72]{ATLAS} Preliminary")
+    statsTexts.append( "#font[72]{ATLAS} Internal")
+    #statsTexts.append( "#font[72]{ATLAS} Preliminary")
     statsTexts.append( "#sqrt{s} = 13 TeV, %.0f fb^{-1}" %( 139. ) ) 
     #statsTexts.append( "ZX channel") # https://root.cern/doc/master/classTAttText.html#T1
 
@@ -110,11 +110,11 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
 
     expectedLimit2Sig.GetYaxis().SetTitle(yAxisTitle)
     expectedLimit2Sig.GetYaxis().SetTitleSize( yAxisTitleSize )
-    expectedLimit2Sig.GetYaxis().SetTitleOffset(1.0)
+    expectedLimit2Sig.GetYaxis().SetTitleOffset(1.05)
     #expectedLimit2Sig.GetYaxis().CenterTitle()
 
     expectedLimit2Sig.GetXaxis().SetTitle(xAxisTitle)
-    expectedLimit2Sig.GetXaxis().SetTitleSize(0.05)
+    expectedLimit2Sig.GetXaxis().SetTitleSize(0.045)
     expectedLimit2Sig.GetXaxis().SetTitleOffset(0.85)
     #expectedLimit2Sig.GetXaxis().CenterTitle()
 
@@ -539,16 +539,18 @@ if __name__ == '__main__':
 
         if "observedLimitGraph" in [tObject.GetName() for tObject in TDirTools.TDirToList(observedLimitTFile)]:
             observedLimitGraph         = observedLimitTFile.Get("observedLimitGraph")
+
+            import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
             if isinstance(observedLimitGraph, ROOT.TGraphAsymmErrors): # for some limit setting schemes the upperlimit is given by the upper error of the TGraph. 
                 observedLimitGraph = graphHelper.getTGraphWithoutError( observedLimitGraph , ySetpoint = "yHigh")
 
         yAxisTitlePrefix = "95 % CL upper limit on "
-        yAxisTitle = yAxisTitlePrefix + "#sigma(H #rightarrow ZZ_{d} #rightarrow 4l) [fb] "
+        yAxisTitle = yAxisTitlePrefix + "#sigma(gg #rightarrow H #rightarrow ZZ_{d} #rightarrow 4l) [fb] "
         xAxisTitle = "m_{Z_{d}} [GeV]"
 
         #observedLimitGraph = None
 
-        yAxisTitleSize = 0.045
+        yAxisTitleSize = 0.039
         delta = 0.06
 
         blurbDx = .3; blurbDy = .1
@@ -570,7 +572,7 @@ if __name__ == '__main__':
         if args.makeMixingParameterPlot: 
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "mixingParameterLimit" , flavor = args.AddATLASBlurp)
             yAxisTitle = yAxisTitlePrefix + "kinetic mixing parameter #varepsilon"
-            yAxisTitleSize = 0.045
+            #yAxisTitleSize = 0.045
             #blurbBoundaries = (0.3,0.76,0.62,0.86)
             #legendBoundaries = (0.3, .78 +blurbDy - .18 , 0.3+legendDx , .78 +blurbDy )
             limitType = "mixingParameterLimit"
@@ -580,20 +582,20 @@ if __name__ == '__main__':
             limitType = "brachingRatioLimit"
         elif args.makeFiducialXSPlot:
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "fiducialXSLimit", flavor = args.AddATLASBlurp)
-            yAxisTitle = yAxisTitlePrefix + "#sigma_{fid}(H #rightarrow ZX #rightarrow 4l) [fb] "
+            yAxisTitle = yAxisTitlePrefix + "#sigma_{fid}(gg #rightarrow H #rightarrow ZX #rightarrow 4l) [fb] "
             xAxisTitle = "m_{X} [GeV]"
             limitType = "fiducialXSLimit"
         elif args.makeMassMixingPlot:
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "massMixingLimit", flavor = args.AddATLASBlurp)
             yAxisTitle = yAxisTitlePrefix + "#delta^{2} #times BR(Z_{d} #rightarrow 2l)"
-            yAxisTitleSize = 0.045
+            #yAxisTitleSize = 0.045
             #blurbBoundaries = (0.7,0.76,0.93,0.86)
             #legendBoundaries = (0.25, 0.69, 0.25+0.3 ,0.69+0.2)
             legendBoundaries = (0.25, .78 +blurbDy - .18 , 0.3+legendDx , .78 +blurbDy )
             limitType = "massMixingLimit"
         elif args.makeZaLimitPlot:
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "ZaXSLimit", flavor = args.AddATLASBlurp)
-            yAxisTitle = yAxisTitlePrefix + "#sigma(H #rightarrow Za #rightarrow 2l2#mu) [fb] "
+            yAxisTitle = yAxisTitlePrefix + "#sigma(gg #rightarrow H #rightarrow Za #rightarrow 2l2#mu) [fb] "
             xAxisTitle = "m_{a} [GeV]"
             #blurbBoundaries = (0.24,0.76,0.62,0.86)
             limitType = "ZaXSLimit"
