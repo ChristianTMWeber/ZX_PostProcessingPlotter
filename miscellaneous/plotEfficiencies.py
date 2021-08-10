@@ -199,16 +199,22 @@ if __name__ == '__main__':
                 efficiencyGraphDict[flavor][uncertType].SetLineColorAlpha(1,0.) # In the legend the unceratinty logo has a black outline, in the figure it does not. This harmonizes it
 
 
-
     efficiencyGraphDict["2l2mu"]["stat"].SetFillColor(ROOT.kBlue)
     efficiencyGraphDict["2l2mu"]["syst"].SetFillColorAlpha(ROOT.kBlue, 0.2)
+    efficiencyGraphDict["2l2mu"]["noUncert"].SetLineColor(ROOT.kBlue)
+    efficiencyGraphDict["2l2mu"]["noUncert"].SetFillColorAlpha(ROOT.kBlue, 0.2)
+
 
     efficiencyGraphDict["2l2e"]["stat"].SetFillColor(ROOT.kRed)
     efficiencyGraphDict["2l2e"]["syst"].SetFillColorAlpha(ROOT.kRed, 0.2)
+    efficiencyGraphDict["2l2e"]["noUncert"].SetLineColor(ROOT.kRed)
+    efficiencyGraphDict["2l2e"]["noUncert"].SetFillColorAlpha(ROOT.kRed, 0.2)
 
 
     efficiencyGraphDict["all"]["stat"].SetFillColor(ROOT.kBlack)
     efficiencyGraphDict["all"]["syst"].SetFillColorAlpha(ROOT.kBlack, 0.2)
+    efficiencyGraphDict["all"]["noUncert"].SetLineColor(ROOT.kBlack)
+    efficiencyGraphDict["all"]["noUncert"].SetFillColorAlpha(ROOT.kBlack, 0.2)
 
 
 
@@ -218,16 +224,18 @@ if __name__ == '__main__':
 
     efficiencyGraphDict["2l2mu"]["syst"].Draw("A3")
     efficiencyGraphDict["2l2mu"]["stat"].Draw("3 same")
-    #efficiencyGraphDict["2l2mu"]["noUncert"].Draw("same")
-    legend.AddEntry( efficiencyGraphDict["2l2mu"]["syst"]   , "4#mu, 2e2#mu final states"  , "f");
+    efficiencyGraphDict["2l2mu"]["noUncert"].Draw("same")
+    legend.AddEntry( efficiencyGraphDict["2l2mu"]["noUncert"]   , "4#mu, 2e2#mu final states"  , "lf");
 
     efficiencyGraphDict["2l2e"]["syst"].Draw("3 same")
     efficiencyGraphDict["2l2e"]["stat"].Draw("3 same")
-    legend.AddEntry( efficiencyGraphDict["2l2e"]["syst"]  , "2#mu2e, 4e final states"  , "f");
+    efficiencyGraphDict["2l2e"]["noUncert"].Draw("same")
+    legend.AddEntry( efficiencyGraphDict["2l2e"]["noUncert"]  , "2#mu2e, 4e final states"  , "lf");
 
     efficiencyGraphDict["all"]["syst"].Draw("3 same")
     efficiencyGraphDict["all"]["stat"].Draw("3 same")
-    legend.AddEntry( efficiencyGraphDict["all"]["syst"]   , "4#mu, 2e2#mu, 2#mu2e, 4e final states"  , "f");
+    efficiencyGraphDict["all"]["noUncert"].Draw("same")
+    legend.AddEntry( efficiencyGraphDict["all"]["noUncert"]   , "4#mu, 2e2#mu, 2#mu2e, 4e final states"  , "lf");
 
 
     legend.Draw()
@@ -240,5 +248,5 @@ if __name__ == '__main__':
 
 
 
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
