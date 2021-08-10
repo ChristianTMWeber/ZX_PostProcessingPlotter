@@ -251,9 +251,9 @@ if __name__ == '__main__':
 
     legend2 = setupTLegend(nColumns = 3, boundaries = (0.2, 0.8 ,0.9,0.9) )
     #if alternatePlot: legend = setupTLegend(nColumns = 3, boundaries = (0.2, 0.75 ,0.9,0.9) )
-    legend2.AddEntry(VR1Graph , "ZX VR c" , "f");
+    legend2.AddEntry(VR1Graph , "ZX VR 5" , "f");
     legend2.AddEntry(SRGraph  , "ZX SR" , "f");
-    legend2.AddEntry(VR2Graph , "ZX VR d" , "f");
+    legend2.AddEntry(VR2Graph , "ZX VR 6" , "f");
     legend2.Draw()
 
     canvas2.Update()
