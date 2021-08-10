@@ -51,8 +51,9 @@ def addATLASBlurp(filename):
     statsTexts = []
 
     #statsTexts.append( "#font[72]{ATLAS} Internal")
-    statsTexts.append( "#font[72]{ATLAS} Preliminary")
+    statsTexts.append( "#font[72]{ATLAS} Internal")
     statsTexts.append( "#sqrt{s} = 13 TeV, %.0f fb^{-1}" %( 139. ) ) 
+    statsTexts.append( "H #rightarrow ZZ_{d} #rightarrow 4l" ) 
 
     if "2l2e" in filename:                         statsTexts.append( "2#mu2e, 4e final states" )
     elif "2l2mu" in filename:                      statsTexts.append( "4#mu, 2e2#mu final states" )
@@ -60,18 +61,15 @@ def addATLASBlurp(filename):
 
 
 
-    blurbDx = .3; blurbDy = .1
+    blurbDx = .3; blurbDy = .15
     legendDx = .3 ; legendDy = 0
-
-    blurbBoundaries = (0.58, .78  ,0.58 + blurbDx, .78 +blurbDy )
-
 
 
     # (0.58,0.51 + delta,0.9,0.67 + delta)
     # (0.15,0.73,0.45,0.88,"NBNDC")
     dx = 0.06
     dy = 0.2
-    statsTPave=ROOT.TPaveText(0.58, .78  ,0.58 + blurbDx, .78 +blurbDy,"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
+    statsTPave=ROOT.TPaveText(0.58, .73  ,0.58 + blurbDx, .73 +blurbDy,"NBNDC"); statsTPave.SetFillStyle(0); statsTPave.SetBorderSize(0); # and
     for stats in statsTexts:   statsTPave.AddText(stats);
     #statsTPave.AddText( "ZX channel") # https://root.cern/doc/master/classTAttText.html#T1
     statsTPave.SetTextAlign(12)
@@ -105,6 +103,7 @@ def castFiducialYieldHistsToDict(fileName):
     for key in histContents:
         histContents[key]["2l2mu"] = histContents[key]["4mu"] + histContents[key]["2e2mu"]
         histContents[key]["2l2e"]  = histContents[key]["4e"] + histContents[key]["2mu2e"]
+        histContents[key]["ZdTruthFlavor_all"]  = histContents[key]["ZdTruthFlavor_2l2e"] + histContents[key]["ZdTruthFlavor_2l2mu"]
 
     return histContents
 
@@ -120,6 +119,21 @@ def prepCanvas(title):
     return canvas
 
 
+def setGraphProperties( graph ):
+
+    graph.GetYaxis().SetRangeUser(0.29,max(allAcceptances)*1.15)
+    graph.GetYaxis().SetTitle("acceptance [unitless]")
+    graph.GetYaxis().SetTitleSize(0.05)
+    graph.GetYaxis().SetTitleOffset(0.8)
+    #graph.GetYaxis().CenterTitle()
+
+    graph.GetXaxis().SetTitle("m_{Z_{d}} [GeV]")
+    graph.GetXaxis().SetTitleSize(0.05)
+    graph.GetXaxis().SetTitleOffset(0.85)
+
+    return None
+
+
 
 if __name__ == '__main__':
 
@@ -132,6 +146,7 @@ if __name__ == '__main__':
     #hists = [hist for hist in generateTDirContents(file)]
     #hists.sort( key = lambda x:x.GetName() , reverse=True) # i.e. we
     acceptances = collections.defaultdict(lambda: collections.defaultdict(dict))
+    acceptanceError = collections.defaultdict(lambda: collections.defaultdict(dict))
     #histMassDict = { int(re.search("\d+",hist.GetName()).group()) : hist for hist in hists}
 
 
@@ -144,20 +159,28 @@ if __name__ == '__main__':
         #outputString = hist.GetName() + " truth count " + str(histContents["ZdTruthFlavor_2l2mu"]  + histContents["ZdTruthFlavor_2l2e"]) + " eventsProcessed: " +  str(histContents["eventsProcessed"])
 
         #outputString = hist.GetName() + " truth count " + str(histContents["ZdTruthFlavor_2l2mu"]  + histContents["ZdTruthFlavor_2l2e"])
-        mass = re.search("\d+", histName ).group()
+        mass = int(re.search("\d+", histName ).group())
 
-       
 
-        if histContents["ZdTruthFlavor_2l2e"] == 0: acceptances["2l2e"][int(mass)] = 0
-        else:  acceptances["2l2e"][int(mass)]   = (histContents["4e"]  + histContents["2mu2e"])/histContents["ZdTruthFlavor_2l2e"]
-        acceptances["2l2mu"][int(mass)]  = (histContents["4mu"] + histContents["2e2mu"])/histContents["ZdTruthFlavor_2l2mu"] 
-        acceptances["all"][int(mass)]   = histContents["all"] /(histContents["ZdTruthFlavor_2l2e"] +histContents["ZdTruthFlavor_2l2mu"]  )
+        fiducialYield = 0
+
+        for flavor in ['all','2l2e','2l2mu']: 
+
+            fiducialYield = histContents[flavor]
+            totalProd = histContents["ZdTruthFlavor_"+flavor]
+
+            if totalProd == 0:
+                acceptances[flavor][mass] = 0
+                acceptanceError[flavor][mass] = 0
+            else:
+                acceptances[flavor][mass] = fiducialYield / totalProd
+                fiducialYieldBinomialError = (fiducialYield - fiducialYield/totalProd)**.5
+                acceptanceError[flavor][mass] = fiducialYieldBinomialError / totalProd
 
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-        outputString = histName + ", #2l2mu = " + str(acceptances["2l2mu"][int(mass)]  ) + \
-                ", #2l2e = " + str(acceptances["2l2e"][int(mass)]) + \
-                ", #all = " + str( acceptances["all"][int(mass)]  ) 
-
+        outputString = histName + ", #2l2mu = " + str(acceptances["2l2mu"][mass]  ) + \
+                ", #2l2e = " + str(acceptances["2l2e"][mass]) + \
+                ", #all = " + str( acceptances["all"][mass]  ) 
 
         print outputString
 
@@ -176,40 +199,54 @@ if __name__ == '__main__':
     allAcceptances = []
     for key in acceptances: allAcceptances.extend( acceptances[key].values()  )
 
-    
-    graphDict = { flavor: graphHelper.dictToTGraph(acceptances[flavor]) for flavor in acceptances.keys() }
+    graphWithUncertaintyDict = { flavor: graphHelper.dictToTGraph(acceptances[flavor], uncertDict = acceptanceError[flavor]) for flavor in acceptances.keys() }
+    graphDict = { flavor: graphHelper.dictToTGraph(acceptances[flavor], uncertDict = None) for flavor in acceptances.keys() }
 
-    graphDict["all"].GetYaxis().SetRangeUser(0.2,max(allAcceptances)*1.2)
-    graphDict["all"].GetYaxis().SetTitle("acceptance [unitless]")
-    graphDict["all"].GetYaxis().SetTitleSize(0.05)
-    graphDict["all"].GetYaxis().SetTitleOffset(0.8)
-    #graphDict["all"].GetYaxis().CenterTitle()
+    graphDict["all"].SetLineColor(ROOT.kBlack); graphWithUncertaintyDict["all"].SetFillColorAlpha(ROOT.kBlack, 0.2)
+    graphDict["2l2e"].SetLineColor(ROOT.kBlue); graphWithUncertaintyDict["2l2e"].SetFillColorAlpha(ROOT.kBlue, 0.2)
+    graphDict["2l2mu"].SetLineColor(ROOT.kRed); graphWithUncertaintyDict["2l2mu"].SetFillColorAlpha(ROOT.kRed, 0.2)
 
-    graphDict["all"].GetXaxis().SetTitle("m_{Z_{d}} [GeV]")
-    graphDict["all"].GetXaxis().SetTitleSize(0.05)
-    graphDict["all"].GetXaxis().SetTitleOffset(0.85)
-
-    graphDict["all"].SetLineColor(ROOT.kBlack)
-    graphDict["2l2e"].SetLineColor(ROOT.kBlue)
-    graphDict["2l2mu"].SetLineColor(ROOT.kRed)
+    graphDict["all"].SetFillColorAlpha(ROOT.kBlack, 0.2)
+    graphDict["2l2e"].SetFillColorAlpha(ROOT.kBlue, 0.2)
+    graphDict["2l2mu"].SetFillColorAlpha(ROOT.kRed, 0.2)
 
 
+    for graph in graphWithUncertaintyDict.values():  setGraphProperties( graph )
+    for graph in graphWithUncertaintyDict.values():  setGraphProperties( graph )
 
     legend = setupTLegend()
 
-    legend.AddEntry(graphDict["all"]   , "4#mu, 2e2#mu, 2#mu2e, 4e final states"  , "l");
-    legend.AddEntry(graphDict["2l2e"]  , "2#mu2e, 4e final states"  , "l");
-    legend.AddEntry(graphDict["2l2mu"] , "4#mu, 2e2#mu final states"  , "l");
+    legend.AddEntry(graphDict["all"]   , "4#mu, 2e2#mu, 2#mu2e, 4e final states"  , "lf");
+    legend.AddEntry(graphDict["2l2e"]  , "2#mu2e, 4e final states"  , "lf");
+    legend.AddEntry(graphDict["2l2mu"] , "4#mu, 2e2#mu final states"  , "lf");
 
-    for key in graphDict: graphDict[key].SetLineWidth(2)
+    for key in graphDict: graphDict[key].SetLineWidth(1)
 
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
     canvas =  prepCanvas("AcceptanceOverview")
 
-    graphDict["all"].Draw("")
-    graphDict["2l2e"].Draw("same")
-    graphDict["2l2mu"].Draw("same")
+
+    errorMultigraph = ROOT.TMultiGraph()
+    for graph in graphWithUncertaintyDict.values(): errorMultigraph.Add(graph)
+
+    setGraphProperties( errorMultigraph )
+
+
+    errorMultigraph.Draw("A3")
+    #graphWithUncertaintyDict["all"].Draw("A3")
+    #graphWithUncertaintyDict["2l2e"].Draw("3 same")
+    #graphWithUncertaintyDict["2l2mu"].Draw("3 same")
+
+
+    lineMultigraph = ROOT.TMultiGraph()
+    for graph in graphDict.values(): lineMultigraph.Add(graph)
+
+    lineMultigraph.Draw()
+
+    #graphDict["all"].Draw("same")
+    #graphDict["2l2e"].Draw(" same")
+    #graphDict["2l2mu"].Draw(" same")
 
     atlasBlurb = addATLASBlurp("") 
 
