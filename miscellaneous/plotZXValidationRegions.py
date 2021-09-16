@@ -243,6 +243,14 @@ if __name__ == '__main__':
     limitsMultiGraph2.Draw()
 
 
+    delimeter_m34_VR1_SR = ROOT.TLine(115,m34LowerLimit(115),115, m34UpperLimit(115))
+    delimeter_m34_SR_VR2 = ROOT.TLine(130,m34LowerLimit(130),130, m34UpperLimit(130))
+    for line in [delimeter_m34_VR1_SR, delimeter_m34_SR_VR2]:
+        line.SetLineWidth(2)
+        line.SetLineStyle(2)
+        line.Draw()
+
+
     #regionsMultiGraphM12.Draw("3")
     #limitsMultiGraph.Draw()
 
@@ -291,6 +299,13 @@ if __name__ == '__main__':
     #limitsMultiGraph.Draw()
 
     #SRGraph.Draw("3 same")
+
+    delimeter_m12_VR1_SR = ROOT.TLine(115,m12LowerLimit(115),115, m12UpperLimit(115))
+    delimeter_m12_SR_VR2 = ROOT.TLine(130,m12LowerLimit(130),130, m12UpperLimit(130))
+    for line in [delimeter_m12_VR1_SR, delimeter_m12_SR_VR2]:
+        line.SetLineWidth(2)
+        line.SetLineStyle(2)
+        line.Draw()
 
 
     legend3 = setupTLegend(nColumns = 3, boundaries = (0.2, 0.8 ,0.9,0.9) )
