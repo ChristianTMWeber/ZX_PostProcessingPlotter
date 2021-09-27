@@ -590,8 +590,8 @@ def addRegionAndChannelToStatsText(shortName):
     # fill in region
     if "ZXSR" in shortName:    outList += "ZX Signal Region; "
     elif "ZXVR1a" in shortName: outList += "ZXVR1a; "
-    elif "ZXVR1" in shortName: outList += "ZX Validation Region c; "
-    elif "ZXVR2" in shortName: outList += "ZX Validation Region d; "
+    elif "ZXVR1" in shortName: outList += "ZX Validation Region 5; "
+    elif "ZXVR2" in shortName: outList += "ZX Validation Region 6; "
     else: outList += shortName
 
     #outList += ", "
