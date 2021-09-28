@@ -458,8 +458,8 @@ def setupStatsTPave(statsTextList, boundaries = (0.4,0.40,0.9,0.87)):
     splitCoordinate = boundaries[3] - ( boundaries[3] - boundaries[1] ) * ATTLASTextFraction
 
     ATLASTPave = ROOT.TPaveText(boundaries[0],splitCoordinate,boundaries[2],boundaries[3],"NBNDC")
-    #ATLASTPave.AddText("#font[72]{ATLAS} Internal");
-    ATLASTPave.AddText( "#font[72]{ATLAS} Preliminary")
+    ATLASTPave.AddText("#font[72]{ATLAS} Internal");
+    #ATLASTPave.AddText( "#font[72]{ATLAS} Preliminary")
     ATLASTPave.SetFillStyle(0); ATLASTPave.SetBorderSize(0); # and
     ATLASTPave.SetTextAlign(12)
 
@@ -1265,7 +1265,9 @@ if __name__ == '__main__':
 
             statsTexts.append( regionAndChannelString.split(";")[0] )
 
-            if not args.makePaperStylePlots: statsTexts.append( regionAndChannelString.split(";")[1] );  statsTexts.append( "  " ) 
+            if not args.makePaperStylePlots: 
+                if ";" in regionAndChannelString:  statsTexts.append( regionAndChannelString.split(";")[1] ); 
+                statsTexts.append( "  " ) 
             else: statsTexts.append( "  " ) 
 
             # use these to report the total number of background and signal samples each later on
@@ -1276,7 +1278,7 @@ if __name__ == '__main__':
             
 
             if args.makePaperStylePlots: legend = setupTLegend(nColumns = 1, boundaries = (0.55 - 0.02, 0.5 ,0.9,0.9) )
-            else:                        legend = setupTLegend()
+            else:                        legend = setupTLegend(boundaries = (0.17,0.70,0.55,0.95))
 
             lengendInputListBackground = []
             lengendInputListSignal = []
@@ -1479,7 +1481,7 @@ if __name__ == '__main__':
             backgroundTHStack.GetXaxis().SetRange(axRangeLow,axRangeHigh)
             
             if args.makePaperStylePlots: statsTPaves=setupStatsTPave(statsTexts, boundaries = (0.18,0.68,0.5,0.925)) 
-            else:                        statsTPaves=setupStatsTPave(statsTexts)
+            else:                        statsTPaves=setupStatsTPave(statsTexts, boundaries = (0.4,0.40,0.9,0.87))
 
             for statsTPave in statsTPaves: statsTPave.Draw();
             legend.Draw(); # do legend things
@@ -1547,7 +1549,7 @@ if __name__ == '__main__':
                     TObject.GetYaxis().SetNdivisions( 506, True)  # XYY x minor divisions YY major ones, optimizing around these values = TRUE
                     TObject.GetYaxis().SetLabelSize(0.12)
 
-                    TObject.GetYaxis().SetTitle("Data / MC")
+                    TObject.GetYaxis().SetTitle("Data / Bkg")
 
                     topPadYAxisTitleSize = (1-histPadYStart) * yAxisTitleSize 
                     TObject.GetYaxis().SetTitleSize(topPadYAxisTitleSize/histPadYStart)
