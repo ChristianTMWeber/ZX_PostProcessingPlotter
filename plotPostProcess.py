@@ -982,6 +982,22 @@ def makeAsymmetricDataMCRatioTGraph(dataTGrapth, expectedBackgroundTH1, dataTH1)
 
     return asymmetricDataMCRatioTGraph
 
+def writeOutHistsForHEPData(dataTGrapth, backgroundMergedTH1, sortedSamples, myDSIDHelper, 
+                            outputFileName = "hepdata.root", flavor = ""):
+
+    HEPDataTFile = ROOT.TFile(outputFileName,"RECREATE")
+
+    dataTGrapth.Write()
+    backgroundMergedTH1.Write()
+    for sampleName in sortedSamples: 
+        if myDSIDHelper.isSignalSample( sampleName ): continue
+        hist = sortedSamples[sampleName].Clone(sampleName)
+        hist.SetTitle(sampleName)
+        hist.Write()
+
+
+    HEPDataTFile.Close()
+    return None
 
 
 
@@ -1378,14 +1394,15 @@ if __name__ == '__main__':
 
             backgroundMergedTH1ForRatioHist = backgroundMergedTH1.Clone( backgroundMergedTH1.GetName() + "_ratioHist")
 
+
+            inferredFlavor  = re.search("(All)|(2e2mu)|(4mu)|(4e)|(2mu2e)|(2l2e)|(2l2mu)", histEnding).group()
+
             ################# add in systematic uncertainties #################
             if addSystematicUncertaintyToNominal  and systematicChannel == "Nominal" and "ZXVR1a" not in histEnding : # and "ZXSR" in histEnding
 
                 inferredRegion = re.search( "(ZXSR)|(ZXVR1)|(ZXVR2)", histEnding).group()
 
                 print(inferredRegion)
-
-                inferredFlavor  = re.search("(All)|(2e2mu)|(4mu)|(4e)|(2mu2e)|(2l2e)|(2l2mu)", histEnding).group()
 
                 addStatUncertVariationHists(altMasterHistDict[inferredRegion]["Background"], flavor = inferredFlavor , nominalHist = backgroundTallyTH1)
 
@@ -1460,6 +1477,8 @@ if __name__ == '__main__':
             if gotDataSample: # add data samples
 
                 dataTGrapth = tGraphHelpers.histToTGraph(dataTH1, skipFunction = lambda x,y,yErrorLow,yErrorHigh : y==0, errorFunction = lambda x,y : getAsymmetricPoissonError(y) )
+                dataTGrapth.SetName(  dataTGrapth.GetName() +"_data")
+                dataTGrapth.SetTitle( dataTGrapth.GetTitle() +"_data")
                 dataTGrapth.Draw("same PZ")
                 dataTGrapth.SetMarkerSize(1)
                 #dataTGrapth.SetLineColor(ROOT.kRed); dataTGrapth.SetMarkerColor(ROOT.kRed)
@@ -1467,7 +1486,10 @@ if __name__ == '__main__':
 
                 legend.AddEntry(dataTGrapth, "Data", "P")
                 #ROOT.gStyle.SetEndErrorSize(10)
-                
+
+                if  systematicChannel == "Nominal" and "ZXSR" in histEnding : # and "ZXSR" in histEnding
+                    writeOutHistsForHEPData(dataTGrapth, backgroundMergedTH1, sortedSamples , myDSIDHelper, 
+                        outputFileName = "HEPData_" + histEnding + ".root" , flavor = inferredFlavor)               
 
                 if dataTH1.Integral >0 and not args.makePaperStylePlots: statsTexts.append("Data: %.1f #pm %.1f" %( getHistIntegralWithUnertainty(dataTH1) ) )  
 
