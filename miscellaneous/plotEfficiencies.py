@@ -199,22 +199,31 @@ if __name__ == '__main__':
                 efficiencyGraphDict[flavor][uncertType].SetLineColorAlpha(1,0.) # In the legend the unceratinty logo has a black outline, in the figure it does not. This harmonizes it
 
 
-    efficiencyGraphDict["2l2mu"]["stat"].SetFillColor(ROOT.kBlue)
+    efficiencyGraphDict["2l2mu"]["stat"].SetFillColorAlpha(ROOT.kBlue, 0.2)
     efficiencyGraphDict["2l2mu"]["syst"].SetFillColorAlpha(ROOT.kBlue, 0.2)
     efficiencyGraphDict["2l2mu"]["noUncert"].SetLineColor(ROOT.kBlue)
     efficiencyGraphDict["2l2mu"]["noUncert"].SetFillColorAlpha(ROOT.kBlue, 0.2)
+    efficiencyGraphDict["2l2mu"]["noUncert"].SetLineStyle(3)
 
-
-    efficiencyGraphDict["2l2e"]["stat"].SetFillColor(ROOT.kRed)
+    efficiencyGraphDict["2l2e"]["stat"].SetFillColorAlpha(ROOT.kRed, 0.2)
     efficiencyGraphDict["2l2e"]["syst"].SetFillColorAlpha(ROOT.kRed, 0.2)
     efficiencyGraphDict["2l2e"]["noUncert"].SetLineColor(ROOT.kRed)
     efficiencyGraphDict["2l2e"]["noUncert"].SetFillColorAlpha(ROOT.kRed, 0.2)
+    efficiencyGraphDict["2l2e"]["noUncert"].SetLineStyle(2)
 
-
-    efficiencyGraphDict["all"]["stat"].SetFillColor(ROOT.kBlack)
+    efficiencyGraphDict["all"]["stat"].SetFillColorAlpha(ROOT.kBlack, 0.2)
     efficiencyGraphDict["all"]["syst"].SetFillColorAlpha(ROOT.kBlack, 0.2)
     efficiencyGraphDict["all"]["noUncert"].SetLineColor(ROOT.kBlack)
     efficiencyGraphDict["all"]["noUncert"].SetFillColorAlpha(ROOT.kBlack, 0.2)
+    efficiencyGraphDict["all"]["noUncert"].SetLineStyle(1)
+
+    graphList = []
+
+    for flavor in efficiencyGraphDict:
+        for uncertainty in efficiencyGraphDict[flavor]:
+            efficiencyGraphDict[flavor][uncertainty].SetName( flavor + "_" + uncertainty );
+            efficiencyGraphDict[flavor][uncertainty].SetTitle( flavor + "_" + uncertainty )
+            graphList.append(efficiencyGraphDict[flavor][uncertainty])
 
 
 
@@ -222,21 +231,23 @@ if __name__ == '__main__':
     legend = fiducialNumbers.setupTLegend()
     
 
-    efficiencyGraphDict["2l2mu"]["syst"].Draw("A3")
-    efficiencyGraphDict["2l2mu"]["stat"].Draw("3 same")
+    #efficiencyGraphDict["2l2mu"]["syst"].Draw("A3")
+    efficiencyGraphDict["2l2mu"]["stat"].Draw("A3")
     efficiencyGraphDict["2l2mu"]["noUncert"].Draw("same")
-    legend.AddEntry( efficiencyGraphDict["2l2mu"]["noUncert"]   , "4#mu, 2e2#mu final states"  , "lf");
 
-    efficiencyGraphDict["2l2e"]["syst"].Draw("3 same")
+
+    #efficiencyGraphDict["2l2e"]["syst"].Draw("3 same")
     efficiencyGraphDict["2l2e"]["stat"].Draw("3 same")
     efficiencyGraphDict["2l2e"]["noUncert"].Draw("same")
-    legend.AddEntry( efficiencyGraphDict["2l2e"]["noUncert"]  , "2#mu2e, 4e final states"  , "lf");
 
-    efficiencyGraphDict["all"]["syst"].Draw("3 same")
+
+    #efficiencyGraphDict["all"]["syst"].Draw("3 same")
     efficiencyGraphDict["all"]["stat"].Draw("3 same")
     efficiencyGraphDict["all"]["noUncert"].Draw("same")
-    legend.AddEntry( efficiencyGraphDict["all"]["noUncert"]   , "4#mu, 2e2#mu, 2#mu2e, 4e final states"  , "lf");
 
+    legend.AddEntry( efficiencyGraphDict["2l2mu"]["noUncert"]   , "4#mu, 2e2#mu final states"  , "lf");
+    legend.AddEntry( efficiencyGraphDict["all"]["noUncert"]   , "4#mu, 2e2#mu, 2#mu2e, 4e final states"  , "lf");
+    legend.AddEntry( efficiencyGraphDict["2l2e"]["noUncert"]  , "2#mu2e, 4e final states"  , "lf");
 
     legend.Draw()
     atlasBlurb = fiducialNumbers.addATLASBlurp("") 

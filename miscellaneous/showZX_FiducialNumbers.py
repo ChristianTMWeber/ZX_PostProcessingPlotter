@@ -50,8 +50,8 @@ def addATLASBlurp(filename):
     activateATLASPlotStyle()
     statsTexts = []
 
+    statsTexts.append( "#font[72]{ATLAS} Simulation")
     #statsTexts.append( "#font[72]{ATLAS} Internal")
-    statsTexts.append( "#font[72]{ATLAS} Internal")
     statsTexts.append( "#sqrt{s} = 13 TeV, %.0f fb^{-1}" %( 139. ) ) 
     statsTexts.append( "H #rightarrow ZZ_{d} #rightarrow 4l" ) 
 
@@ -122,7 +122,7 @@ def prepCanvas(title):
 def setGraphProperties( graph ):
 
     graph.GetYaxis().SetRangeUser(0.29,max(allAcceptances)*1.15)
-    graph.GetYaxis().SetTitle("acceptance [unitless]")
+    graph.GetYaxis().SetTitle("Acceptance [unitless]")
     graph.GetYaxis().SetTitleSize(0.05)
     graph.GetYaxis().SetTitleOffset(0.8)
     #graph.GetYaxis().CenterTitle()
@@ -202,23 +202,30 @@ if __name__ == '__main__':
     graphWithUncertaintyDict = { flavor: graphHelper.dictToTGraph(acceptances[flavor], uncertDict = acceptanceError[flavor]) for flavor in acceptances.keys() }
     graphDict = { flavor: graphHelper.dictToTGraph(acceptances[flavor], uncertDict = None) for flavor in acceptances.keys() }
 
+    for key in graphDict.keys():  graphDict[key].SetName(key);graphDict[key].SetTitle(key)
+
     graphDict["all"].SetLineColor(ROOT.kBlack); graphWithUncertaintyDict["all"].SetFillColorAlpha(ROOT.kBlack, 0.2)
-    graphDict["2l2e"].SetLineColor(ROOT.kBlue); graphWithUncertaintyDict["2l2e"].SetFillColorAlpha(ROOT.kBlue, 0.2)
-    graphDict["2l2mu"].SetLineColor(ROOT.kRed); graphWithUncertaintyDict["2l2mu"].SetFillColorAlpha(ROOT.kRed, 0.2)
+    graphDict["2l2e"].SetLineColor(ROOT.kRed); graphWithUncertaintyDict["2l2e"].SetFillColorAlpha(ROOT.kRed, 0.2)
+    graphDict["2l2mu"].SetLineColor(ROOT.kBlue); graphWithUncertaintyDict["2l2mu"].SetFillColorAlpha(ROOT.kBlue, 0.2)
 
     graphDict["all"].SetFillColorAlpha(ROOT.kBlack, 0.2)
-    graphDict["2l2e"].SetFillColorAlpha(ROOT.kBlue, 0.2)
-    graphDict["2l2mu"].SetFillColorAlpha(ROOT.kRed, 0.2)
+    graphDict["2l2e"].SetFillColorAlpha(ROOT.kRed, 0.2)
+    graphDict["2l2mu"].SetFillColorAlpha(ROOT.kBlue, 0.2)
 
+    graphDict["all"].SetLineStyle(1)
+    graphDict["2l2e"].SetLineStyle(2)
+    graphDict["2l2mu"].SetLineStyle(3)
 
     for graph in graphWithUncertaintyDict.values():  setGraphProperties( graph )
     for graph in graphWithUncertaintyDict.values():  setGraphProperties( graph )
+    for key in graphWithUncertaintyDict.keys():  graphWithUncertaintyDict[key].SetName(key+"_uncert");graphWithUncertaintyDict[key].SetTitle(key+"_uncert");
 
     legend = setupTLegend()
 
+    legend.AddEntry(graphDict["2l2mu"] , "4#mu, 2e2#mu final states"  , "lf");
     legend.AddEntry(graphDict["all"]   , "4#mu, 2e2#mu, 2#mu2e, 4e final states"  , "lf");
     legend.AddEntry(graphDict["2l2e"]  , "2#mu2e, 4e final states"  , "lf");
-    legend.AddEntry(graphDict["2l2mu"] , "4#mu, 2e2#mu final states"  , "lf");
+    
 
     for key in graphDict: graphDict[key].SetLineWidth(1)
 

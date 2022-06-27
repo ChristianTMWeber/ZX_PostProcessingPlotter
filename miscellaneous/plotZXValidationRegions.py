@@ -212,6 +212,8 @@ if __name__ == '__main__':
         latexText.DrawLatex(60,m34UpperLimit( 60 ) +3,"#scale[%f]{#color[1]{#bf{m_{34} upper limit}}}" %(textScale) )
         latexText.DrawLatex(60,m34LowerLimit( 60 ) +3,"#scale[%f]{#color[1]{#bf{m_{34} lower limit}}}" %(textScale) )
 
+    else: pass
+
     legend.Draw()
 
     canvas.Update()
@@ -255,6 +257,10 @@ if __name__ == '__main__':
     #limitsMultiGraph.Draw()
 
     #SRGraph.Draw("3 same")
+
+    #latexText.DrawLatex(60,80,"#scale[%f]{#bf{ZX VR 5}}"%(.75))
+    #latexText.DrawLatex(116,80,"#scale[%f]{#bf{ZX \\ SR}}"%(.6))
+    #latexText.DrawLatex(140,80,"#scale[%f]{#bf{ZX VR 6}}"%(.75))
 
 
     legend2 = setupTLegend(nColumns = 3, boundaries = (0.2, 0.8 ,0.9,0.9) )

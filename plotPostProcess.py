@@ -458,7 +458,8 @@ def setupStatsTPave(statsTextList, boundaries = (0.4,0.40,0.9,0.87)):
     splitCoordinate = boundaries[3] - ( boundaries[3] - boundaries[1] ) * ATTLASTextFraction
 
     ATLASTPave = ROOT.TPaveText(boundaries[0],splitCoordinate,boundaries[2],boundaries[3],"NBNDC")
-    ATLASTPave.AddText("#font[72]{ATLAS} Internal");
+    ATLASTPave.AddText("#font[72]{ATLAS}");
+    #ATLASTPave.AddText("#font[72]{ATLAS} Internal");
     #ATLASTPave.AddText( "#font[72]{ATLAS} Preliminary")
     ATLASTPave.SetFillStyle(0); ATLASTPave.SetBorderSize(0); # and
     ATLASTPave.SetTextAlign(12)
@@ -990,7 +991,7 @@ def writeOutHistsForHEPData(dataTGrapth, backgroundMergedTH1, sortedSamples, myD
     dataTGrapth.Write()
     backgroundMergedTH1.Write()
     for sampleName in sortedSamples: 
-        if myDSIDHelper.isSignalSample( sampleName ): continue
+        if myDSIDHelper.isSignalSample( sampleName ): pass
         hist = sortedSamples[sampleName].Clone(sampleName)
         hist.SetTitle(sampleName)
         hist.Write()
@@ -1431,7 +1432,7 @@ if __name__ == '__main__':
 
                 # include the systematic error in the backgroundMergedTH1, so that it is reflected in the ratio hist
                 for binNr in xrange(1,backgroundMergedTH1ForRatioHist.GetNbinsX()+1): 
-                    newBinError = upSysHist.GetBinContent(binNr) - backgroundMergedTH1ForRatioHist.GetBinContent(binNr)
+                    newBinError = (upSysHist.GetBinContent(binNr)- downSysHist.GetBinContent(binNr))/2 
                     backgroundMergedTH1ForRatioHist.SetBinError(binNr, newBinError )
                     backgroundMergedTH1.SetBinError(binNr,  (upSysHist.GetBinContent(binNr)- downSysHist.GetBinContent(binNr))/2 )
             ################# add in systematic uncertainties #################

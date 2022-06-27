@@ -48,7 +48,8 @@ def addATLASBlurp(filename, boundaries = (0.5,0.57,0.9,0.67)):
     activateATLASPlotStyle()
     statsTexts = []
 
-    statsTexts.append( "#font[72]{ATLAS} Internal")
+    statsTexts.append( "#font[72]{ATLAS}")
+    #statsTexts.append( "#font[72]{ATLAS} Internal")
     #statsTexts.append( "#font[72]{ATLAS} Preliminary")
     statsTexts.append( "#sqrt{s} = 13 TeV, %.0f fb^{-1}" %( 139. ) ) 
     #statsTexts.append( "ZX channel") # https://root.cern/doc/master/classTAttText.html#T1
@@ -67,7 +68,7 @@ def addATLASBlurp(filename, boundaries = (0.5,0.57,0.9,0.67)):
 
 def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , colorScheme = None, writeTo = False, YAxisLimits = None, 
                        keepInScopeList = [], smoothPlot = False , yAxisTitle = "Upper 95% CL on #sigma_{H #rightarrow ZZ_{d} #rightarrow 4l} [fb] ", xAxisTitle = "m_{Z_{d}} [GeV]",
-                       makeYAxisLogarithmic = False , legendSuffix = "", yAxisTitleSize = 0.045, legendBoundaries = None):
+                       makeYAxisLogarithmic = False , legendSuffix = "", yAxisTitleSize = 0.045, legendBoundaries = None ,YAxisSetMaxDigits = None):
 
     def setupTLegend( boundaries = None):
 
@@ -141,6 +142,8 @@ def makeGraphOverview( extractedLimit,  expectedLimit1Sig, expectedLimit2Sig , c
         #expectedLimit2Sig.SetFillStyle(3001)  # https://root.cern.ch/doc/master/classTAttFill.html
         #expectedLimit1Sig.SetFillColorAlpha(ROOT.kGreen,1) # there are some issues with the transparency setting while running ROOT in a docker container realated to openGL. Let's abstain from using it for now
 
+
+    if YAxisSetMaxDigits is not None: expectedLimit2Sig.GetYaxis().SetMaxDigits(YAxisSetMaxDigits)
 
     if reuseCanvas: expectedLimit2Sig.Draw(errorBarDrawOption + " same") # use 'A' option only for first TGraph apparently
     else:           expectedLimit2Sig.Draw(errorBarDrawOption + " A same") # use 'A' option only for first TGraph apparently
@@ -466,9 +469,9 @@ def convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimits
         expectedLimits_mixingParameter_2Sigma_High  = XSLimitToZaLimit( massPoints , expectedLimits_2Sigma_High , XSLimitToFiducialXSLimit, flavor = flavor)
 
 
-    observedLimitGraph = graphHelper.listToTGraph( massPoints, observedLimits_mixingParameter  )
-    expectedLimitsGraph_1Sigma = graphHelper.listToTGraph( massPoints, expectedLimits_mixingParameter , yLowList = expectedLimits_mixingParameter_1Sigma_Low, yHighList = expectedLimits_mixingParameter_1Sigma_High )
-    expectedLimitsGraph_2Sigma = graphHelper.listToTGraph( massPoints, expectedLimits_mixingParameter , yLowList = expectedLimits_mixingParameter_2Sigma_Low, yHighList = expectedLimits_mixingParameter_2Sigma_High )
+    observedLimitGraph         = graphHelper.listToTGraph( massPoints, observedLimits_mixingParameter , name = observedLimitGraph.GetName() )
+    expectedLimitsGraph_1Sigma = graphHelper.listToTGraph( massPoints, expectedLimits_mixingParameter , yLowList = expectedLimits_mixingParameter_1Sigma_Low, yHighList = expectedLimits_mixingParameter_1Sigma_High , name = expectedLimitsGraph_1Sigma.GetName())
+    expectedLimitsGraph_2Sigma = graphHelper.listToTGraph( massPoints, expectedLimits_mixingParameter , yLowList = expectedLimits_mixingParameter_2Sigma_Low, yHighList = expectedLimits_mixingParameter_2Sigma_High , name = expectedLimitsGraph_2Sigma.GetName())
 
     return observedLimitGraph, expectedLimitsGraph_1Sigma , expectedLimitsGraph_2Sigma
 
@@ -568,6 +571,7 @@ if __name__ == '__main__':
 
 
         limitType = None
+        YAxisSetMaxDigits = None
 
         if args.makeMixingParameterPlot: 
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "mixingParameterLimit" , flavor = args.AddATLASBlurp)
@@ -580,6 +584,7 @@ if __name__ == '__main__':
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "brachingRatioLimit", flavor = args.AddATLASBlurp)
             yAxisTitle = yAxisTitlePrefix + "#frac{#sigma_{H}}{#sigma_{H}^{SM}}B(H #rightarrow ZZd)"  
             limitType = "brachingRatioLimit"
+            YAxisSetMaxDigits = 2
         elif args.makeFiducialXSPlot:
             observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma = convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , limitType = "fiducialXSLimit", flavor = args.AddATLASBlurp)
             yAxisTitle = yAxisTitlePrefix + "#sigma_{fid}(gg #rightarrow H #rightarrow ZX #rightarrow 4l) [fb] "
@@ -609,7 +614,7 @@ if __name__ == '__main__':
         #makeGraphOverview( observedLimitTGraphNoErrors , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = outputTFile)
         canv, keepInScopeList = makeGraphOverview(  observedLimitGraph   , expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = colorScheme , 
                                                     YAxisLimits = args.YAxis, keepInScopeList = [], smoothPlot = args.smooth ,
-                                                    yAxisTitle = yAxisTitle, makeYAxisLogarithmic = args.logarithmixYAxis, xAxisTitle = xAxisTitle, yAxisTitleSize = yAxisTitleSize, legendBoundaries = legendBoundaries , legendSuffix = legendSuffix) 
+                                                    yAxisTitle = yAxisTitle, makeYAxisLogarithmic = args.logarithmixYAxis, xAxisTitle = xAxisTitle, yAxisTitleSize = yAxisTitleSize, legendBoundaries = legendBoundaries , legendSuffix = legendSuffix, YAxisSetMaxDigits = YAxisSetMaxDigits) 
 
 
 

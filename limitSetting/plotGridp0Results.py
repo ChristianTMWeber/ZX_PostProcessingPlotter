@@ -111,8 +111,9 @@ def addATLASBlurp(boundaries = (0.5,0.57,0.9,0.67)):
     activateATLASPlotStyle()
     statsTexts = []
 
+    statsTexts.append( "#font[72]{ATLAS}")
     #statsTexts.append( "#font[72]{ATLAS} Internal")
-    statsTexts.append( "#font[72]{ATLAS} Preliminary")
+    #statsTexts.append( "#font[72]{ATLAS} Preliminary")
     statsTexts.append( "#sqrt{s} = 13 TeV, %.0f fb^{-1}" %( 139. ) ) 
     statsTexts.append( "ZX channel") # https://root.cern/doc/master/classTAttText.html#T1
 
@@ -199,7 +200,8 @@ if __name__ == '__main__':
     listOfAllGraphes = [graph_1Sigma, graph_2Sigma, graph_3Sigma, p0Graph]
 
     for graph in listOfAllGraphes:
-        graph.GetYaxis().SetTitle("Local p_{0}")
+        #graph.GetYaxis().SetTitle("Local p_{0}")
+        graph.GetYaxis().SetTitle("Local p-value")
         graph.GetXaxis().SetTitle("m_{X} [GeV]")
         graph.GetYaxis().SetTitleSize(0.06)
         graph.GetXaxis().SetTitleSize(0.05)
