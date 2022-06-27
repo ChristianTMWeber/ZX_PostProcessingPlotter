@@ -132,7 +132,26 @@ dataset_number/I:crossSection/D:kFactor/D:genFiltEff/D:physics_short/C:ami_tags/
 #getMetadata.py --timestamp="2019-03-13 22:13:14" --physicsGroups="PMG,MCGN" --fields="dataset_number,crossSection,kFactor,genFiltEff,physics_short,ami_tags,events,physics_comment,pdf,generator_name" --inDsTxt="bkg_datasets_mc16e_extra.txt"
 
 
+# total higgs boson cross section - 55.72 pb = 55.72E3 fb , https://link.springer.com/content/pdf/10.1140/epjc/s10052-020-8223-0.pdf
+# H -> 4l BR = 1.251E-4  => Higgs to 4l XS = 6.97 fb = 6.97E-6 nb
 #ZX Signal, remeber, cross section unit here is nb = 1E-9 barn. Let's list the ZZd cross section as 1fb = 1E-15 barn = 1E-6 nb 
+#343234 6.97E-07   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd15  e4551_e5984_a875_r9364_r9315_p3654
+#343235 6.97E-07   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd20  e4551_e5984_a875_r9364_r9315_p3654
+#343236 6.97E-07   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd25  e4551_e5984_a875_r9364_r9315_p3654
+#343237 6.97E-07   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd30  e4551_e5984_a875_r9364_r9315_p3654
+#343238 6.97E-07   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd35  e4551_e5984_a875_r9364_r9315_p3654
+#343239 6.97E-07   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd40  e4551_e5984_a875_r9364_r9315_p3654
+#343240 6.97E-07   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd45  e4551_e5984_a875_r9364_r9315_p3654
+#343241 6.97E-07   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd50  e4551_e5984_a875_r9364_r9315_p3654
+#343242 6.97E-07   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd55  e4551_e5984_a875_r9364_r9315_p3654
+
+# Alternatively, consider only ggf prudction mode:
+# ggf higgs boson cross section - 48.58 pb = 48.58E3 fb , https://link.springer.com/content/pdf/10.1140/epjc/s10052-020-8223-0.pdf
+# H -> 4l BR = 1.251E-4  => Higgs to 4l XS = 6.02 fb = 6.02E-6 nb
+#ZX Signal, remeber, cross section unit here is nb = 1E-9 barn. Let's list the ZZd cross section as 1fb = 1E-15 barn = 1E-6 nb 
+
+
+# ZX default cross sections for limit setting. Units of fb make interpretation of parameter of interest easy
 343234 1.00E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd15  e4551_e5984_a875_r9364_r9315_p3654
 343235 1.00E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd20  e4551_e5984_a875_r9364_r9315_p3654
 343236 1.00E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd25  e4551_e5984_a875_r9364_r9315_p3654
@@ -142,6 +161,21 @@ dataset_number/I:crossSection/D:kFactor/D:genFiltEff/D:physics_short/C:ami_tags/
 343240 1.00E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd45  e4551_e5984_a875_r9364_r9315_p3654
 343241 1.00E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd50  e4551_e5984_a875_r9364_r9315_p3654
 343242 1.00E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd55  e4551_e5984_a875_r9364_r9315_p3654
+
+
+
+# ZX measured upper 95% CL cross sections?
+#343234 0.3372712766319882E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd15  e4551_e5984_a875_r9364_r9315_p3654
+#343235 0.744900408118204E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd20  e4551_e5984_a875_r9364_r9315_p3654
+#343236 0.36623098723428077E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd25  e4551_e5984_a875_r9364_r9315_p3654
+#343237 0.5641095503423309E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd30  e4551_e5984_a875_r9364_r9315_p3654
+#343238 0.3849772255346796E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd35  e4551_e5984_a875_r9364_r9315_p3654
+#343239 0.3938319056912399E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd40  e4551_e5984_a875_r9364_r9315_p3654
+#343240 0.18592968197794882E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd45  e4551_e5984_a875_r9364_r9315_p3654
+#343241 0.30417155062201173E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd50  e4551_e5984_a875_r9364_r9315_p3654
+#343242 0.1649884054874536E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd55  e4551_e5984_a875_r9364_r9315_p3654
+
+
 
 #Za Signal, a = pseudoscalar remeber, cross section unit here is nb = 1E-9 barn. Let's list the ZZd cross section as 1fb = 1E-15 barn = 1E-6 nb 
 451324 1.00E-06   1.0             1.0000E+00 PowhegPythia8EvtGen_AZNLOCTEQ6L1_ggH125_a1_2mu_Z_ll  e8034_e5984_a875_r10724_r10726_p3654
