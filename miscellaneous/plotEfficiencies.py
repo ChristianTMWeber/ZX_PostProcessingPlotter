@@ -225,6 +225,9 @@ if __name__ == '__main__':
             efficiencyGraphDict[flavor][uncertainty].SetTitle( flavor + "_" + uncertainty )
             graphList.append(efficiencyGraphDict[flavor][uncertainty])
 
+    fiducialNumbers.writeTGraphsForHEPData( graphList , outputFileName = "HEPData_ZX_efficiency.root"  )
+
+
 
 
     canvas = fiducialNumbers.prepCanvas("efficacy")

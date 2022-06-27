@@ -475,6 +475,15 @@ def convertXSLimitsToMixingParameterLimits(observedLimitGraph   , expectedLimits
 
     return observedLimitGraph, expectedLimitsGraph_1Sigma , expectedLimitsGraph_2Sigma
 
+
+def outputHEPDataRootFile(outputName, graphList):
+
+    HEPDataTFile = ROOT.TFile("HEPData_"+outputName, "RECREATE")
+    for graph in graphList: graph.Write()
+    HEPDataTFile.Close()
+
+    return None
+
 if __name__ == '__main__':
 
 
@@ -605,6 +614,9 @@ if __name__ == '__main__':
             #blurbBoundaries = (0.24,0.76,0.62,0.86)
             limitType = "ZaXSLimit"
 
+
+        outputHEPDataRootFile(outputFileName, [observedLimitGraph, expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma] )
+
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
         if args.secondInput: legendSuffix = ", 2l2e"
@@ -639,6 +651,8 @@ if __name__ == '__main__':
                                                          YAxisLimits = args.YAxis, keepInScopeList = keepInScopeList, smoothPlot = args.smooth, 
                                                          yAxisTitle = yAxisTitle, xAxisTitle = xAxisTitle, legendSuffix = ", 2l2#mu")
             atlasBlurb = addATLASBlurp("",boundaries = blurbBoundaries) 
+
+            outputHEPDataRootFile(re.sub( ".root", "__2l2mu.root"  , outputFileName), [observedLimitGraphB, expectedLimitsGraph_1SigmaB, expectedLimitsGraph_2SigmaB] )
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
         #expectedLimitTFile = ROOT.TFile( "mc16adeToyResultsV7.37.root", "OPEN") # 2l2mu
         #observedLimitGraphC = expectedLimitTFile.Get("observedLimitGraph")

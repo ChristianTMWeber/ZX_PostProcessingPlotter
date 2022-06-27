@@ -133,6 +133,15 @@ def setGraphProperties( graph ):
 
     return None
 
+def writeTGraphsForHEPData( graphList , outputFileName = "HEPData_ZX_acceptances.root" ):
+
+    HEPDataTFile = ROOT.TFile(outputFileName,"RECREATE")
+
+    for graph in graphList: graph.Write()
+
+    HEPDataTFile.Close()
+
+    return None
 
 
 if __name__ == '__main__':
@@ -265,6 +274,16 @@ if __name__ == '__main__':
 
 
     for fileType in ["png","pdf","root"]: canvas.Print("acceptanceOverview."+fileType)
+
+
+
+
+    #graphList_Flattened = []
+    #for graphList in graphLists: graphList_Flattened.extend(graphList)
+
+    flatGraphList = [item for sublist in [graphWithUncertaintyDict.values(), graphDict.values()] for item in sublist]
+
+    writeTGraphsForHEPData( flatGraphList)
 
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
