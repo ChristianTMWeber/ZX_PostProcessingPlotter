@@ -3,6 +3,8 @@ import ROOT
 def getTGraphWithoutError( errorTGraph , ySetpoint = "median"):
 
     noErrorTGraph = ROOT.TGraph()
+    noErrorTGraph.SetTitle( errorTGraph.GetTitle() )
+    noErrorTGraph.SetName( errorTGraph.GetName() )
 
     xCopy =ROOT.Double() # use these for pass by reference
     yCopy = ROOT.Double() # use these for pass by reference
@@ -99,7 +101,7 @@ def tGraphToList(TGraph , ySetpoint = "median"):
     if ySetpoint == "yLowAndYHigh": return xList, yList, yLowList, yHighLowList
     else: return xList, yList
 
-def listToTGraph( xList, yList, yLowList = None, yHighList = None ):
+def listToTGraph( xList, yList, yLowList = None, yHighList = None , name = ""):
 
     doErrors = True
 
@@ -114,6 +116,8 @@ def listToTGraph( xList, yList, yLowList = None, yHighList = None ):
 
     if doErrors: tGraph = ROOT.TGraphAsymmErrors()
     else:        tGraph = ROOT.TGraph() 
+
+    tGraph.SetName(name)
 
 
     for x in xrange( len(yList) ): 
@@ -140,6 +144,8 @@ def dictToTGraph(aDict, uncertDict = None):
 def histToTGraph(hist, skipFunction = False, errorFunction = None):
 
     tGraph = ROOT.TGraphAsymmErrors()
+    tGraph.SetTitle(hist.GetTitle())
+    tGraph.SetName( hist.GetName())
 
     graphPointCounter = 0
 

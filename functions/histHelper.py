@@ -10,7 +10,7 @@ def mergeTHStackHists(myTHStack):
     ROOT.SetOwnership(myTHStack, False) # We need to set this, to aoid a segmentation fault: https://root-forum.cern.ch/t/crash-on-exit-with-thstack-draw-and-gethists/11221
     constituentHists =  myTHStack.GetHists() 
 
-    mergedHist  = constituentHists[0].Clone( constituentHists.GetName() + "_merged")
+    mergedHist  = constituentHists[0].Clone( myTHStack.GetName() + "_merged")
 
     for hist in constituentHists:
         if hist != constituentHists[0]: mergedHist.Add(hist)
