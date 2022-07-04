@@ -35,7 +35,7 @@ if __name__ == '__main__':
     # check root version
     currentROOTVersion = ROOT.gROOT.GetVersion()
 
-    Print("current version is  " + currentROOTVersion)
+    print("current version is  " + currentROOTVersion)
 
     assert compareVersions( '6.14/04', '6.14/04' ) == 0 
     assert compareVersions( '6.15/04', '6.14/04' ) == 1
