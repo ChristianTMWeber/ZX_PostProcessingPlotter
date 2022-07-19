@@ -1116,6 +1116,7 @@ if __name__ == '__main__':
 
     reportMemUsage.reportMemUsage(startTime = startTime)
 
+    del dataObj, templatePaths # delete this objects manually and explcitly to avoid a segmentation fault
 
     print("All Done!")
     #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
