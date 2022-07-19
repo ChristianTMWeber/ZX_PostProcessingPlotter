@@ -45,6 +45,8 @@ def addExpectedData(masterHistDict  ):
     eventType = "Nominal"
 
     for channel in masterHistDict.keys():
+
+        if "H4l" not in masterHistDict[channel].keys(): continue
         for flavor in masterHistDict[channel]["H4l"][eventType].keys():
 
             H4l = masterHistDict[channel]["H4l"][eventType][flavor]
