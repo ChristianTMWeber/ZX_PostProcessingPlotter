@@ -326,6 +326,9 @@ if __name__ == '__main__':
     parser.add_argument("--outputSignalOverview", default=False, action='store_true' ,       # this is the more proper way to affect default booleans
         help = "output overview of signal samples" ) 
 
+    parser.add_argument("--skipDataDrivenReducible", default=False, action='store_true' ,       # this is the more proper way to affect default booleans
+        help = "Skip the inclusion of the data driven reducible backgrounds" ) 
+
     parser.add_argument( "--rebin", type=int, default=1 , 
     help = "We can rebin the bins. Choose rebin > 1 to rebin #<rebin> bins into 1." ) 
 
@@ -410,7 +413,7 @@ if __name__ == '__main__':
     if args.makeTheoryShapeVariations:
         assembleTheoryShapeVariationHists.addTheoryVariationsToMasterHistDict( pmgWeightDict, masterHistDict,  myDSIDHelper.mappingOfChoiceInverse, region = "ZXSR", backgroundtypes = ["H4l", "ZZ"], prefix="PMG_", outputEnvelopeDir = "theorySystOverview")
 
-    addDataDrivenReducibleBackground2( masterHistDict  )
+    if not args.skipDataDrivenReducible: addDataDrivenReducibleBackground2( masterHistDict  )
 
     ######################################################
     # Interpolate signal samples in 1GeV steps and add them to the master hist dict
