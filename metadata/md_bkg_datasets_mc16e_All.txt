@@ -210,3 +210,6 @@ dataset_number/I:crossSection/D:kFactor/D:genFiltEff/D:physics_short/C:ami_tags/
 302085  2.5E-07     1.0 1.0000E+00  MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZdZd4l_mZd50      e4022_e5984_s3126_r10724_r10726_p3654
 302086  5.0E-07     1.0 1.0000E+00  MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZdZd4l_mZd55      e4022_e5984_s3126_r10724_r10726_p3654
 302087  2.0E-07     1.0 1.0000E+00  MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZdZd4l_mZd60      e4022_e5984_s3126_r10724_r10726_p3654
+
+# Test Signal
+999999  1.00E-06   1.0             1.0000E+00 MadGraphPythia8EvtGen_A14NNPDF23LO_HAHMggfZZd4l_mZd15  e4551_e5984_a875_r9364_r9315_p3654

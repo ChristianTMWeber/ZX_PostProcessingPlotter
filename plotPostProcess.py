@@ -85,7 +85,8 @@ class DSIDHelper:
                             "Za, m_{a} = 15GeV" : [451331, 451332],
                             "Za, m_{a} = 20GeV" : [451333, 451334],
                             "Za, m_{a} = 25GeV" : [451335, 451336],
-                            "Za, m_{a} = 30GeV" : [451337, 451338]}
+                            "Za, m_{a} = 30GeV" : [451337, 451338],
+                            "signal" : [999999]}
 
 
     colorMap = {"H->ZZ*->4l" : ROOT.kRed  , "ZZ*->4l" :   ROOT.kAzure+1 ,
