@@ -127,7 +127,7 @@ if __name__ == '__main__':
         if args.tag is None: tagMatch = True
         else: tagMatch = re.search(args.tag,TDirPathWithObjectName)
 
-        if args.veto is None: tagMatch = False
+        if args.veto is None: vetoMatch = False
         else: vetoMatch = re.search(args.veto,TDirPathWithObjectName)
 
 
