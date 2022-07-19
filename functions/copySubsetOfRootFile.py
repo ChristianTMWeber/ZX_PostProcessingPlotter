@@ -16,6 +16,8 @@ import argparse # to parse command line options
 
 import rootDictAndTDirTools as rootDictAndTDirTools
 
+from  collections import defaultdict
+
 import os.path
 
 
@@ -63,6 +65,8 @@ def prepOutputTFile_and_TDir_structure( outputFileName , outputDict ):
 
     TDirList  = sorted(list(set(outputDict.keys())))
 
+    if None in TDirList: TDirList.remove(None)
+
     outputTFile = ROOT.TFile(outputFileName,"RECREATE")
 
     outputTFile.cd()
@@ -77,10 +81,10 @@ def writeTObjectsToOutput(outputTFile, outputDict):
 
     for path in outputDict:
 
-        outputTFile.cd(path)
+        if path is None: outputTFile.cd()
+        else:            outputTFile.cd(path)
 
-        outputDict[path].Write()
-
+        for TObject in outputDict[path]: TObject.Write()
 
     outputTFile.cd()
 
@@ -116,9 +120,7 @@ if __name__ == '__main__':
 
     counter = 0
 
-    TDirPathSet = set()
-
-    TDirPath_to_TOjectDict = {}
+    TDirPath_to_TOjectDict = defaultdict(list)
 
     for TDirPathWithObjectName, TObject  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive( inputTFile , newOwnership = None, maxRecursionDepth = -1) :        
 
@@ -131,12 +133,20 @@ if __name__ == '__main__':
         else: vetoMatch = re.search(args.veto,TDirPathWithObjectName)
 
 
+        #TDirPathWithObjectName=re.sub("343234","999999",TDirPathWithObjectName)
+        #TObjectName = TObject.GetName()
+        #TObjectName=re.sub("343234","999999",TObjectName)
+        #TObject.SetName(TObjectName)
 
         if tagMatch and not vetoMatch: 
 
             # consider the look behind and look ahead patterns
-            TDirPath = re.search("(?<=/).*(?=/)",TDirPathWithObjectName).group()
-            TDirPath_to_TOjectDict[TDirPath] = TObject
+            TPathMatch = re.search("(?<=/).*(?=/)",TDirPathWithObjectName)
+
+            if TPathMatch is None: TDirPath = None
+            else:                  TDirPath = TPathMatch.group()
+
+            TDirPath_to_TOjectDict[TDirPath].append(TObject)
         
 
         #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
