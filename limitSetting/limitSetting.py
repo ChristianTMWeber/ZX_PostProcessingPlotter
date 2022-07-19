@@ -787,6 +787,33 @@ def setupHistofactoryData(TH1):
 
     return dataObj
 
+
+def selectSignal( signalTag , physicsProcessList):
+
+    def matchFunction(tag):
+
+        rePattern = re.compile(tag)
+
+        matchList = filter(rePattern.search, physicsProcessList) # Read Note below
+
+        if not isinstance(matchList, list): matchList = [item for item in matchList]
+
+        if len(matchList)>0: return matchList[0]
+        else: return None
+
+
+    signalSampleExact = matchFunction(signalTag)
+
+    if signalSampleExact is None: signalSampleExact = matchFunction("signal")
+
+    # selection via difflib
+    #signalSampleExact = difflib.get_close_matches( signalSample  , masterDict[region].keys())[0]
+
+
+
+    return signalSampleExact
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -918,9 +945,13 @@ if __name__ == '__main__':
             templatePaths = {}
 
             # Prep signal sample locations
-            signalSample = "ZZd %iGeV" %( massPoint )
-            signalSampleExact = difflib.get_close_matches( signalSample  , masterDict[region].keys())[0]
-            templatePaths["Signal"]  = getFullTDirPath(masterDict, region, signalSampleExact , "Nominal",  flavor) # region+"/ZZd, m_{Zd} = 35GeV/Nominal/"+flavor+"/ZXSR_ZZd, m_{Zd} = 35GeV_Nominal_All"
+            signalSampleTag = "ZZd\D+%iGeV" %( massPoint )
+
+            signalSample = selectSignal( signalSampleTag , masterDict[region].keys())
+
+
+
+            templatePaths["Signal"]  = getFullTDirPath(masterDict, region, signalSample , "Nominal",  flavor) # region+"/ZZd, m_{Zd} = 35GeV/Nominal/"+flavor+"/ZXSR_ZZd, m_{Zd} = 35GeV_Nominal_All"
 
             templatePaths["ZZ"]      = getFullTDirPath(masterDict, region, "ZZ" , "Nominal",  flavor)
             templatePaths["H4l"]     = getFullTDirPath(masterDict, region, "H4l" , "Nominal",  flavor)
