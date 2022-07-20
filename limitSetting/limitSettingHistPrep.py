@@ -17,6 +17,7 @@ import collections # so we can use collections.defaultdict to more easily constr
 import re
 import time # for measuring execution time
 import copy # for making deep copies
+import os # for file system operations
 
 
 # import sys and os.path to be able to import plotPostProcess from the parent directory
@@ -308,7 +309,11 @@ if __name__ == '__main__':
         help="name of the mc campaign, i.e. mc16a or mc16d, need to provide exactly 1 mc-campaign tag for each input file, \
         make sure that sequence of mc-campaign tags matches the sequence of 'input' strings")
 
-    parser.add_argument("-d", "--metaData", type=str, default="../metadata/md_bkg_datasets_mc16e_All.txt" ,
+    parser.add_argument("-d", "--metaData", type=str, 
+
+        # __file__ stores the location of the file / script we are currently on, 
+        # so let's use the construct below so that we can load the metadata regardless of where we call this script from
+        default= os.path.join( os.path.dirname(os.path.abspath(__file__)),"../metadata/md_bkg_datasets_mc16e_All.txt") ,
         help="location of the metadata file for the given mc campaign. If not provided, we will use a default location" )
 
     parser.add_argument( "--DSID_Binning", type=str, help = "set how the different DSIDS are combined, ",
