@@ -20,6 +20,7 @@
 *.xml
 *.table
 *.out
+*.csv
 
 # ignore compressed folders that I might have
 *.zip

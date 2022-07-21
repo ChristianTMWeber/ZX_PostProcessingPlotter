@@ -813,6 +813,29 @@ def selectSignal( signalTag , physicsProcessList):
 
     return signalSampleExact
 
+def writeLimitsToCSV( limitDict ):
+
+    import csv
+
+    limitDictKeys = sorted(limitDict.keys())
+
+    headerList = ["signalType"]; headerList.extend(limitDictKeys)
+    csvMetaList = []
+
+    for signalKey in  sorted(bestEstimateDict.keys()):
+
+        csvList = [signalKey]
+        for limitKey in limitDictKeys:       csvList.append( limitDict[limitKey][signalKey][0] )
+        csvMetaList.append(csvList)
+
+
+    with open('limits.csv', 'w') as file:
+        writer = csv.writer(file)
+        writer.writerow(headerList)
+        for csvLine in csvMetaList: writer.writerow(csvLine)
+
+    return None
+
 
 if __name__ == '__main__':
 
@@ -1086,8 +1109,7 @@ if __name__ == '__main__':
             #                                     expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = writeTFile)
 
 
-        
-
+    writeLimitsToCSV( {"lowLimit2Sigma" : lowLimits2SigDict, "lowLimit1Sigma" : lowLimits1SigDict, "bestEstimate" : bestEstimateDict, "upperLimit1Sigma" : upperLimits1SigDict , "upperLimit2Sigma" : upperLimits2SigDict } )
 
 
     ###############################################
