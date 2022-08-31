@@ -805,6 +805,7 @@ def selectSignal( signalTag , physicsProcessList):
     signalSampleExact = matchFunction(signalTag)
 
     if signalSampleExact is None: signalSampleExact = matchFunction("signal")
+    if signalSampleExact is None: signalSampleExact = matchFunction("ZZd")
 
     # selection via difflib
     #signalSampleExact = difflib.get_close_matches( signalSample  , masterDict[region].keys())[0]
