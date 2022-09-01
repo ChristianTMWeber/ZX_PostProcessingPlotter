@@ -27,9 +27,7 @@ code-build: # This job runs in the build stage, which runs first.
     image: atlas/athanalysis:21.2.94
     script:
         - pwd
-        - cpack -G RPM
-        - ls -lah
-        - mv *.rpm ../ZdZdPostProcessing.rpm
+        - source /release_setup.sh
     artifacts:
         name: rpm
         paths:
