@@ -28,6 +28,9 @@ code-build: # This job runs in the build stage, which runs first.
     script:
         - pwd
         - source /release_setup.sh
+        - cpack -G RPM
+        - ls -lah
+        - mv *.rpm ../ZX_PostProcessingPlotter.rpm
     artifacts:
         name: rpm
         paths:
