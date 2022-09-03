@@ -4,4 +4,4 @@ build_image:
     - docker push gitlab-registry.cern.ch/chweber/zx_postprocessingplotter:zx_limit_container_test
 
   tags:
-    - docker-image-build
+    - docker-image-build # we need a ci runner that has the special docker image building ability
