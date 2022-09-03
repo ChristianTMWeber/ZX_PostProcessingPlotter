@@ -1,4 +1,4 @@
 build_image:
   script:
-    - docker buildah -t gitlab-registry.cern.ch/chweber/zx_postprocessingplotter:zx_limit_container .
+    - buildah build -t gitlab-registry.cern.ch/chweber/zx_postprocessingplotter:zx_limit_container .
     #- docker run my-docker-image /script/to/run/tests
