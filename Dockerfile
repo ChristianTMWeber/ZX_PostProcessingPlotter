@@ -15,14 +15,12 @@
 
 FROM atlas/athanalysis:21.2.94 AS centosContainer
 
-
-WORKDIR /workdir
+ARG PROJECT=workdir
 
 #ARG CACHEBUST=1 # with this the command below will run without cache
-RUN mkdir ZX_PostProcessingPlotter
-RUN COPY * ZX_PostProcessingPlotter
-RUN yum install vim
+COPY . /$PROJECT/ZX_PostProcessingPlotter/
+#RUN sudo yum install -y vim
 
-WORKDIR /workdir
+WORKDIR /$PROJECT
 
 
