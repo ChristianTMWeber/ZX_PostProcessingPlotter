@@ -835,6 +835,22 @@ def writeLimitsToCSV( limitDict ):
         writer.writerow(headerList)
         for csvLine in csvMetaList: writer.writerow(csvLine)
 
+
+    limit = 0
+    with open ('limits.csv') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            for (k,v) in row.items():
+                if k == 'bestEstimate':
+                    limit = float(v)
+    import json
+    import numpy as np
+    result = {}
+    with open('output.json', 'w') as f:
+        result['loss'] = np.square(limit-1) # assuming limit is in fb, this is to find out the parameters that gives close limit to 1fb
+        print(result)
+        json.dump(result, f, indent=2)
+
     return None
 
 
