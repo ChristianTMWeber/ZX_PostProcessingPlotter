@@ -948,6 +948,7 @@ if __name__ == '__main__':
     bestEstimateDict   = collections.defaultdict(list)
     upperLimits1SigDict = collections.defaultdict(list)
     upperLimits2SigDict = collections.defaultdict(list)
+    expectedLimitDict = collections.defaultdict(list)
     lowLimits1SigDict = collections.defaultdict(list)
     lowLimits2SigDict = collections.defaultdict(list)
     timingDict = collections.defaultdict(list)
@@ -1065,6 +1066,7 @@ if __name__ == '__main__':
 
 
             if likelihoodLimitObserved is not None: bestEstimateDict[signalSample].append( likelihoodLimitObserved.getVal() )
+            if likelihoodLimit         is not None: expectedLimitDict[signalSample].append(likelihoodLimit.getVal())
             if likelihoodLimit         is not None: upperLimits1SigDict[signalSample].append(likelihoodLimit.getMax())
             if likelihoodLimit_2Sig    is not None: upperLimits2SigDict[signalSample].append(likelihoodLimit_2Sig.getMax())
             if likelihoodLimit         is not None: lowLimits1SigDict[signalSample].append(likelihoodLimit.getMin())
@@ -1126,7 +1128,7 @@ if __name__ == '__main__':
             #                                     expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = writeTFile)
 
 
-    writeLimitsToCSV( {"lowLimit2Sigma" : lowLimits2SigDict, "lowLimit1Sigma" : lowLimits1SigDict, "bestEstimate" : bestEstimateDict, "upperLimit1Sigma" : upperLimits1SigDict , "upperLimit2Sigma" : upperLimits2SigDict } )
+    writeLimitsToCSV( {"lowLimit2Sigma" : lowLimits2SigDict, "lowLimit1Sigma" : lowLimits1SigDict, "bestEstimate" : bestEstimateDict, "expectedLimit": expectedLimitDict "upperLimit1Sigma" : upperLimits1SigDict , "upperLimit2Sigma" : upperLimits2SigDict } )
 
 
     ###############################################
