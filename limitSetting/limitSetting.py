@@ -1128,7 +1128,11 @@ if __name__ == '__main__':
             #                                     expectedLimitsGraph_1Sigma, expectedLimitsGraph_2Sigma , colorScheme = ROOT.kRed , writeTo = writeTFile)
 
 
+<<<<<<< limitSetting/limitSetting.py
     writeLimitsToCSV( {"lowLimit2Sigma" : lowLimits2SigDict, "lowLimit1Sigma" : lowLimits1SigDict, "bestEstimate" : bestEstimateDict, "expectedLimit": expectedLimitDict, "upperLimit1Sigma" : upperLimits1SigDict , "upperLimit2Sigma" : upperLimits2SigDict } )
+=======
+    writeLimitsToCSV( {"lowLimit2Sigma" : lowLimits2SigDict, "lowLimit1Sigma" : lowLimits1SigDict, "bestEstimate" : bestEstimateDict, "expectedLimit": expectedLimitDict "upperLimit1Sigma" : upperLimits1SigDict , "upperLimit2Sigma" : upperLimits2SigDict } )
+>>>>>>> limitSetting/limitSetting.py
 
 
     ###############################################
