@@ -847,7 +847,7 @@ def writeLimitsToCSV( limitDict ):
     import numpy as np
     result = {}
     with open('output.json', 'w') as f:
-        result['loss'] = np.square(limit-1) # assuming limit is in fb, this is to find out the parameters that gives close limit to 1fb
+        result['loss'] = limit
         print(result)
         json.dump(result, f, indent=2)
 
