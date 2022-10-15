@@ -836,7 +836,7 @@ def writeLimitsToCSV( limitDict ):
         for csvLine in csvMetaList: writer.writerow(csvLine)
 
 
-    limit_exp, limit_obs = 0
+    limit_exp, limit_obs = 0, 0
     with open ('limits.csv') as f:
         reader = csv.DictReader(f)
         for row in reader:
