@@ -836,18 +836,20 @@ def writeLimitsToCSV( limitDict ):
         for csvLine in csvMetaList: writer.writerow(csvLine)
 
 
-    limit = 0
+    limit_exp, limit_obs = 0
     with open ('limits.csv') as f:
         reader = csv.DictReader(f)
         for row in reader:
             for (k,v) in row.items():
                 if k == 'bestEstimate':
-                    limit = float(v)
+                    limit_obs = float(v)
+                if k == 'expectedLimit':
+                    limit_exp = float(v)
     import json
     import numpy as np
     result = {}
     with open('output.json', 'w') as f:
-        result['loss'] = limit
+        result['loss'] = limit_obs - limit_exp # let active learning searching for excess
         print(result)
         json.dump(result, f, indent=2)
 
