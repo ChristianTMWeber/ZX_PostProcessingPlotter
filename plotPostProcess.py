@@ -914,12 +914,7 @@ def make1UpAnd1DownSystVariationYields( BackgroundVariationDict , flavor = "All"
 
 def preselectTDirsForProcessing(postProcessedData , permittedDSIDs = None, systematicsTags = None, systematicsVetoes = None , newOwnership = None):
 
-    if permittedDSIDs is None:
-        reSearchString = ""
-    else:
-        reSearchOptions = [ "(/%i)" %DSID for DSID in permittedDSIDs]
-
-        reSearchStringDSID = "|".join(reSearchOptions)
+    all_DSID_a_priori_ok = permittedDSIDs is None
 
     # preselect by systematic
     if systematicsTags is None:                    reSearchStringSystematics = ""
@@ -935,7 +930,9 @@ def preselectTDirsForProcessing(postProcessedData , permittedDSIDs = None, syste
 
         if not isinstance(baseHist_DSIDLevel,ROOT.TDirectoryFile): continue
         DSID = path_DSIDLevel.split("/")[-1]
-        if not re.search( reSearchStringDSID, path_DSIDLevel): continue
+
+        if not(all_DSID_a_priori_ok or int(DSID) in permittedDSIDs) : continue
+        
 
         preselectedTDirs = []
         for path_sysLevel, baseHist_sysLevel  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive( baseHist_DSIDLevel , baseString = path_DSIDLevel, newOwnership = newOwnership, maxRecursionDepth = 0) :
