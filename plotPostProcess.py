@@ -1130,7 +1130,9 @@ if __name__ == '__main__':
     help = "If we only want to list a subset of the kninematic variables, list them here.\
             Use like --kinematicsToPlot m4l m34. If none are specified, or argument is not used, we plot all kinematic variables" ) 
 
-    parser.add_argument( "--flavorsToPlot", nargs='*', default=["2e2mu", "2mu2e", "4e", "4mu", "All"], 
+    flavorsToPlotDefaults = ["2e2mu", "2mu2e", "4e", "4mu", "2l2j", "2e2j", "2mu2j","All"]
+    parser.add_argument( "--flavorsToPlot", nargs='*', 
+    default=flavorsToPlotDefaults, 
     help = "If we only want to list a subset of the kninematic variables, list them here.\
             Use like --kinematicsToPlot m4l m34. If none are specified, or argument is not used, we plot all kinematic variables" ) 
 
@@ -1472,8 +1474,7 @@ if __name__ == '__main__':
 
             backgroundMergedTH1ForRatioHist = backgroundMergedTH1.Clone( backgroundMergedTH1.GetName() + "_ratioHist")
 
-
-            inferredFlavor  = re.search("(All)|(2e2mu)|(4mu)|(4e)|(2mu2e)|(2l2e)|(2l2mu)", histEnding).group()
+            inferredFlavor  = re.search("(%s)" %")|(".join(flavorsToPlotDefaults), histEnding).group()
 
             ################# add in systematic uncertainties #################
             if addSystematicUncertaintyToNominal  and systematicChannel == "Nominal" and "ZXVR1a" not in histEnding : # and "ZXSR" in histEnding
