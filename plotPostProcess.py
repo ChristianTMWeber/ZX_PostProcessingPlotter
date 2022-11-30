@@ -1161,7 +1161,7 @@ if __name__ == '__main__':
 
     if skipReducible: skipZjets = True
 
-    replaceWithDataDriven = True
+    replaceWithDataDriven = False
 
     addSystematicUncertaintyToNominal = args.makeSystematicsPlots and (len(args.kinematicsToPlot)==1)
 
@@ -1223,20 +1223,19 @@ if __name__ == '__main__':
     histCounter = 0 # count how many relevant hists we have
     nonRelevantHistCounter = 0
 
-
-    DSIDsToConsider = []
-    DSIDsToConsider.append( 0) # data!
-    DSIDsToConsider.extend( myDSIDHelper.analysisMapping["H4l"])
-    DSIDsToConsider.extend( myDSIDHelper.analysisMapping["ZZ"])
-    DSIDsToConsider.extend( myDSIDHelper.analysisMapping["VVV_Z+ll"])
-    if not skipReducible: DSIDsToConsider.extend( myDSIDHelper.analysisMapping["Reducible"])
-    if skipZjets: # we remove the Z+Jet DSIDs after the fact, due to the way the analysisMappings are defined
-        for ZJetDISD in  myDSIDHelper.ZJetDSIDs:
-            if ZJetDISD in DSIDsToConsider:   DSIDsToConsider.remove(ZJetDISD)
-
-    # ZZd samples                          m_Zd    15 GeV  20 GeV  25 GeV  30 GeV  35 GeV  40 GeV  45 GeV  50 GeV  55 GeV  
-    #                                              343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242
-    if args.plotZXSignal : DSIDsToConsider.extend([        343235,                 343238,                         343242])
+    DSIDsToConsider = None
+    #DSIDsToConsider = []
+    #DSIDsToConsider.append( 0) # data!
+    #DSIDsToConsider.extend( myDSIDHelper.analysisMapping["H4l"])
+    #DSIDsToConsider.extend( myDSIDHelper.analysisMapping["ZZ"])
+    #DSIDsToConsider.extend( myDSIDHelper.analysisMapping["VVV_Z+ll"])
+    #if not skipReducible: DSIDsToConsider.extend( myDSIDHelper.analysisMapping["Reducible"])
+    #if skipZjets: # we remove the Z+Jet DSIDs after the fact, due to the way the analysisMappings are defined
+    #    for ZJetDISD in  myDSIDHelper.ZJetDSIDs:
+    #        if ZJetDISD in DSIDsToConsider:   DSIDsToConsider.remove(ZJetDISD)
+    ## ZZd samples                          m_Zd    15 GeV  20 GeV  25 GeV  30 GeV  35 GeV  40 GeV  45 GeV  50 GeV  55 GeV  
+    ##                                              343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242
+    #if args.plotZXSignal : DSIDsToConsider.extend([        343235,                 343238,                         343242])
 
 
 
