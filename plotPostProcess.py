@@ -339,6 +339,11 @@ class DSIDHelper:
 
         if DSID == 0 : return 1. # zero indicates data, and will not be scaled
 
+        if self.isSignalSample( DSID ) and DSID not in self.metaDataDict: # set XS to 1fb by default for signal
+            self.metaDataDict[DSID]["crossSection"] = 1.00E-05
+            self.metaDataDict[DSID]["kFactor"]      = 1.
+            self.metaDataDict[DSID]["genFiltEff"]   = 1.
+
         prod = self.metaDataDict[DSID]["crossSection"] * self.metaDataDict[DSID]["kFactor"] * self.metaDataDict[DSID]["genFiltEff"]
 
         # remember: the metadata stores the cross section in nano barn, and the luminosity if in 1/fb. Th 1E6 factor scales the cross section from nb to fb.
@@ -376,8 +381,8 @@ class DSIDHelper:
         # There the different values are seperate by whitespace
         # We ignore lines that do not start with a DSID (i.e. a 6 digit number)
 
-        metaDataDict = {}
-        physicsShort = {}
+        metaDataDict = collections.defaultdict(dict)
+        physicsShort = collections.defaultdict(dict)
 
         DSIDPattern = re.compile("\d{6}") # DSIDs are numbers 6 digits long
 
