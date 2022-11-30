@@ -1305,6 +1305,12 @@ if __name__ == '__main__':
 
     canvasList = []
 
+    # treat signal DSIDS like backgrounds, if there are no backgrounds, it's a hack to allow plotting when there are no backgrounds
+    DSIDs = combinedMCTagHistDict["Nominal"].values()[0].keys()
+    anyBackgroundsPresent = any([ not myDSIDHelper.isSignalSample( DSID ) for DSID in DSIDs])
+    treatSignalAsBackgroundsForPlotting = not anyBackgroundsPresent
+
+
     for systematicChannel in combinedMCTagHistDict.keys():
         if re.search("(UncorrUncertaintyNP)|(CorrUncertaintyNP)|(PMG_)", systematicChannel): continue # skip generator weight variations when plottins systematics
 
@@ -1401,7 +1407,7 @@ if __name__ == '__main__':
 
                 if not args.makePaperStylePlots: statsTexts.append( keyProperArrow + ": %.1f" %( mergedHist.Integral() ) )
 
-                if myDSIDHelper.isSignalSample( key ): 
+                if myDSIDHelper.isSignalSample( key ) and not treatSignalAsBackgroundsForPlotting: 
                     signalTallyTH1.Add(sortedSamples[key])
                     lengendInputListSignal.append( (mergedHist , keyProperArrow , "f") )
                 else:
@@ -1416,7 +1422,7 @@ if __name__ == '__main__':
             backgroundClones = []
             signalTHStacks = []
             for key in myDSIDHelper.defineSequenceOfSortedSamples( sortedSamples  ): # add merged samples to the backgroundTHStack 
-                if myDSIDHelper.isSignalSample( key ): 
+                if myDSIDHelper.isSignalSample( key ) and not treatSignalAsBackgroundsForPlotting: 
                     signalHist = sortedSamples[key]
 
                     signalTHStack = ROOT.THStack(key,key)
