@@ -120,6 +120,8 @@ if __name__ == '__main__':
     l4_pT     = array('f',[0]) ; TTree.Branch("l4_pT"  ,   l4_pT   , 'l4_pT/F')
     l4_eta    = array('f',[0]) ; TTree.Branch("l4_eta" ,   l4_eta  , 'l4_eta/F')
     l4_pdgId  = array('i',[0]) ; TTree.Branch("l4_pdgId",  l4_pdgId, 'l4_pdgId/I')
+
+    mcEventWeight  = array('f',[0]) ; TTree.Branch("mcEventWeight",  l4_pdgId, 'mcEventWeight/I')
     
 
 
@@ -131,7 +133,7 @@ if __name__ == '__main__':
     #   11 = electron
     #   13 = muon
 
-    pdIdTag = 36
+    pdIdTag = 32
 
     if args.nEventsToProcess < 0 : nEvents = evt.getEntries()
     else:                          nEvents = args.nEventsToProcess
@@ -143,6 +145,9 @@ if __name__ == '__main__':
         evt.getEntry(n) #would call this method inside a loop if you want to loop over events .. argument is the entry number
 
         truthParticles = evt.retrieve("xAOD::TruthParticleContainer","TruthParticles")  
+
+        eventInfo = evt.retrieve("xAOD::EventInfo","EventInfo")
+        mcEventWeight[0] = eventInfo.mcEventWeight()
 
         # print out all (?) the information of the truth particles in the given event
         #for p in truthParticles: ROOT.AAH.printAuxElement(p)
