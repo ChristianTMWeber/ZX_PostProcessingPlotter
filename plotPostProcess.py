@@ -1532,9 +1532,10 @@ if __name__ == '__main__':
             #if "eta"   in backgroundMergedTH1.getTitle: yAxisUnit = ""
             #elif "phi" in backgroundMergedTH1.getTitle: yAxisUnit = " radians"
 
+            yAxisString = "Events / " + str(backgroundMergedTH1.GetBinWidth(1) )
+            if "GeV" in backgroundTHStack.GetYaxis().GetTitle(): yAxisString += " GeV"
 
-
-            backgroundTHStack.GetYaxis().SetTitle("Events / " + str(backgroundMergedTH1.GetBinWidth(1) )+" GeV" )
+            backgroundTHStack.GetYaxis().SetTitle( yAxisString )
             yAxisTitleSize = 0.055
             backgroundTHStack.GetYaxis().SetTitleSize(yAxisTitleSize)
             backgroundTHStack.GetYaxis().SetTitleOffset(0)
