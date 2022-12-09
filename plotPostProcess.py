@@ -1130,6 +1130,11 @@ if __name__ == '__main__':
     help = "If we only want to list a subset of the kninematic variables, list them here.\
             Use like --kinematicsToPlot m4l m34. If none are specified, or argument is not used, we plot all kinematic variables" ) 
 
+    parser.add_argument( "--DSIDsToPlot", type=int, nargs='*', default=None, 
+    help = "List of DSIDs that we want to plot.\
+            e.g. --DSIDsToPlot 343238 343239\
+            If you do not use this argument, we will plot all of the DSIDs in the file together" ) 
+
     flavorsToPlotDefaults = ["2e2mu", "2mu2e", "4e", "4mu", "2l2j", "2e2j", "2mu2j","All"]
     parser.add_argument( "--flavorsToPlot", nargs='*', 
     default=flavorsToPlotDefaults, 
@@ -1245,7 +1250,7 @@ if __name__ == '__main__':
 
     # loop over all of the TObjects in the given ROOT file                         # newOwnership set to none for newer root versions, set to true for older ones
     #for path, baseHist  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = ownershipSetpoint): 
-    for path, baseHist in preselectTDirsForProcessing(postProcessedData, permittedDSIDs = DSIDsToConsider, systematicsTags = systematicsTags, systematicsVetoes = ["UncorrUncertaintyNP" ,"CorrUncertaintyNP" ,"PMG_"], newOwnership = ownershipSetpoint):
+    for path, baseHist in preselectTDirsForProcessing(postProcessedData, permittedDSIDs = args.DSIDsToPlot, systematicsTags = systematicsTags, systematicsVetoes = ["UncorrUncertaintyNP" ,"CorrUncertaintyNP" ,"PMG_"], newOwnership = ownershipSetpoint):
 
         nonRelevantHistCounter += 1
         if nonRelevantHistCounter %1e5 == 0: print "%i irrelevant hists processed. \t Memory usage: %s (MB)" % (nonRelevantHistCounter, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1000)
