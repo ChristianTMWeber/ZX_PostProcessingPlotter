@@ -1135,7 +1135,7 @@ if __name__ == '__main__':
             e.g. --DSIDsToPlot 343238 343239\
             If you do not use this argument, we will plot all of the DSIDs in the file together" ) 
 
-    flavorsToPlotDefaults = ["2e2mu", "2mu2e", "4e", "4mu", "2l2j", "2e2j", "2mu2j","All"]
+    flavorsToPlotDefaults = ["2e2mu", "2mu2e", "4e", "4mu", "2l2e", "2l2mu", "2l2j", "2e2j", "2mu2j","All"]
     parser.add_argument( "--flavorsToPlot", nargs='*', 
     default=flavorsToPlotDefaults, 
     help = "If we only want to list a subset of the kninematic variables, list them here.\
@@ -1467,7 +1467,12 @@ if __name__ == '__main__':
 
             backgroundTHStack.SetTitle("")
 
-            backgroundTHStack.Draw("Hist")
+
+            drawString_backgroundTHStack = "Hist" + " NOSTACK"
+
+            if treatSignalAsBackgroundsForPlotting: drawString_backgroundTHStack += " NOSTACK"
+
+            backgroundTHStack.Draw(drawString_backgroundTHStack)
             drawPrefix = "SAME " # after we draw out first histogram(stack) we need to add 'same' to the draw command 
             for signalStack in signalTHStacks:
                 signalStack.Draw(drawPrefix + "HIST")
