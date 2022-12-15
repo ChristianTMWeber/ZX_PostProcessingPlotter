@@ -1468,18 +1468,19 @@ if __name__ == '__main__':
             backgroundTHStack.SetTitle("")
 
 
-            drawString_backgroundTHStack = "Hist" + " NOSTACK"
+            drawStringSuffix = "" 
 
-            if treatSignalAsBackgroundsForPlotting: drawString_backgroundTHStack += " NOSTACK"
 
-            backgroundTHStack.Draw(drawString_backgroundTHStack)
+            if treatSignalAsBackgroundsForPlotting: drawStringSuffix += " NOSTACK"
+
+            backgroundTHStack.Draw("HIST" + drawStringSuffix)
             drawPrefix = "SAME " # after we draw out first histogram(stack) we need to add 'same' to the draw command 
             for signalStack in signalTHStacks:
-                signalStack.Draw(drawPrefix + "HIST")
+                signalStack.Draw(drawPrefix + "HIST" + drawStringSuffix)
                 drawPrefix = "SAME "
 
 
-            backgroundTHStack.Draw(drawPrefix+"Hist")
+            backgroundTHStack.Draw(drawPrefix+"Hist"+ drawStringSuffix)
 
 
             backgroundMergedTH1 = histHelper.mergeTHStackHists(backgroundTHStack) # get a merged background to draw uncertainty bars on the total backgroun
