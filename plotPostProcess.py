@@ -418,7 +418,7 @@ class DSIDHelper:
             else :  backgroundKeys.append(key)
 
         backgroundKeys.sort( key = lambda x: sortedSamples[x].Integral() , reverse = True)
-        signalKeys.sort()
+        signalKeys.sort(key = lambda x: sortedSamples[x].Integral() , reverse = True)
 
 
 
