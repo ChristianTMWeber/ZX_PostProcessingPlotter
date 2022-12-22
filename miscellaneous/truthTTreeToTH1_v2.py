@@ -89,7 +89,7 @@ def defineHistProperties():
     histPropertyDict["eta"]["units"]   = ""
 
     histPropertyDict["mInv"]["nBins"]   = 100
-    histPropertyDict["mInv"]["lowBin"]  = 50
+    histPropertyDict["mInv"]["lowBin"]  = 0
     histPropertyDict["mInv"]["highBin"] = 115
     histPropertyDict["mInv"]["units"]   = "(GeV)"
 
@@ -110,36 +110,91 @@ def defineHistProperties():
     return histPropertyDict, physicsObjectDict
 
 
+def getTPads():
 
-def defineHist(mZd,epsilon, histPropertyDict, physicsObjectDict ):
+    ZZd_pT_pad  = ROOT.TPad("histPad", "histPad", 0, 2./3, 0.5, 1);
+    ZZd_eta_pad = ROOT.TPad("histPad", "histPad", 0.5, 2./3, 1, 1);
+
+    l_pT_pad    = ROOT.TPad("histPad", "histPad", 0, 1./3, 0.5, 2./3);
+    l_eta_pad   = ROOT.TPad("histPad", "histPad", 0.5, 1./3, 1, 2./3);
+
+    ll_mInv_pad    = ROOT.TPad("histPad", "histPad", 0, 0, 1, 1./3);
+
+    TPadDict = {}
+
+    TPadDict[("Zd","pT")] = ZZd_pT_pad
+    TPadDict[("Z" ,"pT")] = ZZd_pT_pad
+    TPadDict[("Zd","eta")] = ZZd_eta_pad
+    TPadDict[("Z" ,"eta")] = ZZd_eta_pad
+
+
+    TPadDict[("l1","pT")] = l_pT_pad
+    TPadDict[("l2","pT")] = l_pT_pad
+    TPadDict[("l3","pT")] = l_pT_pad
+    TPadDict[("l4","pT")] = l_pT_pad
+
+    TPadDict[("l1","eta")] = l_eta_pad
+    TPadDict[("l2","eta")] = l_eta_pad
+    TPadDict[("l3","eta")] = l_eta_pad
+    TPadDict[("l4","eta")] = l_eta_pad
+
+    TPadDict[("ll12","mInv")] = ll_mInv_pad
+    TPadDict[("ll34","mInv")] = ll_mInv_pad
+
+
+    for pad in TPadDict.values(): ROOT.SetOwnership(pad, False) # Do this
+
+    return TPadDict
+
+def getZdEpsilonString(mZd,epsilon):
 
     mZdFixPrec     = "%2.2f"%float(mZd)
     epsilonSciNota = "%1.2e" %float(epsilon)
 
+    return mZdFixPrec, epsilonSciNota
+
+
+def defineHist(mZd,epsilon, histPropertyDict, physicsObjectDict ):
+
+    mZdFixPrec, epsilonSciNota = getZdEpsilonString(mZd,epsilon)
+
 
     histDict = collections.defaultdict(dict)
+
+
+    kinematicsReplacements = {}
+
+    kinematicsReplacements["mInv"] = "m_{ll}"
 
 
     for physicsObjs in physicsObjectDict:
         for kinematic in physicsObjectDict[physicsObjs]:
 
             histName = "%s_%s_test_mZd%s_epsilon%s" %(physicsObjs, kinematic,mZdFixPrec,epsilonSciNota)
-            histTitle = "truth H #rightarrow ZZ_{d} #rightarrow 4l %s distribution" %(kinematic)
+            histTitle = "m_{Z_{d}} = %s, #varepsilon = %s, %s distribution" %(mZdFixPrec,epsilonSciNota, kinematic)
 
             histProperties = histPropertyDict[kinematic]
 
-            hist = ROOT.TH1F(histName,histTitle,histProperties["nBins"], histProperties["lowBin"],  histProperties["highBin"])
+            lowBin  = histProperties["lowBin"]
+            highBin = histProperties["highBin"]
+
+            hist = ROOT.TH1F(histName,histTitle,histProperties["nBins"], lowBin,  highBin)
+            hist.SetStats( False) # remove stats box
 
 
-            hist.AddDirectory(ROOT.kFALSE) # prevent histograms from being added to the current directory, see https://root.cern/manual/object_ownership/
+            #hist.AddDirectory(ROOT.kFALSE) # prevent histograms from being added to the current directory, see https://root.cern/manual/object_ownership/
 
-            hist.GetXaxis().SetTitle("%s %s %s" %(physicsObjs,kinematic,histProperties["units"]) )
+            kinematicLabel = kinematicsReplacements.get(kinematic,kinematic)
+
+            hist.GetXaxis().SetTitle("%s %s" %(kinematicLabel,histProperties["units"]) )
             
 
             #                % draw command
             histDict[histName]["hist"] = hist
             histDict[histName]["drawCommand"] = "%s_%s >> %s" % (physicsObjs,kinematic ,histName)
             histDict[histName]["legendStr"] = "m_{Z_{d}} = %s, #varepsilon = %s" %(mZdFixPrec, epsilonSciNota)
+
+            histDict[histName]["physKinSet"] =  (physicsObjs,kinematic)
 
             #ROOT.SetOwnership(hist,True)
 
@@ -156,33 +211,89 @@ def getTChain( listOfFiles, TTreeName):
     for file in listOfFiles: myTChain.Add(file)
 
 
-
-
-    hist = ROOT.TH1F("test","test",100, 1,-1)
-    myTChain.Draw("l2_pT >> test")
-    #hist.Print("Print.pdf")
-    canv = ROOT.TCanvas()
-    hist.Draw()
-    canv.Update()
-    canv.Print("Print.pdf")
+    #ROOT.gROOT.cd()
 
 
 
+    #TFile = ROOT.TFile("/workdir/Downloads/evntTTree/user.zhangr.sqlp_ZZ32_000_inner_work_evgen.1_EVNT.pool.root.1/DAOD_TRUTH1.user.zhangr.31074559._000001.flat.TTree.root.1","OPEN")
+    #TTree = TFile.Get("truthTree_Zd")
+    #canv = ROOT.TCanvas()
+    #hist = ROOT.TH1F("ABCD","ABC",100, 0, 100)
+    #TTree.Draw("Zd_pT >> ABCD")
+    #canv.Update()
+    #mass =1
+    #Zd_pT_Hist = ROOT.TH1D("Zd_pT_Hist%i" %mass, "truth H #rightarrow ZZ_{d} #rightarrow 4l pT distribution, m_{Zd} = %i GeV"%mass, 200,0,200)
+    #Zd_pT_Hist.GetXaxis().SetTitle("Z_{d} pT (GeV)")
+    #myTChain.Draw(" Zd_pT >> Zd_pT_Hist%i" %mass)
+    #myTChain.Draw(" Zd_pT >> hHist")
+    #hist = ROOT.TH1D("test","test",100, 0,700)
+    #myTChain.Draw("l2_pT >> test")
+    ##hist.Print("Print.pdf")
+    #canv = ROOT.TCanvas()
+    #hist.Draw()
+    #canv.Update()
+    #canv.Print("Print.pdf")
 
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    return myTChain
 
 
+def setupTLegend( nColumns = 1, boundaries = (0.15,0.70,0.55,0.95)):
+    # set up a TLegend, still need to add the different entries
+    # boundaries = (lowLimit X, lowLimit Y, highLimit X, highLimit Y)
+
+    TLegend = ROOT.TLegend(boundaries[0],boundaries[1],boundaries[2],boundaries[3])
+    TLegend.SetFillColor(ROOT.kWhite)
+    TLegend.SetLineColor(ROOT.kWhite)
+    TLegend.SetNColumns(nColumns);
+    TLegend.SetFillStyle(0);  # make legend background transparent
+    TLegend.SetBorderSize(0); # and remove its border without a border
+
+    ROOT.gStyle.SetLegendTextSize(0.038)
+
+    return TLegend
+
+
+def printRootCanvasPDF(myRootCanvas, isLastCanvas, fileName, tableOfContents = None):
+    if fileName is None:  fileName = myRootCanvas.GetTitle() + ".pdf"
+
+    # it is not the last histogram in the TFile
+    if not isLastCanvas: fileName += "("
+    # close the pdf if it is the last histogram
+    else:                fileName += ")"
+    # see for alternatives to these brackets here: https://root.cern.ch/doc/master/classTPad.html#abae9540f673ff88149c238e8bb2a6da6
+
+
+    if tableOfContents is None: myRootCanvas.Print(fileName)
+    else: myRootCanvas.Print(fileName, "Title:" + tableOfContents)
 
     return None
+
+
+
 
 
 if __name__ == '__main__':
 
 
+    TFile = ROOT.TFile("/workdir/Downloads/evntTTree/user.zhangr.sqlp_ZZ32_000_inner_work_evgen.1_EVNT.pool.root.1/DAOD_TRUTH1.user.zhangr.31074559._000001.flat.TTree.root.1","OPEN")
+    TTree = TFile.Get("truthTree_Zd")
+
+
+    #ROOT.gROOT.cd()
+    #canv = ROOT.TCanvas()
+    #hist = ROOT.TH1F("ABCD","ABCD",100, 0, 100)
+    #TTree.Draw("Zd_pT >> ABCD")
+    #canv.Update()
+    #print(hist.Integral())
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+
+
     physicsDict = getPhysicsParameterMapping("allresults.csv")
 
 
-    inputTTreeDir =  "/gpfs/mnt/atlasgpfs01/usatlas/data/chweber/ReanaActiveLearningProject/generatedZXSamples/evnt"
+    #inputTTreeDir =  "/gpfs/mnt/atlasgpfs01/usatlas/data/chweber/ReanaActiveLearningProject/generatedZXSamples/evnt"
+
+    inputTTreeDir =  "/workdir/Downloads/evntTTree"
 
     inputFileList = gatherIntputROOTFiles(inputTTreeDir, relevantInputFileReTag = ".*\.flat\.TTree\.root\.1")
 
@@ -203,7 +314,7 @@ if __name__ == '__main__':
 
 
 
-    TFile = ROOT.TFile("ZX_CombinedTruthTTree4.root", "OPEN")
+    #TFile = ROOT.TFile("ZX_CombinedTruthTTree4.root", "OPEN")
 
 
     ROOT.gROOT.SetBatch(True)
@@ -212,6 +323,11 @@ if __name__ == '__main__':
 
     histPropertyDict, physicsObjectDict = defineHistProperties()
 
+    canvasList = []
+    canvasDict = collections.defaultdict(dict)
+    legendList = []
+
+    counter = 0
 
     for Zd_epsilon_batch in massAndEpsilonListBatches:
 
@@ -220,147 +336,127 @@ if __name__ == '__main__':
         for Zd, epsilon in Zd_epsilon_batch:
 
 
+            Zd_epsilonSet = getZdEpsilonString(Zd,epsilon)
+
+
             # define hists
 
             histDict[ (Zd,epsilon)] = defineHist(Zd,epsilon, histPropertyDict, physicsObjectDict )
 
             currentHistSet = histDict[ (Zd,epsilon)]
-
-
-
             setOfFiles = physicsAndIntputFileDict[ (Zd,epsilon)]
-
-
-            getTChain( setOfFiles, "truthTree_Zd")
-
-            for file in physicsAndIntputFileDict[ (Zd,epsilon)]: 
-
-
-                TFile = ROOT.TFile(file,"OPEN")
-                TTree = TFile.Get("truthTree_Zd")
-
-                for histName in currentHistSet:
-
-                    hist = currentHistSet[histName]["hist"]
-
-                    drawCommand = currentHistSet[histName]["drawCommand"]
-
-                    TTree.Draw(drawCommand)
-
-                    #ROOT.gROOT.SetBatch(False)
-
-                    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-
-                    hist = ROOT.TH1F("test","test",100, 1,-1)
-                    TTree.Draw("l2_pT >> test")
-
-
-
-                    #hist.Print("Print.pdf")
-                    canv = ROOT.TCanvas()
-                    hist.Draw()
-                    canv.Update()
-                    canv.Print("Print.pdf")
-
-
-                    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-
-
-                TFile.Close() 
-
-
-
-
-                pass
-                # draw in hists
-
-
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
-
-
-    for mass in [15, 35, 55]:
-
-        TTree = TFile.Get("truthTree_Zd_%i_GeV"%mass)
-
-
-        Zd_pT_Hist = ROOT.TH1D("Zd_pT_Hist%i" %mass, "truth H #rightarrow ZZ_{d} #rightarrow 4l pT distribution, m_{Zd} = %i GeV"%mass, 200,0,200)
-        Zd_pT_Hist.GetXaxis().SetTitle("Z_{d} pT (GeV)")
-        TTree.Draw(" Zd_pT >> Zd_pT_Hist%i" %mass)
-
-
-        Zd_eta_Hist = ROOT.TH1D("Zd_eta_Hist%i" %mass, "truth H #rightarrow ZZ_{d} #rightarrow 4l #eta distribution, m_{Zd} = %i GeV"%mass, 81, -8,8)
-        Zd_eta_Hist.GetXaxis().SetTitle("Z_{d} #eta")
-        TTree.Draw(" Zd_eta >> Zd_eta_Hist%i" %mass)
-
-
-        Z_pT_Hist = ROOT.TH1D("Z_pT_Hist%i" %mass, "truth H #rightarrow ZZ_{d} #rightarrow 4l pT distribution, m_{Zd} = %i GeV"%mass, 200,0,200)
-        Z_pT_Hist.GetXaxis().SetTitle("Z pT (GeV)")
-        TTree.Draw(" Z_pT >> Z_pT_Hist%i" %mass)
-
-
-        Z_eta_Hist = ROOT.TH1D("Z_eta_Hist%i" %mass, "truth H #rightarrow ZZ_{d} #rightarrow 4l #eta distribution, m_{Zd} = %i GeV"%mass, 81, -8,8)
-        Z_eta_Hist.GetXaxis().SetTitle("Z #eta")
-        TTree.Draw(" Z_eta >> Z_eta_Hist%i" %mass)
-
-
-
-
-        ll12_eta_Hist = ROOT.TH1D("ll12_eta_Hist%i" %mass, "truth H #rightarrow ZZ_{d} #rightarrow 4l, Z_{d} #rightarrow ll #eta distribution, m_{Zd} = %i GeV"%mass, 81, -8,8)
-        ll12_eta_Hist.GetXaxis().SetTitle("l_{1}, l_{2}lepton #eta")
-        TTree.Draw(" l1_eta >> ll12_eta_Hist%i" %mass)
-        TTree.Draw(" l2_eta >> ll12_eta_Hist%i" %mass)
-
-
-        ll12_pT_Hist = ROOT.TH1D("ll12_pT_Hist%i" %mass, "truth H #rightarrow ZZ_{d} #rightarrow 4l, Z_{d} #rightarrow ll  pT distribution, m_{Zd} = %i GeV"%mass, 100,0,100)
-        ll12_pT_Hist.GetXaxis().SetTitle("l_{1}, l_{2} lepton pT (GeV)")
-        TTree.Draw(" l1_pT >> ll12_pT_Hist%i" %mass)
-        TTree.Draw(" l2_pT >> ll12_pT_Hist%i" %mass)
-
-
-
-        ll34_eta_Hist = ROOT.TH1D("ll34_eta_Hist%i" %mass, "truth H #rightarrow ZZ_{d} #rightarrow 4l, Z_{d} #rightarrow ll #eta distribution, m_{Zd} = %i GeV"%mass, 81, -8,8)
-        ll34_eta_Hist.GetXaxis().SetTitle("l_{3}, l_{4} lepton #eta")
-        TTree.Draw(" l3_eta >> ll34_eta_Hist%i" %mass)
-        TTree.Draw(" l4_eta >> ll34_eta_Hist%i" %mass)
-
-
-        ll34_pT_Hist = ROOT.TH1D("ll34_pT_Hist%i" %mass, "truth H #rightarrow ZZ_{d} #rightarrow 4l, Z_{d} #rightarrow ll  pT distribution, m_{Zd} = %i GeV"%mass, 100,0,100)
-        ll34_pT_Hist.GetXaxis().SetTitle("l_{3}, l_{4} lepton pT (GeV)")
-        TTree.Draw(" l3_pT >> ll34_pT_Hist%i" %mass)
-        TTree.Draw(" l4_pT >> ll34_pT_Hist%i" %mass)
+            TChain = getTChain( setOfFiles, "truthTree_Zd")
 
 
 
 
 
-        ll12_invMass_Hist = ROOT.TH1D("ll12_invMass_Hist%i" %mass, "truth H #rightarrow ZZ_{d} #rightarrow 4l, Z_{d} #rightarrow ll , ll invariant mass distribution, m_{Zd} = %i GeV"%mass, 100, 50, 115)
-        ll12_invMass_Hist.GetXaxis().SetTitle("m_{12} (GeV)")
-        TTree.Draw(" ll12_mInv >> ll12_invMass_Hist%i" %mass)
+            for histName in currentHistSet: # get hists from the TChain
+
+                hist = currentHistSet[histName]["hist"]
+
+                drawCommand = currentHistSet[histName]["drawCommand"]
+
+                TChain.Draw(drawCommand,"mcEventWeight")
 
 
-        ll34_invMass_Hist = ROOT.TH1D("ll34_invMass_Hist%i" %mass, "truth H #rightarrow ZZ_{d} #rightarrow 4l, Z_{d} #rightarrow ll , ll invariant mass distribution, m_{Zd} = %i GeV"%mass, 100, mass-.5,mass+0.5)
-        ll34_invMass_Hist.GetXaxis().SetTitle("m_{34} (GeV)")
-        TTree.Draw(" ll34_mInv >> ll34_invMass_Hist%i" %mass)
+
+            canvasName = "_".join(Zd_epsilonSet)+"_canv"
+
+            canvas = ROOT.TCanvas(canvasName,canvasName, 1600,1600)
 
 
-        for hist in [ Zd_pT_Hist, Zd_eta_Hist, Z_pT_Hist, Z_eta_Hist, ll12_eta_Hist, ll12_pT_Hist, ll34_eta_Hist, ll34_pT_Hist, ll12_invMass_Hist, ll34_invMass_Hist]:
+            TPadDict = getTPads()
 
-            canvasName = hist.GetName() + "_%GeV" %mass
-            canvas = ROOT.TCanvas(canvasName,canvasName, 1920/2, 1090 )
-            hist.Draw()
+            # map TPads to list of maximum Y-values in the histogrmas associated with it
+            maxYValueMap = collections.defaultdict(list)
+
+            for histName in currentHistSet: # find the maximum y-value per histogram
+
+                hist = currentHistSet[histName]["hist"]
+
+                TPad = TPadDict[currentHistSet[histName]["physKinSet"]]
+
+                maxYValueMap[TPad].append(hist.GetMaximum())
+
+
+
+            TPadCountDict = {}
+            TPadLegendDict = {}
+
+
+            for histName in currentHistSet: # plot all the hists on the TCanvas
+
+                hist = currentHistSet[histName]["hist"]
+
+                currentTPad = TPadDict[currentHistSet[histName]["physKinSet"]]
+
+                TPadCount = TPadCountDict.get(currentTPad,0)
+                TPadCountDict[currentTPad] = TPadCount+1
+
+                maxYVal = max(  maxYValueMap[currentTPad] )
+
+                hist.GetYaxis().SetRangeUser(0, maxYVal * 1.1)
+
+                hist.SetLineColor(TPadCount+1)
+                hist.SetLineStyle(TPadCount+1)
+                hist.SetLineWidth(2)
+
+                canvas.cd()
+
+                currentTPad.cd()
+
+                hist.Draw("HIST same")
+
+
+
+
+                legend = TPadLegendDict.get(currentTPad, setupTLegend( nColumns = 1, boundaries = (0.7,0.60,1.,0.85)))
+                if currentTPad not in TPadLegendDict: TPadLegendDict[currentTPad] = legend
+
+                physicsObject = currentHistSet[histName]["physKinSet"][0]
+
+                legend.AddEntry( hist , physicsObject , "l" )
+
+
+                
+                canvas.cd()
+                currentTPad.Draw()
+                canvas.Update()
+
+            for TPad in TPadLegendDict: # draw legends
+
+                TPad.cd()
+
+                legend = TPadLegendDict[TPad]
+
+                legend.Draw()
+
+            canvas.cd()
             canvas.Update()
 
-            canvas.Print(canvasName +".png")
-            canvas.Print(canvasName +".pdf")
+
+            filePrefix = "mZd %s, epsilon %s" %(Zd_epsilonSet)
 
 
-    #fillHist = ROOT.TH1D(weightVariation,weightVariation,200,0,100)
+            canvas.Print("ReanaZXTruthSignals/%s.pdf" %filePrefix)
+            canvas.Print("ReanaZXTruthSignals/%s.jpg" %filePrefix)
+
+
+            canvasDict[canvas]["legendStr"] = currentHistSet[histName]["legendStr"]
+
+            #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
 
 
 
+    #counter = 0
+    #for canvas in canvasList:
+    #    counter +=1
+    #    printRootCanvasPDF(canvas, isLastCanvas = canvas==canvasList[-1] , 
+    #    fileName = "ReanaZXTruthSignals.pdf", tableOfContents = str(counter) + " - " + canvasDict[canvas]["legendStr"] ) # write to .PDF
 
 
 
 
-    import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
+    #import pdb; pdb.set_trace() # import the debugger and instruct it to stop here

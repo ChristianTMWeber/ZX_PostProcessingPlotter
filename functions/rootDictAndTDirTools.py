@@ -49,6 +49,22 @@ def generateTDirPathAndContentsRecursive(TDir, baseString = "" , newOwnership = 
             else :
                 yield baseString +"/"+  TObject.GetName() , TObject
 
+def makeListOfTDirAndTObjects(inputTFile):
+
+    outputList = []
+
+    for path, tObject in generateTDirPathAndContentsRecursive(inputTFile):
+
+        pathComponents = path.split("/")
+
+        if len(pathComponents) >=4 : newPath = pathComponents[1:-1]
+        elif len(pathComponents) == 3: newPath = pathComponents[1]
+        else:   newPath = ""
+
+        outputList.append( (newPath,tObject))
+
+    return outputList
+
 def getSubTDirList( currentTDir) : # provides a list of subdirectories in the current TDirectory
     listOfSubdirectories = [TObject.GetName() for TObject in generateTDirContents(currentTDir) if isinstance(TObject, ROOT.TDirectoryFile)]
     return listOfSubdirectories
