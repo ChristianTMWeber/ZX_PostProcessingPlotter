@@ -86,7 +86,54 @@ class DSIDHelper:
                             "Za, m_{a} = 20GeV" : [451333, 451334],
                             "Za, m_{a} = 25GeV" : [451335, 451336],
                             "Za, m_{a} = 30GeV" : [451337, 451338],
-                            "signal" : [999999]}
+                            "AS, m_{S}=70, m_{Zd}=20" : [513526] ,
+                            "AS, m_{S}=70, m_{Zd}=35" : [513527] ,
+                            "AS, m_{S}=84, m_{Zd}=20" : [513528] ,
+                            "AS, m_{S}=84, m_{Zd}=31" : [513529] ,
+                            "AS, m_{S}=84, m_{Zd}=42" : [513530] ,
+                            "AS, m_{S}=98, m_{Zd}=20" : [513531] ,
+                            "AS, m_{S}=98, m_{Zd}=34" : [513532] ,
+                            "AS, m_{S}=98, m_{Zd}=49" : [513533] ,
+                            "AS, m_{S}=110, m_{Zd}=20"  : [513534] ,
+                            "AS, m_{S}=110, m_{Zd}=30"  : [513535] ,
+                            "AS, m_{S}=110, m_{Zd}=42"  : [513536] ,
+                            "AS, m_{S}=110, m_{Zd}=55"  : [513537] ,
+                            "AS, m_{S}=125, m_{Zd}=20"  : [513538] ,
+                            "AS, m_{S}=125, m_{Zd}=28"  : [513539] ,
+                            "AS, m_{S}=125, m_{Zd}=39"  : [513540] ,
+                            "AS, m_{S}=125, m_{Zd}=51"  : [513541] ,
+                            "AS, m_{S}=125, m_{Zd}=62"  : [513542] ,
+                            "AS, m_{S}=183, m_{Zd}=20"  : [513543] ,
+                            "AS, m_{S}=183, m_{Zd}=30"  : [513544] ,
+                            "AS, m_{S}=183, m_{Zd}=50"  : [513545] ,
+                            "AS, m_{S}=183, m_{Zd}=71"  : [513546] ,
+                            "AS, m_{S}=183, m_{Zd}=91"  : [513547] ,
+                            "AS, m_{S}=279, m_{Zd}=20"  : [513548] ,
+                            "AS, m_{S}=279, m_{Zd}=30"  : [513549] ,
+                            "AS, m_{S}=279, m_{Zd}=60"  : [513550] ,
+                            "AS, m_{S}=279, m_{Zd}=91"  : [513551] ,
+                            "AS, m_{S}=279, m_{Zd}=116" : [513552] ,
+                            "AS, m_{S}=279, m_{Zd}=139" : [513553] ,
+                            "AS, m_{S}=414, m_{Zd}=20"  : [513554] ,
+                            "AS, m_{S}=414, m_{Zd}=30"  : [513555] ,
+                            "AS, m_{S}=414, m_{Zd}=60"  : [513556] ,
+                            "AS, m_{S}=414, m_{Zd}=91"  : [513557] ,
+                            "AS, m_{S}=414, m_{Zd}=149" : [513558] ,
+                            "AS, m_{S}=414, m_{Zd}=207" : [513559] ,
+                            "AS, m_{S}=588, m_{Zd}=20"  : [513560] ,
+                            "AS, m_{S}=588, m_{Zd}=30"  : [513561] ,
+                            "AS, m_{S}=588, m_{Zd}=91"  : [513562] ,
+                            "AS, m_{S}=588, m_{Zd}=159" : [513563] ,
+                            "AS, m_{S}=588, m_{Zd}=226" : [513564] ,
+                            "AS, m_{S}=588, m_{Zd}=294" : [513565] ,
+                            "AS, m_{S}=800, m_{Zd}=20"  : [513566] ,
+                            "AS, m_{S}=800, m_{Zd}=30"  : [513567] ,
+                            "AS, m_{S}=800, m_{Zd}=91"  : [513568] ,
+                            "AS, m_{S}=800, m_{Zd}=168" : [513569] ,
+                            "AS, m_{S}=800, m_{Zd}=246" : [513570] ,
+                            "AS, m_{S}=800, m_{Zd}=323" : [513571] ,
+                            "AS, m_{S}=800, m_{Zd}=400" : [513572] ,
+                            "signal" : [999999,303456]}
 
 
     colorMap = {"H->ZZ*->4l" : ROOT.kRed  , "ZZ*->4l" :   ROOT.kAzure+1 ,
@@ -98,29 +145,56 @@ class DSIDHelper:
     physicsSubProcess = {"ggH" : [345060], "VBFH":[341488], "WH" : [341964], "ZH" : [341947],
                      "ggZH" : [345066], "ttH125" : [345046, 345047, 345048], "bbH" : [344973, 344974],
                      "qq->ZZ*->4l" : [364250, 364251, 364252], "gg->ZZ*->4l" : [345708, 345709],
-                     "ZZZ" : [364248, 364247], "WZZ" : [364245], "WWZ" : [364243], 
-                     "lllljj" : [364364], "ttll" : [410142], "WZ" : [361601], "ttbar" : [410472],
+                     "ZZZ" : [364248, 364247], "WZZ" : [364245], "WWZ" : [364243],
+                     "lllljj" : [364364], "ttll" : [410142], "WZ" : [361601, 363357, 363358, 363489],
+                     "WW" : [363359, 363360], "ZZ" : [363355, 363356], "ttbar" : [410470, 410471, 410472],
+                     "singletop": [410644, 410645, 410658, 410659], "Wt" : [410646, 410647, 410648, 410649],
                      "Z+Jets (Z->ee, CVetoBVeto)"      : [364114, 364117, 364120, 364123] ,
                      "Z+Jets (Z->mumu, CVetoBVeto)"    : [364100, 364103, 364106, 364109] ,
                      "Z+Jets (Z->tautau, CVetoBVeto)"  : [364128, 364131, 364134, 364137] ,
+                     "Z+Jets (Z->nunu, CVetoBVeto)"    : [364142, 364145, 364148, 164151] ,
+                     "W+Jets (W->enu, CVetoBVeto)"     : [364170, 364173, 364176, 364179] ,
+                     "W+Jets (W->munu, CVetoBVeto)"    : [364156, 364159, 364162, 364165] ,
+                     "W+Jets (W->taunu, CVetoBVeto)"   : [364184, 364187, 364190, 364193] ,
                      "Z+Jets (Z->ee, CFilterBVeto)"    : [364115, 364118, 364121, 364124] ,
                      "Z+Jets (Z->mumu, CFilterBVeto)"  : [364101, 364104, 364107, 364110] ,
                      "Z+Jets (Z->tautau, CFilterBVeto)": [364129, 364132, 364135, 364138] ,
+                     "Z+Jets (Z->nunu, CFilterBVeto)"  : [364143, 364146, 364149, 364152] ,
+                     "W+Jets (W->enu, CFilterBVeto)"   : [364171, 364174, 364177, 364180] ,
+                     "W+Jets (W->munu, CFilterBVeto)"  : [361334, 364157, 364160, 364163, 364166] ,
+                     "W+Jets (W->taunu, CFilterBVeto)" : [364185, 364188, 364191, 364194] ,
                      "Z+Jets (Z->ee, BFilter)"         : [364116, 364119, 364122, 364125] ,
                      "Z+Jets (Z->mumu, BFilter)"       : [364102, 364105, 364108, 364111] ,
                      "Z+Jets (Z->tautau, BFilter)"     : [364130, 364133, 364136, 364139] ,
+                     "Z+Jets (Z->nunu, BFilter)"       : [364144, 364147, 364150, 364153] ,
+                     "W+Jets (W->enu, BFilter)"        : [364172, 364175, 364178, 364181] ,
+                     "W+Jets (W->munu, BFilter)"       : [364158, 364161, 364164, 364167] ,
+                     "W+Jets (W->taunu, BFilter)"      : [364186, 364189, 364192, 364195] ,
                      "Z+Jets (Z->ee, hight pT, no filters)"       : [364126, 364127] ,
                      "Z+Jets (Z->mumu, hight pT, no filters)"     : [364112, 364113] ,
-                     "Z+Jets (Z->tautau, hight pT, no filters)"   : [364140, 364141] 
+                     "Z+Jets (Z->tautau, hight pT, no filters)"   : [364140, 364141] ,
+                     "Z+Jets (Z->nunu, hight pT, no filters)"     : [364154, 364155] ,
+                     "W+Jets (W->enu, hight pT, no filters)"      : [364182, 364183] ,
+                     "W+Jets (W->munu, hight pT, no filters)"     : [364168, 364169] ,
+                     "W+Jets (W->taunu, hight pT, no filters)"    : [364196, 364197] 
                      }
 
     analysisMapping =   {   "H4l"    : [341964, 341947, 345060, 341488, 345046, 345047, 345048, 345066, 344973, 344974],
                             "ZZ"     : [364250, 364251, 364252, 361603, 342556, 343232, 343212, 343213, 345708, 345709],
-                            "Reducible"  : [364114, 364115, 364116, 364117, 364118, 364119, 364120, 364121, 364122, 
-                                            364123, 364124, 364125, 364126, 364127, 364100, 364101, 364102, 364103, 
-                                            364104, 364105, 364106, 364107, 364108, 364109, 364110, 364111, 364112, 
-                                            364113, 364128, 364129, 364130, 364131, 364132, 364133, 364134, 364135, 
-                                            364136, 364137, 364138, 364139, 364140, 364141, 361601, 410472],
+                            "Reducible"  : [364114, 364115, 364116, 364117, 364118, 364119, 364120, 364121, 364122,
+                                            364123, 364124, 364125, 364126, 364127, 364100, 364101, 364102, 364103,
+                                            364104, 364105, 364106, 364107, 364108, 364109, 364110, 364111, 364112,
+                                            364113, 364128, 364129, 364130, 364131, 364132, 364133, 364134, 364135,
+                                            364136, 364137, 364138, 364139, 364140, 364141, 364142, 364143, 364144,
+                                            364145, 364146, 364147, 364148, 364149, 364150, 364151, 364152,
+                                            364153, 364154, 364155, 410470, 410471, 410472, 410644, 410645, 410658,
+                                            410659, 410646, 410647, 410648, 410649, 364170, 364171, 364172, 364173,
+                                            364174, 364175, 364176, 364177, 364178, 364179, 364180, 364181, 364182,
+                                            364183, 361334, 364156, 364157, 364158, 364159, 364160, 364161, 364162,
+                                            364163, 364164, 364165, 364166, 364167, 364168, 364169, 364184, 364185,
+                                            364186, 364187, 364188, 364189, 364190, 364191, 364192, 364193, 364194,
+                                            364195, 364196, 364197],
+                            "Dibosons" : [361601, 363357, 363358, 363489, 363359, 363360, 363355, 363356],
                             "VVV_Z+ll" : [364248, 364247, 364245, 364243, 364364,
                                            410142],
                 }
@@ -265,6 +339,11 @@ class DSIDHelper:
 
         if DSID == 0 : return 1. # zero indicates data, and will not be scaled
 
+        if self.isSignalSample( DSID ) and DSID not in self.metaDataDict: # set XS to 1fb by default for signal
+            self.metaDataDict[DSID]["crossSection"] = 1.00E-05
+            self.metaDataDict[DSID]["kFactor"]      = 1.
+            self.metaDataDict[DSID]["genFiltEff"]   = 1.
+
         prod = self.metaDataDict[DSID]["crossSection"] * self.metaDataDict[DSID]["kFactor"] * self.metaDataDict[DSID]["genFiltEff"]
 
         # remember: the metadata stores the cross section in nano barn, and the luminosity if in 1/fb. Th 1E6 factor scales the cross section from nb to fb.
@@ -302,8 +381,8 @@ class DSIDHelper:
         # There the different values are seperate by whitespace
         # We ignore lines that do not start with a DSID (i.e. a 6 digit number)
 
-        metaDataDict = {}
-        physicsShort = {}
+        metaDataDict = collections.defaultdict(dict)
+        physicsShort = collections.defaultdict(dict)
 
         DSIDPattern = re.compile("\d{6}") # DSIDs are numbers 6 digits long
 
@@ -339,7 +418,7 @@ class DSIDHelper:
             else :  backgroundKeys.append(key)
 
         backgroundKeys.sort( key = lambda x: sortedSamples[x].Integral() , reverse = True)
-        signalKeys.sort()
+        signalKeys.sort(key = lambda x: sortedSamples[x].Integral() , reverse = True)
 
 
 
@@ -840,12 +919,7 @@ def make1UpAnd1DownSystVariationYields( BackgroundVariationDict , flavor = "All"
 
 def preselectTDirsForProcessing(postProcessedData , permittedDSIDs = None, systematicsTags = None, systematicsVetoes = None , newOwnership = None):
 
-    if permittedDSIDs is None:
-        reSearchString = ""
-    else:
-        reSearchOptions = [ "(/%i)" %DSID for DSID in permittedDSIDs]
-
-        reSearchStringDSID = "|".join(reSearchOptions)
+    all_DSID_a_priori_ok = permittedDSIDs is None
 
     # preselect by systematic
     if systematicsTags is None:                    reSearchStringSystematics = ""
@@ -861,7 +935,9 @@ def preselectTDirsForProcessing(postProcessedData , permittedDSIDs = None, syste
 
         if not isinstance(baseHist_DSIDLevel,ROOT.TDirectoryFile): continue
         DSID = path_DSIDLevel.split("/")[-1]
-        if not re.search( reSearchStringDSID, path_DSIDLevel): continue
+
+        if not(all_DSID_a_priori_ok or int(DSID) in permittedDSIDs) : continue
+        
 
         preselectedTDirs = []
         for path_sysLevel, baseHist_sysLevel  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive( baseHist_DSIDLevel , baseString = path_DSIDLevel, newOwnership = newOwnership, maxRecursionDepth = 0) :
@@ -1054,7 +1130,14 @@ if __name__ == '__main__':
     help = "If we only want to list a subset of the kninematic variables, list them here.\
             Use like --kinematicsToPlot m4l m34. If none are specified, or argument is not used, we plot all kinematic variables" ) 
 
-    parser.add_argument( "--flavorsToPlot", nargs='*', default=["2e2mu", "2mu2e", "4e", "4mu", "All"], 
+    parser.add_argument( "--DSIDsToPlot", type=int, nargs='*', default=None, 
+    help = "List of DSIDs that we want to plot.\
+            e.g. --DSIDsToPlot 343238 343239\
+            If you do not use this argument, we will plot all of the DSIDs in the file together" ) 
+
+    flavorsToPlotDefaults = ["2e2mu", "2mu2e", "4e", "4mu", "2l2e", "2l2mu", "2l2j", "2e2j", "2mu2j","All"]
+    parser.add_argument( "--flavorsToPlot", nargs='*', 
+    default=flavorsToPlotDefaults, 
     help = "If we only want to list a subset of the kninematic variables, list them here.\
             Use like --kinematicsToPlot m4l m34. If none are specified, or argument is not used, we plot all kinematic variables" ) 
 
@@ -1083,7 +1166,7 @@ if __name__ == '__main__':
 
     if skipReducible: skipZjets = True
 
-    replaceWithDataDriven = True
+    replaceWithDataDriven = False
 
     addSystematicUncertaintyToNominal = args.makeSystematicsPlots and (len(args.kinematicsToPlot)==1)
 
@@ -1145,20 +1228,19 @@ if __name__ == '__main__':
     histCounter = 0 # count how many relevant hists we have
     nonRelevantHistCounter = 0
 
-
-    DSIDsToConsider = []
-    DSIDsToConsider.append( 0) # data!
-    DSIDsToConsider.extend( myDSIDHelper.analysisMapping["H4l"])
-    DSIDsToConsider.extend( myDSIDHelper.analysisMapping["ZZ"])
-    DSIDsToConsider.extend( myDSIDHelper.analysisMapping["VVV_Z+ll"])
-    if not skipReducible: DSIDsToConsider.extend( myDSIDHelper.analysisMapping["Reducible"])
-    if skipZjets: # we remove the Z+Jet DSIDs after the fact, due to the way the analysisMappings are defined
-        for ZJetDISD in  myDSIDHelper.ZJetDSIDs:
-            if ZJetDISD in DSIDsToConsider:   DSIDsToConsider.remove(ZJetDISD)
-
-    # ZZd samples                          m_Zd    15 GeV  20 GeV  25 GeV  30 GeV  35 GeV  40 GeV  45 GeV  50 GeV  55 GeV  
-    #                                              343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242
-    if args.plotZXSignal : DSIDsToConsider.extend([        343235,                 343238,                         343242])
+    DSIDsToConsider = None
+    #DSIDsToConsider = []
+    #DSIDsToConsider.append( 0) # data!
+    #DSIDsToConsider.extend( myDSIDHelper.analysisMapping["H4l"])
+    #DSIDsToConsider.extend( myDSIDHelper.analysisMapping["ZZ"])
+    #DSIDsToConsider.extend( myDSIDHelper.analysisMapping["VVV_Z+ll"])
+    #if not skipReducible: DSIDsToConsider.extend( myDSIDHelper.analysisMapping["Reducible"])
+    #if skipZjets: # we remove the Z+Jet DSIDs after the fact, due to the way the analysisMappings are defined
+    #    for ZJetDISD in  myDSIDHelper.ZJetDSIDs:
+    #        if ZJetDISD in DSIDsToConsider:   DSIDsToConsider.remove(ZJetDISD)
+    ## ZZd samples                          m_Zd    15 GeV  20 GeV  25 GeV  30 GeV  35 GeV  40 GeV  45 GeV  50 GeV  55 GeV  
+    ##                                              343234, 343235, 343236, 343237, 343238, 343239, 343240, 343241, 343242
+    #if args.plotZXSignal : DSIDsToConsider.extend([        343235,                 343238,                         343242])
 
 
 
@@ -1168,7 +1250,7 @@ if __name__ == '__main__':
 
     # loop over all of the TObjects in the given ROOT file                         # newOwnership set to none for newer root versions, set to true for older ones
     #for path, baseHist  in rootDictAndTDirTools.generateTDirPathAndContentsRecursive(postProcessedData, newOwnership = ownershipSetpoint): 
-    for path, baseHist in preselectTDirsForProcessing(postProcessedData, permittedDSIDs = DSIDsToConsider, systematicsTags = systematicsTags, systematicsVetoes = ["UncorrUncertaintyNP" ,"CorrUncertaintyNP" ,"PMG_"], newOwnership = ownershipSetpoint):
+    for path, baseHist in preselectTDirsForProcessing(postProcessedData, permittedDSIDs = args.DSIDsToPlot, systematicsTags = systematicsTags, systematicsVetoes = ["UncorrUncertaintyNP" ,"CorrUncertaintyNP" ,"PMG_"], newOwnership = ownershipSetpoint):
 
         nonRelevantHistCounter += 1
         if nonRelevantHistCounter %1e5 == 0: print "%i irrelevant hists processed. \t Memory usage: %s (MB)" % (nonRelevantHistCounter, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1000)
@@ -1227,6 +1309,12 @@ if __name__ == '__main__':
     combinedMCTagHistDict = masterHistDict
 
     canvasList = []
+
+    # treat signal DSIDS like backgrounds, if there are no backgrounds, it's a hack to allow plotting when there are no backgrounds
+    DSIDs = combinedMCTagHistDict["Nominal"].values()[0].keys()
+    anyBackgroundsPresent = any([ not myDSIDHelper.isSignalSample( DSID ) for DSID in DSIDs])
+    treatSignalAsBackgroundsForPlotting = not anyBackgroundsPresent
+
 
     for systematicChannel in combinedMCTagHistDict.keys():
         if re.search("(UncorrUncertaintyNP)|(CorrUncertaintyNP)|(PMG_)", systematicChannel): continue # skip generator weight variations when plottins systematics
@@ -1324,7 +1412,7 @@ if __name__ == '__main__':
 
                 if not args.makePaperStylePlots: statsTexts.append( keyProperArrow + ": %.1f" %( mergedHist.Integral() ) )
 
-                if myDSIDHelper.isSignalSample( key ): 
+                if myDSIDHelper.isSignalSample( key ) and not treatSignalAsBackgroundsForPlotting: 
                     signalTallyTH1.Add(sortedSamples[key])
                     lengendInputListSignal.append( (mergedHist , keyProperArrow , "f") )
                 else:
@@ -1339,7 +1427,7 @@ if __name__ == '__main__':
             backgroundClones = []
             signalTHStacks = []
             for key in myDSIDHelper.defineSequenceOfSortedSamples( sortedSamples  ): # add merged samples to the backgroundTHStack 
-                if myDSIDHelper.isSignalSample( key ): 
+                if myDSIDHelper.isSignalSample( key ) and not treatSignalAsBackgroundsForPlotting: 
                     signalHist = sortedSamples[key]
 
                     signalTHStack = ROOT.THStack(key,key)
@@ -1379,14 +1467,20 @@ if __name__ == '__main__':
 
             backgroundTHStack.SetTitle("")
 
-            backgroundTHStack.Draw("Hist")
+
+            drawStringSuffix = "" 
+
+
+            if treatSignalAsBackgroundsForPlotting: drawStringSuffix += " NOSTACK"
+
+            backgroundTHStack.Draw("HIST" + drawStringSuffix)
             drawPrefix = "SAME " # after we draw out first histogram(stack) we need to add 'same' to the draw command 
             for signalStack in signalTHStacks:
-                signalStack.Draw(drawPrefix + "HIST")
+                signalStack.Draw(drawPrefix + "HIST" + drawStringSuffix)
                 drawPrefix = "SAME "
 
 
-            backgroundTHStack.Draw(drawPrefix+"Hist")
+            backgroundTHStack.Draw(drawPrefix+"Hist"+ drawStringSuffix)
 
 
             backgroundMergedTH1 = histHelper.mergeTHStackHists(backgroundTHStack) # get a merged background to draw uncertainty bars on the total backgroun
@@ -1396,8 +1490,7 @@ if __name__ == '__main__':
 
             backgroundMergedTH1ForRatioHist = backgroundMergedTH1.Clone( backgroundMergedTH1.GetName() + "_ratioHist")
 
-
-            inferredFlavor  = re.search("(All)|(2e2mu)|(4mu)|(4e)|(2mu2e)|(2l2e)|(2l2mu)", histEnding).group()
+            inferredFlavor  = re.search("(%s)" %")|(".join(flavorsToPlotDefaults), histEnding).group()
 
             ################# add in systematic uncertainties #################
             if addSystematicUncertaintyToNominal  and systematicChannel == "Nominal" and "ZXVR1a" not in histEnding : # and "ZXSR" in histEnding
@@ -1450,9 +1543,10 @@ if __name__ == '__main__':
             #if "eta"   in backgroundMergedTH1.getTitle: yAxisUnit = ""
             #elif "phi" in backgroundMergedTH1.getTitle: yAxisUnit = " radians"
 
+            yAxisString = "Events / " + str(backgroundMergedTH1.GetBinWidth(1) )
+            if "GeV" in backgroundTHStack.GetYaxis().GetTitle(): yAxisString += " GeV"
 
-
-            backgroundTHStack.GetYaxis().SetTitle("Events / " + str(backgroundMergedTH1.GetBinWidth(1) )+" GeV" )
+            backgroundTHStack.GetYaxis().SetTitle( yAxisString )
             yAxisTitleSize = 0.055
             backgroundTHStack.GetYaxis().SetTitleSize(yAxisTitleSize)
             backgroundTHStack.GetYaxis().SetTitleOffset(0)
