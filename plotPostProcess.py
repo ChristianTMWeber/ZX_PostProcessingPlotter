@@ -1309,6 +1309,7 @@ if __name__ == '__main__':
     combinedMCTagHistDict = masterHistDict
 
     canvasList = []
+    keepInScopeList = [] # We want to keep certain things in scope that we need for plotting later. Let's do that via this list
 
     # treat signal DSIDS like backgrounds, if there are no backgrounds, it's a hack to allow plotting when there are no backgrounds
     DSIDs = combinedMCTagHistDict["Nominal"].values()[0].keys()
@@ -1385,6 +1386,7 @@ if __name__ == '__main__':
 
             if args.makePaperStylePlots: legend = setupTLegend(nColumns = 1, boundaries = (0.55 - 0.02, 0.5 ,0.9,0.9) )
             else:                        legend = setupTLegend(boundaries = (0.17,0.70,0.55,0.95))
+            keepInScopeList.append(legend)
 
             lengendInputListBackground = []
             lengendInputListSignal = []
@@ -1600,6 +1602,7 @@ if __name__ == '__main__':
             
             if args.makePaperStylePlots: statsTPaves=setupStatsTPave(statsTexts, boundaries = (0.18,0.68,0.5,0.925)) 
             else:                        statsTPaves=setupStatsTPave(statsTexts, boundaries = (0.4,0.40,0.9,0.87))
+            keepInScopeList.append(statsTPaves)
 
             for statsTPave in statsTPaves: statsTPave.Draw();
             legend.Draw(); # do legend things
@@ -1763,7 +1766,7 @@ if __name__ == '__main__':
             if args.makePaperStylePlots: adjustAxesRangesManually( [ backgroundTHStack] ) #ratioHist,
 
             canvas.Update() # we need to update the canvas, so that changes to it (like the drawing of a legend get reflected in its status)
-            canvasList.append( copy.deepcopy(canvas) ) # save a deep copy of the canvas for later use
+            canvasList.append( canvas ) # save a deep copy of the canvas for later use
             if args.holdAtPlot: import pdb; pdb.set_trace() # import the debugger and instruct it to stop here
 
 
